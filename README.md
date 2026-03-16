@@ -29,10 +29,10 @@ Each note has:
 
 ```
 +-----------------------+
-|       Blazor GUI      |
-|                       |
-| Markdown Editor       |
-| Search UI             |
+|       Blazor GUI      |      +---------------------------------+  
+|                       |      | Rust WASM markdown render       |
+| Markdown Editor       |----->| Mermaid and code highlighting   |
+| Search UI             |      +---------------------------------+
 | LLM Generation        |
 +----------+------------+
            |              \
