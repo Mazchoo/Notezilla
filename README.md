@@ -24,3 +24,34 @@ A python FastMCP service that provides CRUD access to a vector database where de
 Each note has:
 * path: ordered file tree path
 * tags: unorded list of string names
+
+## Component Diagram
+
+```
++-----------------------+
+|       Blazor GUI      |
+|                       |
+| Markdown Editor       |
+| Search UI             |
+| LLM Generation        |
++----------+------------+
+           |              \
+           |               \
+           v                v
+
++--------------------+   +-------------------+
+|   Notezilla API    |   |   Ollama API      |
+|   (FastMCP)        |   |                   |
+|                    |   | text generation   |
+| CRUD interaction   |   | from templates    |
+| vector search      |   | and system prompt |
+| metadata queries   |   +-------------------+
++----------+---------+
+           |          \
+           |           \
+           v            v
++--------------------+  +--------------------+
+| Vector Database    |  | Filesystem Notes   |
+| (semantic index)   |  | Markdown Files     |
++--------------------+  +--------------------+
+```
