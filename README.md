@@ -13,7 +13,14 @@ This project was generated from the following observations
 
 ## Notezilla GUI
 
-A PyQT6 GUI provides:
+A Blazor GUI:
 * A way to use search queries to find notes
 * Generate new notes from a local LLM using templates and edit them
 * Side by side rendering and editing of markdown
+
+## Database API
+
+A python FastMCP service that provides CRUD access to a vector database where details of notes are folder.
+Each note has:
+* path: ordered file tree path
+* tags: unorded list of string names
