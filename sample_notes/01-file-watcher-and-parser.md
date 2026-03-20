@@ -25,6 +25,6 @@ Implement a service to monitor the "Filesystem Notes" folder and parse Markdown 
 - [x] The watcher detects new, modified, and deleted `.md` files within the watched directory and subdirectories.
 - [ ] Frontmatter with `tags` and `path` fields is correctly parsed from each note.
 - [ ] Malformed or missing frontmatter is handled gracefully with a warning, not a crash.
-- [ ] Rapid file changes are debounced so downstream consumers receive a single consolidated event.
+- [x] Rapid file changes are debounced so downstream consumers receive a single consolidated event.
 - [ ] Non-markdown files are ignored.
 - [ ] The watched directory path is configurable.
