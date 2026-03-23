@@ -1,0 +1,58 @@
+"""Handles converting markdown into structured objected"""
+
+from typing import List, Optional
+from pathlib import Path
+from dataclasses import dataclass
+
+from src.note_updates.file_io import read_file_content, extract_yaml_from_file_contents
+from src.config import NOTE_FOLDER
+
+NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
+
+
+@dataclass
+class MarkdownData:
+    """Container that holds markdown information for one file"""
+
+    fields: dict
+    text: str
+    filename: str
+    path: List[str]
+
+    def __str__(self):
+        return "/".join(self.path) + f"/{self.filename} : {self.fields}"
+
+
+def parse_markdown_note(path: str) -> Optional[MarkdownData]:
+    """
+    Converters file contents to markdown object
+    If header cannot be parsed returns MarkdownData as with file contents in full
+    """
+    path_obj = Path(path)
+
+    if (
+        not path_obj.exists()
+        or path_obj.is_dir()
+        or not path_obj.is_relative_to(NOTE_FOLDER_PATH)
+    ):
+        return None
+
+    relative_parts = path_obj.relative_to(NOTE_FOLDER_PATH).parts
+    if not relative_parts:
+        return None
+
+    filename = relative_parts[-1]
+    path_parts = relative_parts[1:-1]
+
+    if not (content := read_file_content(path)):
+        return None
+
+    text, data = extract_yaml_from_file_contents(content)
+
+    return MarkdownData(
+        fields=data, text=text, filename=filename, path=list(path_parts)
+    )
+
+
+if __name__ == "__main__":
+    print(parse_markdown_note("./notes/spam.md"))

@@ -9,7 +9,7 @@ from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
 
 from src.note_updates.event_handling import (
-    FILE_CHANGE_EVENT,
+    FileChangeEvent,
     event_is_valid,
     filter_event_list,
 )
@@ -20,20 +20,20 @@ class PyFileHandler(FileSystemEventHandler):
 
     def __init__(self, debounce_delay_ms=200):
         self.debounce_delay_s = debounce_delay_ms / 1000.0  # Time to wait for "quiet"
-        self.queue: List[FILE_CHANGE_EVENT] = []  # Queue to hold recent events
+        self.queue: List[FileChangeEvent] = []  # Queue to hold recent events
         self._timer = None
         self._lock = threading.Lock()  # Ensure thread safety
 
-    def on_modified(self, event: FILE_CHANGE_EVENT):
+    def on_modified(self, event: FileChangeEvent):
         self._handle_event(event)
 
-    def on_created(self, event: FILE_CHANGE_EVENT):
+    def on_created(self, event: FileChangeEvent):
         self._handle_event(event)
 
-    def on_deleted(self, event: FILE_CHANGE_EVENT):
+    def on_deleted(self, event: FileChangeEvent):
         self._handle_event(event)
 
-    def _handle_event(self, event: FILE_CHANGE_EVENT):
+    def _handle_event(self, event: FileChangeEvent):
         if not event_is_valid(event):
             return
 
