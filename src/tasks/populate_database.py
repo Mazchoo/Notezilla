@@ -3,15 +3,17 @@
 import json
 from datetime import datetime, date
 
+from src.config import BATCH_SIZE
 from src.reserved_fields import ReservedFields
 from src.note_updates.file_io import iterate_all_markdowns
 from src.note_updates.parse_markdown import MarkdownData
+from src.note_updates.database_adapter import NoteDatabase
 
 
 FIELD_HIERARCHY = ["null", "bool", "int", "float", "date", "list", "str", "json"]
 
 
-def get_chroma_type(value):
+def get_field_type(value):
     """Identifies the specific YAML/Python type for a single value."""
     if isinstance(value, list):
         # Check if the list contains any nested complexity
@@ -41,7 +43,7 @@ def discover_field_schemas(markdown: MarkdownData, column_types: dict) -> dict:
         if ReservedFields.contains(key):
             continue
 
-        current_type = get_chroma_type(value)
+        current_type = get_field_type(value)
 
         if key not in column_types:
             column_types[key] = current_type
@@ -55,7 +57,7 @@ def discover_field_schemas(markdown: MarkdownData, column_types: dict) -> dict:
     return column_types
 
 
-def prepare_batch_for_chroma(markdown: MarkdownData, column_types: dict) -> dict:
+def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
     """
     Transforms markdown into a row of data
     """
@@ -71,8 +73,8 @@ def prepare_batch_for_chroma(markdown: MarkdownData, column_types: dict) -> dict
         if target_type == "json":
             row[key] = json.dumps(val, default=str)
         elif target_type == "list":
-            # Ensure it's a list (handles cases where one row was a single str)
-            row[key] = val if isinstance(val, list) else [val]
+            parsed_list = val if isinstance(val, list) else [val]
+            row[key] = json.dumps(parsed_list, default=str)
         elif target_type == "date":
             row[key] = val.isoformat() if hasattr(val, "isoformat") else str(val)
         elif target_type == "str":
@@ -86,7 +88,7 @@ def prepare_batch_for_chroma(markdown: MarkdownData, column_types: dict) -> dict
         else:
             row[key] = val
 
-    row[ReservedFields.PATH.value] = markdown.path
+    row[ReservedFields.PATH.value] = "/".join(markdown.path)
     row[ReservedFields.FILENAME.value] = markdown.filename
     row[ReservedFields.TEXT.value] = markdown.text
 
@@ -105,12 +107,19 @@ def put_all_markdowns_note_folder_into_database():
         if markdown := MarkdownData.construct_from_path(path):
             column_types = discover_field_schemas(markdown, column_types)
 
-    print(column_types)
+    db = NoteDatabase()
+    db.reset_collection()
 
+    batch = []
     for path in iterate_all_markdowns():
         if markdown := MarkdownData.construct_from_path(path):
-            row = prepare_batch_for_chroma(markdown, column_types)
-            print(row)
+            batch.append(prepate_database_row(markdown, column_types))
+            if len(batch) >= BATCH_SIZE:
+                db.upsert_batch(batch)
+                batch = []
+    db.upsert_batch(batch)
+
+    print(f"Loaded {len(db)} documents into database")
 
 
 if __name__ == "__main__":
