@@ -1,8 +1,11 @@
 """Handles interaction with files"""
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable
+import os
 
 import yaml
+
+from src.config import NOTE_FOLDER
 
 
 def read_file_content(path: str) -> Optional[str]:
@@ -32,3 +35,11 @@ def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
         data = {}
 
     return text, data
+
+
+def iterate_all_markdowns() -> Iterable[str]:
+    """Iterate through notes folder and return all markdown paths"""
+    for root, _, files in os.walk(NOTE_FOLDER):
+        for file in files:
+            if file.endswith(".md"):
+                yield os.path.join(root, file)
