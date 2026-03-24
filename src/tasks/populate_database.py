@@ -1,6 +1,5 @@
 """Manually build database from all available files"""
 
-import json
 from datetime import datetime, date
 
 from src.config import BATCH_SIZE
@@ -64,31 +63,9 @@ def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
     row = {}
     for key, target_type in column_types.items():
         val = markdown.fields.get(key)
+        row.update(NoteDatabase.cast_value(key, val, target_type))
 
-        if val is None:
-            row[key] = None
-            continue
-
-        # Cast logic based on the 'Leader' type of the column
-        if target_type == "json":
-            row[key] = json.dumps(val, default=str)
-        elif target_type == "list":
-            parsed_list = val if isinstance(val, list) else [val]
-            row[key] = json.dumps(parsed_list, default=str)
-        elif target_type == "date":
-            row[key] = val.isoformat() if hasattr(val, "isoformat") else str(val)
-        elif target_type == "str":
-            row[key] = str(val)
-        elif target_type == "float":
-            row[key] = float(val)
-        elif target_type == "int":
-            row[key] = int(val)
-        elif target_type == "bool":
-            row[key] = bool(val)
-        else:
-            row[key] = val
-
-    row[ReservedFields.PATH.value] = "/".join(markdown.path)
+    row[ReservedFields.PATH.value] = markdown.path
     row[ReservedFields.FILENAME.value] = markdown.filename
     row[ReservedFields.TEXT.value] = markdown.text
 
@@ -98,16 +75,17 @@ def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
 def put_all_markdowns_note_folder_into_database():
     """Freshly parse all markdown files and add them to chroma db index"""
     column_types = {
-        ReservedFields.PATH.value: "str",
         ReservedFields.FILENAME.value: "str",
         ReservedFields.TEXT.value: "str",
     }
+    max_path_depth = 0
 
     for path in iterate_all_markdowns():
         if markdown := MarkdownData.construct_from_path(path):
             column_types = discover_field_schemas(markdown, column_types)
+            max_path_depth = max(max_path_depth, len(markdown.path))
 
-    db = NoteDatabase()
+    db = NoteDatabase(max_path_depth=max_path_depth)
     db.reset_collection()
 
     batch = []

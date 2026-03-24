@@ -42,7 +42,7 @@ class MarkdownData:
             return None
 
         filename = relative_parts[-1]
-        path_parts = relative_parts[1:-1]
+        path_parts = relative_parts[:-1]
 
         if not (content := read_file_content(path)):
             return None
