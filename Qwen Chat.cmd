@@ -5,7 +5,7 @@ echo Starting Docker if needed...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 "$p = Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue; ^
 if (-not $p) { Start-Process 'C:\Program Files\Docker\Docker\Docker Desktop.exe' }; ^
-do { Start-Sleep 2; docker version > $null 2>&1 } while ($LASTEXITCODE -ne 0)"
+do { Start-Sleep 2; docker version ^> $null 2^>^&1 } while ($LASTEXITCODE -ne 0)"
 
 echo Docker ready.
 
