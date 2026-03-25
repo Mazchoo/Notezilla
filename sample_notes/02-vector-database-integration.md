@@ -23,9 +23,9 @@ Set up a local vector database (ChromaDB) to index the text content of notes for
 
 ## Acceptance Criteria
 
-- [ ] ChromaDB runs locally with persistent storage so data survives process restarts.
-- [ ] Notes are embedded and stored with their metadata (path, tags) in the collection.
+- [x] ChromaDB runs locally with persistent storage so data survives process restarts.
+- [x] Notes are embedded and stored with their metadata (path, tags) in the collection.
 - [ ] Updating a note re-indexes it without creating duplicates.
 - [ ] Deleting a note removes it from the vector database.
-- [ ] Semantic search returns relevant notes ranked by similarity score.
-- [ ] The database can be fully rebuilt from the filesystem notes directory on demand.
+- [x] Semantic search returns relevant notes ranked by similarity score.
+- [x] The database can be fully rebuilt from the filesystem notes directory on demand.
