@@ -4,7 +4,11 @@ from datetime import datetime, date
 
 from src.config import BATCH_SIZE
 from src.reserved_fields import ReservedFields
-from src.note_updates.file_io import iterate_all_markdowns, save_db_column_types, get_default_column_types
+from src.note_updates.file_io import (
+    iterate_all_markdowns,
+    save_db_column_types,
+    get_default_column_types,
+)
 from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_adapter import NoteDatabase
 

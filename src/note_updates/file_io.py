@@ -69,7 +69,7 @@ def save_db_column_types(column_types: dict):
 
 
 def get_default_column_types() -> dict:
-    """Get the default """
+    """Get the default"""
     return {
         ReservedFields.FILENAME.value: "str",
         ReservedFields.TEXT.value: "str",
