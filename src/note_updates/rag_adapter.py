@@ -1,5 +1,6 @@
 """RAG lookup: retrieve relevant notes from ChromaDB"""
 
+from time import perf_counter
 from dataclasses import dataclass
 from typing import Optional
 
@@ -16,7 +17,7 @@ class RAGResult:
     distance: float
 
 
-def query(
+def rag_query(
     text: str,
     n_results: int,
     where: Optional[dict] = None,
@@ -47,10 +48,17 @@ def query(
 
 
 if __name__ == "__main__":
-    search_text = "ToDo"
-    nr_results = 5
+    SEARCH_TEXT = "Eastern tent caterpillar"
+    NR_RESULTS = 5
 
-    for result in query(search_text, n_results=nr_results):
-        print(f"--- {result.filename} (distance: {result.distance:.4f}) ---")
+    start = perf_counter()
+    query_results = rag_query(SEARCH_TEXT, n_results=NR_RESULTS)
+    time_taken = perf_counter() - start
+
+    for result in query_results:
+        date = dict(result.metadata).get("date")
+        print(f"--- {result.filename} {date} (distance: {result.distance:.4f}) ---")
         print(f"  {result.text[:200]}")
         print()
+
+    print(f"Time taken {time_taken:.1f}s")

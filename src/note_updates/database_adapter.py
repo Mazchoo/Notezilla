@@ -117,7 +117,7 @@ class NoteDatabase:
             where=where,
         )
 
-    def reset_collection(self, db_path: str = DATABASE_FOLDER):
+    def reset_collection(self):
         """Drop collection, remove stale index folders, and recreate"""
         self._client.delete_collection(COLLECTION_NAME)
         delete_all_old_index_folders()
