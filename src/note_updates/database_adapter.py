@@ -1,10 +1,7 @@
 """Handles all database interactions for note storage and retrieval"""
 
 import json
-import shutil
-import uuid
 from datetime import datetime, date
-from pathlib import Path
 from typing import List, Optional
 
 import chromadb
@@ -12,6 +9,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME
 from src.reserved_fields import ReservedFields
+from src.note_updates.file_io import delete_all_old_index_folders
 
 
 class NoteDatabase:
@@ -122,15 +120,7 @@ class NoteDatabase:
     def reset_collection(self, db_path: str = DATABASE_FOLDER):
         """Drop collection, remove stale index folders, and recreate"""
         self._client.delete_collection(COLLECTION_NAME)
-
-        folder = Path(db_path)
-        for child in folder.iterdir():
-            try:
-                uuid.UUID(child.name)
-            except ValueError:
-                continue
-            if child.is_dir():
-                shutil.rmtree(child)
+        delete_all_old_index_folders()
 
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,

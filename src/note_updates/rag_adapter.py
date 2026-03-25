@@ -47,8 +47,10 @@ def query(
 
 
 if __name__ == "__main__":
-    search_text = "We will observe that they tend to argue"
-    for result in query(search_text, n_results=5):
+    search_text = "ToDo"
+    nr_results = 5
+
+    for result in query(search_text, n_results=nr_results):
         print(f"--- {result.filename} (distance: {result.distance:.4f}) ---")
         print(f"  {result.text[:200]}")
         print()

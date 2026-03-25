@@ -2,10 +2,13 @@
 
 from typing import Optional, Tuple, Iterable
 import os
+from pathlib import Path
+import uuid
+import shutil
 
 import yaml
 
-from src.config import NOTE_FOLDER
+from src.config import NOTE_FOLDER, DATABASE_FOLDER
 
 
 def read_file_content(path: str) -> Optional[str]:
@@ -43,3 +46,15 @@ def iterate_all_markdowns() -> Iterable[str]:
         for file in files:
             if file.endswith(".md"):
                 yield os.path.join(root, file)
+
+
+def delete_all_old_index_folders():
+    """Chroma db detail, delete all folders in chroma db folder that are uuid's"""
+    folder = Path(DATABASE_FOLDER)
+    for child in folder.iterdir():
+        try:
+            uuid.UUID(child.name)
+        except ValueError:
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)

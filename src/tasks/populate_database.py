@@ -85,6 +85,8 @@ def put_all_markdowns_note_folder_into_database():
             column_types = discover_field_schemas(markdown, column_types)
             max_path_depth = max(max_path_depth, len(markdown.path))
 
+    print(f"Schema: {column_types}")
+
     db = NoteDatabase(max_path_depth=max_path_depth)
     db.reset_collection()
 
