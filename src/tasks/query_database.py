@@ -24,7 +24,9 @@ def print_query_results(documents: Optional[Documents], metadatas: Optional[Meta
         print()
 
 
-def search_by_field(database: NoteDatabase, field: str, value: Any) -> Tuple[Documents, Metadatas]:
+def search_by_field(
+    database: NoteDatabase, field: str, value: Any
+) -> Tuple[Documents, Metadatas]:
     """Find notes where a metadata field equals the given value"""
     results = database.query_by_field(field, value)
 

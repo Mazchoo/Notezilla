@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import chromadb
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME
 from src.reserved_fields import ReservedFields
@@ -17,14 +18,19 @@ class NoteDatabase:
     """Manages a ChromaDB collection for markdown notes"""
 
     PATH_DEPTH_PREFIX = "\npath_depth_"
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
     def __init__(self, max_path_depth: int = 0, path: str = DATABASE_FOLDER):
         self._client = chromadb.PersistentClient(path=path)
         self._next_id = 0
         self._max_path_depth = max_path_depth
+        self._embedding_function = SentenceTransformerEmbeddingFunction(
+            model_name=self.EMBEDDING_MODEL
+        )
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
+            embedding_function=self._embedding_function,  # type: ignore[arg-type]
         )
 
     @staticmethod
@@ -38,7 +44,9 @@ class NoteDatabase:
             parsed_list = val if isinstance(val, list) else [val]
             return {f"{key}\t{item}": True for item in parsed_list}
         if target_type == "date":
-            return {key: val.isoformat() if isinstance(val, (datetime, date)) else str(val)}
+            return {
+                key: val.isoformat() if isinstance(val, (datetime, date)) else str(val)
+            }
         if target_type == "str":
             return {key: str(val)}
         if target_type == "float":
@@ -96,8 +104,7 @@ class NoteDatabase:
             return self._collection.get(limit=n_results)
 
         conditions = [
-            {f"{self.PATH_DEPTH_PREFIX}{i}": part}
-            for i, part in enumerate(path_parts)
+            {f"{self.PATH_DEPTH_PREFIX}{i}": part} for i, part in enumerate(path_parts)
         ]
         where = conditions[0] if len(conditions) == 1 else {"$and": conditions}
         return self._collection.get(where=where, limit=n_results)  # type: ignore[arg-type]
@@ -128,5 +135,6 @@ class NoteDatabase:
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
+            embedding_function=self._embedding_function,  # type: ignore[arg-type]
         )
         self._next_id = 0
