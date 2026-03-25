@@ -5,10 +5,12 @@ import os
 from pathlib import Path
 import uuid
 import shutil
+import json
 
 import yaml
 
 from src.config import NOTE_FOLDER, DATABASE_FOLDER
+from src.reserved_fields import ReservedFields
 
 
 def read_file_content(path: str) -> Optional[str]:
@@ -58,3 +60,28 @@ def delete_all_old_index_folders():
             continue
         if child.is_dir():
             shutil.rmtree(child)
+
+
+def save_db_column_types(column_types: dict):
+    """Save database column schema"""
+    with open(f"{DATABASE_FOLDER}/column_types.json", "w", encoding="utf-8") as f:
+        json.dump(column_types, f)
+
+
+def get_default_column_types() -> dict:
+    """Get the default """
+    return {
+        ReservedFields.FILENAME.value: "str",
+        ReservedFields.TEXT.value: "str",
+    }
+
+
+def get_db_column_types() -> dict:
+    """Save database column schema"""
+    try:
+        with open(f"{DATABASE_FOLDER}/column_types.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = get_default_column_types()
+
+    return data

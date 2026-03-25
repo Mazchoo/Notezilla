@@ -8,11 +8,20 @@ from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
 
+from src.config import BATCH_SIZE
 from src.note_updates.event_handling import (
     FileChangeEvent,
     event_is_valid,
     filter_event_list,
 )
+from src.note_updates.database_adapter import NoteDatabase
+from src.note_updates.parse_markdown import MarkdownData
+from src.note_updates.database_update import prepate_database_row
+from src.note_updates.file_io import get_db_column_types
+
+
+DB = NoteDatabase()
+COLUMN_TYPES = get_db_column_types()
 
 
 class PyFileHandler(FileSystemEventHandler):
@@ -55,7 +64,19 @@ class PyFileHandler(FileSystemEventHandler):
                 return
 
             queue = filter_event_list(self.queue)
-            print(f"✅ BATCHED EVENT: {queue}")
+
+            total_added = 0
+            batch = []
+            for update in [u for u in queue if u.event_type in ["created", "modified"]]:
+                if markdown := MarkdownData.construct_from_path(str(update.src_path)):
+                    batch.append(prepate_database_row(markdown, COLUMN_TYPES))
+                    if len(batch) >= BATCH_SIZE:
+                        DB.upsert_batch(batch)
+                        batch = []
+                        total_added += len(batch)
+            DB.upsert_batch(batch)
+            total_added += len(batch)
+            print(f"Added {total_added} files to database")
 
             # Process and then clear
             self.queue.clear()

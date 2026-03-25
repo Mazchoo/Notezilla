@@ -4,7 +4,7 @@ from datetime import datetime, date
 
 from src.config import BATCH_SIZE
 from src.reserved_fields import ReservedFields
-from src.note_updates.file_io import iterate_all_markdowns
+from src.note_updates.file_io import iterate_all_markdowns, save_db_column_types, get_default_column_types
 from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_adapter import NoteDatabase
 
@@ -74,10 +74,7 @@ def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
 
 def put_all_markdowns_note_folder_into_database():
     """Freshly parse all markdown files and add them to chroma db index"""
-    column_types = {
-        ReservedFields.FILENAME.value: "str",
-        ReservedFields.TEXT.value: "str",
-    }
+    column_types = get_default_column_types()
     max_path_depth = 0
 
     for path in iterate_all_markdowns():
@@ -100,6 +97,7 @@ def put_all_markdowns_note_folder_into_database():
     db.upsert_batch(batch)
 
     print(f"Loaded {len(db)} documents into database")
+    save_db_column_types(column_types)
 
 
 if __name__ == "__main__":
