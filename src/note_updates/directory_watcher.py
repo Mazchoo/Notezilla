@@ -1,10 +1,21 @@
 """Observer class that handles file updates in storage directory"""
+
+import logging
 import threading
 from typing import List
 
+from rich.logging import RichHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
+
+logging.basicConfig(
+    handlers=[RichHandler()],
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%x %X]",
+)
+logger = logging.getLogger("notezilla")
 
 from src.config import BATCH_SIZE
 from src.note_updates.event_handling import (
@@ -74,7 +85,7 @@ class PyFileHandler(FileSystemEventHandler):
                         batch = []
 
             total_added += self.database.upsert_batch(batch)
-            print(f"Added {total_added} files to database")
+            logger.info(f"Added {total_added} files to database")
 
             total_removed = 0
             batch = []
@@ -85,7 +96,7 @@ class PyFileHandler(FileSystemEventHandler):
                     batch = []
 
             total_removed -= self.database.delete_batch(batch)
-            print(f"Removed {total_removed} files to database")
+            logger.info(f"Removed {total_removed} files to database")
 
             # Process and then clear
             self._queue.clear()
