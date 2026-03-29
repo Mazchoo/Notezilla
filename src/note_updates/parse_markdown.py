@@ -4,10 +4,17 @@ from typing import List, Optional
 from pathlib import Path
 from dataclasses import dataclass
 
-from src.note_updates.file_io import read_file_content, extract_yaml_from_file_contents
+from src.note_updates.file_io import (
+    read_file_content,
+    extract_yaml_from_file_contents,
+    construct_yaml_header,
+    write_file_content,
+)
 from src.config import NOTE_FOLDER
 
 NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
+
+# ToDo - return explcit error messages instead of None
 
 
 @dataclass
@@ -52,10 +59,31 @@ class MarkdownData:
         if not (content := read_file_content(path)):
             return None
 
-        text, data = extract_yaml_from_file_contents(content)
+        text, fields = extract_yaml_from_file_contents(content)
 
         return MarkdownData(
-            fields=data, text=text, filename=filename, path=list(path_parts)
+            fields=fields, text=text, filename=filename, path=list(path_parts)
+        )
+
+    @staticmethod
+    def construct_from_data(
+        path: str, contents: str, fields: dict
+    ) -> Optional["MarkdownData"]:
+        """Construct note from data and return it if it was successfully created"""
+
+        path_obj = Path(path)
+        if path_obj.suffix != ".md":
+            return None
+
+        payload = construct_yaml_header(fields) + contents
+        if not write_file_content(path, payload):
+            return None
+
+        filename = path_obj.name
+        path_parts = path_obj.parts[:-1]
+
+        return MarkdownData(
+            fields=fields, text=contents, filename=filename, path=list(path_parts)
         )
 
 

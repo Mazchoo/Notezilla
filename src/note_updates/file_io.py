@@ -16,10 +16,20 @@ from src.reserved_fields import ReservedFields
 def read_file_content(path: str) -> Optional[str]:
     """Return file contents or None is file cannot be read"""
     try:
-        with open(path, "r", encoding="utf-:8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return None
+
+
+def write_file_content(path: str, contents: str) -> bool:
+    """Write file contents to relative path and return True on success"""
+    try:
+        with open(f"{NOTE_FOLDER}/{path}", "w", encoding="utf-8") as f:
+            f.write(contents)
+    except OSError:
+        return False
+    return True
 
 
 def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
@@ -40,6 +50,14 @@ def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
         data = {}
 
     return text, data
+
+
+def construct_yaml_header(data: dict) -> str:
+    """Construct a yaml frontmatter header from a dictionary"""
+    if not data:
+        return ""
+    yaml_block = yaml.dump(data, default_flow_style=False, sort_keys=False)
+    return f"---\n{yaml_block}---\n"
 
 
 def iterate_all_markdowns() -> Iterable[str]:
