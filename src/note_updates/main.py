@@ -17,7 +17,7 @@ from src.note_updates.event_handling import (
 from src.note_updates.database_adapter import NoteDatabase
 from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_update import prepate_database_row
-from src.note_updates.file_io import get_db_column_types
+from src.note_updates.file_io import get_db_column_types, get_normalised_path
 
 
 DB = NoteDatabase()
@@ -71,12 +71,22 @@ class PyFileHandler(FileSystemEventHandler):
                 if markdown := MarkdownData.construct_from_path(str(update.src_path)):
                     batch.append(prepate_database_row(markdown, COLUMN_TYPES))
                     if len(batch) >= BATCH_SIZE:
-                        DB.upsert_batch(batch)
+                        total_added += DB.upsert_batch(batch)
                         batch = []
-                        total_added += len(batch)
-            DB.upsert_batch(batch)
-            total_added += len(batch)
+
+            total_added += DB.upsert_batch(batch)
             print(f"Added {total_added} files to database")
+
+            total_removed = 0
+            batch = []
+            for update in [u for u in queue if u.event_type == "deleted"]:
+                batch.append(get_normalised_path(str(update.src_path)))
+                if len(batch) >= BATCH_SIZE:
+                    total_removed -= DB.delete_batch(batch)
+                    batch = []
+
+            total_removed -= DB.delete_batch(batch)
+            print(f"Removed {total_removed} files to database")
 
             # Process and then clear
             self.queue.clear()

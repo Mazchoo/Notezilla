@@ -57,33 +57,55 @@ class NoteDatabase:
             return {key: bool(val)}
         return {key: val}
 
-    def upsert_batch(self, rows: List[dict]):
+    def upsert_batch(self, rows: List[dict]) -> int:
         """
         Upserts a list of prepared rows into the collection.
         Each row must contain ReservedFields (path, filename, text).
+        Returns change in files (+ve)
         """
         if not rows:
-            return
+            return 0
 
         ids = []
         documents = []
         metadatas = []
 
         for row in rows:
-            text = row.pop(ReservedFields.TEXT.value, "")
-            path_parts = row.pop(ReservedFields.PATH.value, [])
+            text = row.get(ReservedFields.TEXT.value, "")
+            path_parts = row.get(ReservedFields.PATH.value, [])
             filename = row.get(ReservedFields.FILENAME.value, "")
+
             doc_id = "/".join(path_parts + [filename])
             for i in range(self._max_path_depth):
                 key = f"{self.PATH_DEPTH_PREFIX}{i}"
                 row[key] = path_parts[i] if i < len(path_parts) else None
-            metadata = {k: v for k, v in row.items() if v is not None}
+            # The path field is ignored as it is already searchable in path depth parts
+            metadata = {
+                k: v
+                for k, v in row.items()
+                if v is not None and k != ReservedFields.PATH.value
+            }
 
             ids.append(doc_id)
             documents.append(text)
             metadatas.append(metadata)
 
+        count_before = len(self)
         self._collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+        return len(self) - count_before
+
+    def delete_batch(self, paths: List[str]) -> int:
+        """
+        Upserts a list of prepared rows into the collection.
+        Each row must contain ReservedFields (path, filename, text).
+        Returns change in files (-ve)
+        """
+        if not paths:
+            return 0
+
+        count_before = len(self)
+        self._collection.delete(ids=paths)
+        return len(self) - count_before
 
     def __len__(self) -> int:
         return self._collection.count()

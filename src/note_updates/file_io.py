@@ -85,3 +85,8 @@ def get_db_column_types() -> dict:
         data = get_default_column_types()
 
     return data
+
+
+def get_normalised_path(path: str) -> str:
+    """Get standardized path with forward slashes to make path an id"""
+    return "/".join(Path(path).relative_to(NOTE_FOLDER).parts)

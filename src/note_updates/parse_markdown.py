@@ -22,6 +22,10 @@ class MarkdownData:
     def __str__(self):
         return "/".join(self.path) + f"/{self.filename} : {self.fields}"
 
+    @property
+    def full_path(self) -> str:
+        return "/".join(self.path + [self.filename])
+
     @staticmethod
     def construct_from_path(path: str) -> Optional["MarkdownData"]:
         """
