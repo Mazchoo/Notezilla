@@ -32,19 +32,6 @@ class NoteDatabase:
             metadata={"hnsw:space": "cosine"},
             embedding_function=self._embedding_function,  # type: ignore[arg-type]
         )
-        self._next_id = self._load_next_id()
-
-    def _load_next_id(self) -> int:
-        """
-        Determine the next available ID from existing collection entries
-        The database retains insertion order so the greatest id will always be last
-        """
-        result = self._collection.get(
-            include=[], limit=1, offset=self._collection.count() - 1
-        )
-        if not result["ids"]:
-            return 0
-        return int(result["ids"][0]) + 1
 
     @staticmethod
     def cast_value(key: str, val, target_type: str) -> dict:
@@ -85,13 +72,14 @@ class NoteDatabase:
         for row in rows:
             text = row.pop(ReservedFields.TEXT.value, "")
             path_parts = row.pop(ReservedFields.PATH.value, [])
+            filename = row.get(ReservedFields.FILENAME.value, "")
+            doc_id = "/".join(path_parts + [filename])
             for i in range(self._max_path_depth):
                 key = f"{self.PATH_DEPTH_PREFIX}{i}"
                 row[key] = path_parts[i] if i < len(path_parts) else None
             metadata = {k: v for k, v in row.items() if v is not None}
 
-            ids.append(str(self._next_id))
-            self._next_id += 1
+            ids.append(doc_id)
             documents.append(text)
             metadatas.append(metadata)
 
@@ -142,4 +130,3 @@ class NoteDatabase:
             metadata={"hnsw:space": "cosine"},
             embedding_function=self._embedding_function,  # type: ignore[arg-type]
         )
-        self._next_id = 0
