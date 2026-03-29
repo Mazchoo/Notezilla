@@ -23,7 +23,8 @@ class MarkdownData:
         return "/".join(self.path) + f"/{self.filename} : {self.fields}"
 
     @property
-    def full_path(self) -> str:
+    def normalised_path(self) -> str:
+        """Express normalised path"""
         return "/".join(self.path + [self.filename])
 
     @staticmethod
