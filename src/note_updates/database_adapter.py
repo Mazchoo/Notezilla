@@ -1,5 +1,6 @@
 """Handles all database interactions for note storage and retrieval"""
 
+import os
 import json
 from datetime import datetime, date
 from typing import List, Optional
@@ -7,29 +8,43 @@ from typing import List, Optional
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from src.config import DATABASE_FOLDER, COLLECTION_NAME
+from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.reserved_fields import ReservedFields
 from src.note_updates.file_io import delete_all_old_index_folders
+
+
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 
 class NoteDatabase:
     """Manages a ChromaDB collection for markdown notes"""
 
     PATH_DEPTH_PREFIX = "\npath_depth_"
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
     def __init__(self, max_path_depth: int = 0, path: str = DATABASE_FOLDER):
         self._client = chromadb.PersistentClient(path=path)
-        self._next_id = 0
         self._max_path_depth = max_path_depth
         self._embedding_function = SentenceTransformerEmbeddingFunction(
-            model_name=self.EMBEDDING_MODEL
+            model_name=EMBEDDING_MODEL
         )
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
             embedding_function=self._embedding_function,  # type: ignore[arg-type]
         )
+        self._next_id = self._load_next_id()
+
+    def _load_next_id(self) -> int:
+        """
+        Determine the next available ID from existing collection entries
+        The database retains insertion order so the greatest id will always be last
+        """
+        result = self._collection.get(
+            include=[], limit=1, offset=self._collection.count() - 1
+        )
+        if not result["ids"]:
+            return 0
+        return int(result["ids"][0]) + 1
 
     @staticmethod
     def cast_value(key: str, val, target_type: str) -> dict:
