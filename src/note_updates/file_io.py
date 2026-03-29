@@ -23,10 +23,32 @@ def read_file_content(path: str) -> Optional[str]:
 
 
 def write_file_content(path: str, contents: str) -> bool:
-    """Write file contents to relative path and return True on success"""
+    """
+    Write file contents to relative path and return True on success
+    Will only write to note folder
+    NB: writing .md files to NOTE_FOLDER has side effect of updating database
+    """
+    if not (normed_path := get_normalised_path(path)):
+        return False
+
     try:
-        with open(f"{NOTE_FOLDER}/{path}", "w", encoding="utf-8") as f:
+        with open(f"{NOTE_FOLDER}/{normed_path}", "w", encoding="utf-8") as f:
             f.write(contents)
+    except OSError:
+        return False
+    return True
+
+
+def delete_note_file(path: str) -> bool:
+    """
+    Write file contents to relative path and return True on success
+    NB: writing .md files to NOTE_FOLDER has side effect of updating database
+    """
+    if not (normed_path := get_normalised_path(path)):
+        return False
+
+    try:
+        Path(f"{NOTE_FOLDER}/{normed_path}").unlink()
     except OSError:
         return False
     return True
@@ -105,6 +127,9 @@ def get_db_column_types() -> dict:
     return data
 
 
-def get_normalised_path(path: str) -> str:
+def get_normalised_path(path: str) -> Optional[str]:
     """Get standardized path with forward slashes to make path an id"""
-    return "/".join(Path(path).relative_to(NOTE_FOLDER).parts)
+    resolved_path = Path(path).resolve()
+    if not (Path(NOTE_FOLDER) / resolved_path).is_relative_to(NOTE_FOLDER):
+        return None
+    return "/".join(resolved_path.relative_to(NOTE_FOLDER).parts)

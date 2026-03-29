@@ -1,21 +1,11 @@
 """Observer class that handles file updates in storage directory"""
 
-import logging
 import threading
 from typing import List
 
-from rich.logging import RichHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
-
-logging.basicConfig(
-    handlers=[RichHandler()],
-    level=logging.INFO,
-    format="%(message)s",
-    datefmt="[%x %X]",
-)
-logger = logging.getLogger("notezilla")
 
 from src.config import BATCH_SIZE
 from src.note_updates.event_handling import (
@@ -27,6 +17,7 @@ from src.note_updates.database_adapter import NoteDatabase
 from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_update import prepate_database_row
 from src.note_updates.file_io import get_normalised_path
+from src.note_updates.logger import LOGGER
 
 
 class PyFileHandler(FileSystemEventHandler):
@@ -85,18 +76,20 @@ class PyFileHandler(FileSystemEventHandler):
                         batch = []
 
             total_added += self.database.upsert_batch(batch)
-            logger.info(f"Added {total_added} files to database")
+            LOGGER.info(f"Added {total_added} files to database")
 
             total_removed = 0
             batch = []
             for update in [u for u in queue if u.event_type == "deleted"]:
-                batch.append(get_normalised_path(str(update.src_path)))
+                if not (normed_path := get_normalised_path(str(update.src_path))):
+                    continue
+                batch.append(normed_path)
                 if len(batch) >= BATCH_SIZE:
                     total_removed -= self.database.delete_batch(batch)
                     batch = []
 
             total_removed -= self.database.delete_batch(batch)
-            logger.info(f"Removed {total_removed} files to database")
+            LOGGER.info(f"Removed {total_removed} files to database")
 
             # Process and then clear
             self._queue.clear()

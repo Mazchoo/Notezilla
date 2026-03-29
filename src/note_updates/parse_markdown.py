@@ -14,8 +14,6 @@ from src.config import NOTE_FOLDER
 
 NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
 
-# ToDo - return explcit error messages instead of None
-
 
 @dataclass
 class MarkdownData:
