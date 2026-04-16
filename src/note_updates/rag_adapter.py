@@ -29,12 +29,9 @@ def rag_query(
     then performs a cosine-similarity search against the ChromaDB collection.
     """
     db = NoteDatabase()
-    results = db.query_by_text(text, n_results=n_results, where=where)
-    distances = results.get("distances")
-
-    documents = results["documents"][0] if results["documents"] else []
-    metadatas = results["metadatas"][0] if results["metadatas"] else []
-    distances = distances[0] if distances else []
+    documents, metadatas, distances = db.query_by_text(
+        text, n_results=n_results, where=where
+    )
 
     return [
         RAGResult(

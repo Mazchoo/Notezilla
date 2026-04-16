@@ -3,7 +3,7 @@
 import os
 import json
 from datetime import datetime, date
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -110,37 +110,59 @@ class NoteDatabase:
     def __len__(self) -> int:
         return self._collection.count()
 
-    def query_by_field(self, field: str, value, n_results: int = 10):
-        """Return documents where a metadata field equals the given value"""
-        return self._collection.get(
-            where={field: value},
-            limit=n_results,
+    def query_by_field(
+        self, field: str, value, n_results: int = 10
+    ) -> Tuple[List[str], List[Dict[str, Any]]]:
+        """Return documents and metadatas where a metadata field equals the given value"""
+        results = self._collection.get(where={field: value}, limit=n_results)
+        return (
+            cast(List[str], results["documents"] or []),
+            cast(List[Dict[str, Any]], results["metadatas"] or []),
         )
 
-    def query_field_contains(self, field: str, value: str, n_results: int = 10):
-        """Return documents where a list field contains a value (stored as field.value: True)"""
+    def query_field_contains(
+        self, field: str, value: str, n_results: int = 10
+    ) -> Tuple[List[str], List[Dict[str, Any]]]:
+        """Return documents and metadatas where a list field contains a value (stored as field.value: True)"""
         return self.query_by_field(f"{field}\t{value}", True, n_results)
 
-    def query_by_path(self, path_parts: List[str], n_results: int = 100):
-        """Return all documents under a given folder path"""
+    def query_by_path(
+        self, path_parts: List[str], n_results: int = 100
+    ) -> Tuple[List[str], List[Dict[str, Any]]]:
+        """Return all documents and metadatas under a given folder path"""
         if not path_parts:
-            return self._collection.get(limit=n_results)
-
-        conditions = [
-            {f"{self.PATH_DEPTH_PREFIX}{i}": part} for i, part in enumerate(path_parts)
-        ]
-        where = conditions[0] if len(conditions) == 1 else {"$and": conditions}
-        return self._collection.get(where=where, limit=n_results)  # type: ignore[arg-type]
+            results = self._collection.get(limit=n_results)
+        else:
+            conditions = [
+                {f"{self.PATH_DEPTH_PREFIX}{i}": part}
+                for i, part in enumerate(path_parts)
+            ]
+            where = conditions[0] if len(conditions) == 1 else {"$and": conditions}
+            results = self._collection.get(where=where, limit=n_results)  # type: ignore[arg-type]
+        return (
+            cast(List[str], results["documents"] or []),
+            cast(List[Dict[str, Any]], results["metadatas"] or []),
+        )
 
     def query_by_text(
         self, text: str, n_results: int = 10, where: Optional[dict] = None
-    ):
-        """Semantic search over document text, with optional metadata filter"""
-        return self._collection.query(
+    ) -> Tuple[List[str], List[Dict[str, Any]], List[float]]:
+        """Semantic search — returns (documents, metadatas, distances)"""
+        results = self._collection.query(
             query_texts=[text],
             n_results=n_results,
             where=where,
         )
+        documents = cast(
+            List[str], results["documents"][0] if results["documents"] else []
+        )
+        metadatas = cast(
+            List[Dict[str, Any]],
+            results["metadatas"][0] if results["metadatas"] else [],
+        )
+        raw_distances = results.get("distances")
+        distances = cast(List[float], raw_distances[0] if raw_distances else [])
+        return documents, metadatas, distances
 
     def reset_collection(self):
         """Drop collection, remove stale index folders, and recreate"""

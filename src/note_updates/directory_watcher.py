@@ -76,7 +76,7 @@ class PyFileHandler(FileSystemEventHandler):
                         batch = []
 
             total_added += self.database.upsert_batch(batch)
-            LOGGER.info(f"Added {total_added} files to database")
+            LOGGER.info("Added %s files to database", total_added)
 
             total_removed = 0
             batch = []
@@ -89,7 +89,7 @@ class PyFileHandler(FileSystemEventHandler):
                     batch = []
 
             total_removed -= self.database.delete_batch(batch)
-            LOGGER.info(f"Removed {total_removed} files to database")
+            LOGGER.info("Removed %s files to database", total_removed)
 
             # Process and then clear
             self._queue.clear()
