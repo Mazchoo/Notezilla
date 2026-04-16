@@ -27,40 +27,40 @@ if __name__ == "__main__":
     db = NoteDatabase()
 
     start = perf_counter()
-    docs, metas = db.query_field_contains(LIST_FIELD, LIST_VALUE, 5)
+    result = db.query_field_contains(LIST_FIELD, LIST_VALUE, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search by using 'in list' query method for tags")
-    print_query_results(docs, metas)
-    print(f"Time taken: {time_taken_ms:.3}ms")
+    print_query_results(result.documents, result.metadatas)
+    print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
     print()
 
     start = perf_counter()
-    docs, metas = db.query_by_field(SEARCH_FIELD, SEARCH_VALUE, 5)
+    result = db.query_by_field(SEARCH_FIELD, SEARCH_VALUE, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search exact match for specific field")
-    print_query_results(docs, metas)
-    print(f"Time taken: {time_taken_ms:.3}ms")
+    print_query_results(result.documents, result.metadatas)
+    print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
     print()
 
     start = perf_counter()
-    docs, metas = db.query_by_path(SEARCH_PATH, 5)
+    result = db.query_by_path(SEARCH_PATH, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search by file path")
-    print_query_results(docs, metas)
-    print(f"Time taken: {time_taken_ms:.3}ms")
+    print_query_results(result.documents, result.metadatas)
+    print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
     print()
 
     start = perf_counter()
-    docs, metas, _ = db.query_by_text(SEARCH_TEXT, 5)
+    result = db.query_by_text(SEARCH_TEXT, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Semantic search by text")
-    print_query_results(docs, metas)
-    print(f"Time taken: {time_taken_ms:.3}ms")
+    print_query_results(result.documents, result.metadatas)
+    print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")

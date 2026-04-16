@@ -24,11 +24,11 @@ Build the Python API using FastMCP to expose CRUD operations and search capabili
 
 ## Acceptance Criteria
 
-- [ ] `notes` tool returns a list of notes with metadata, supporting optional tag and path filters.
+- [x] `notes` tool returns a list of notes with metadata, supporting optional tag and path filters.
 - [x] `update_note` tool creates a new `.md` file or updates an existing one with correct frontmatter.
 - [x] `delete_note` tool removes the file from disk and from the vector database.
-- [ ] Semantic search resource returns ranked results for a given query string.
-- [ ] Metadata filtering resource supports filtering by tags (any/all match) and path prefix.
+- [x] Semantic search resource returns ranked results for a given query string.
+- [x] Metadata filtering resource supports filtering by tags (any/all match) and path prefix.
 - [ ] All endpoints return meaningful error messages for invalid inputs.
 - [ ] The API is usable by MCP-compatible clients (e.g. Claude Desktop).
 - [ ] Add tests that mock the file directory events

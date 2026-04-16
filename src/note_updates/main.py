@@ -1,5 +1,7 @@
 """Handle changes to note directory and forward them to database updates"""
 
+from typing import Any, Dict, List, TypedDict
+
 from fastmcp import FastMCP
 
 from src.note_updates.database_adapter import NoteDatabase
@@ -12,6 +14,11 @@ DB = NoteDatabase()
 COLUMN_TYPES = get_db_column_types()
 
 mcp = FastMCP("Notezilla")
+
+
+class NoteQueryResult(TypedDict):
+    documents: List[str]
+    metadatas: List[Dict[str, Any]]
 
 
 @mcp.tool()
@@ -39,6 +46,56 @@ def delete_note(path: str) -> str:
     if delete_note_file(path):
         return f"Note deleted at '{path}'"
     return f"Failed to delete note at '{path}'. Ensure the path is valid."
+
+
+@mcp.tool()
+def search_notes_by_field(field: str, value: str, n_results: int = 10) -> NoteQueryResult:
+    """Find notes where a metadata field exactly matches a value.
+
+    Args:
+        field: Metadata field name to filter on e.g. "filename"
+        value: Exact value the field must equal
+        n_results: Maximum number of results to return
+    """
+    result = DB.query_by_field(field, value, n_results)
+    return NoteQueryResult(documents=result.documents, metadatas=result.metadatas)
+
+
+@mcp.tool()
+def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQueryResult:
+    """Find notes where a list metadata field contains a given value.
+
+    Args:
+        field: List metadata field name e.g. "tags"
+        value: Value that the list must contain
+        n_results: Maximum number of results to return
+    """
+    result = DB.query_field_contains(field, value, n_results)
+    return NoteQueryResult(documents=result.documents, metadatas=result.metadatas)
+
+
+@mcp.tool()
+def search_notes_by_path(path_parts: List[str], n_results: int = 100) -> NoteQueryResult:
+    """Find notes under a given folder path.
+
+    Args:
+        path_parts: Ordered list of path segments e.g. ["2018", "01", "14"]
+        n_results: Maximum number of results to return
+    """
+    result = DB.query_by_path(path_parts, n_results)
+    return NoteQueryResult(documents=result.documents, metadatas=result.metadatas)
+
+
+@mcp.tool()
+def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
+    """Semantically search notes by their content.
+
+    Args:
+        text: Natural language query to search for
+        n_results: Maximum number of results to return
+    """
+    result = DB.query_by_text(text, n_results)
+    return NoteQueryResult(documents=result.documents, metadatas=result.metadatas)
 
 
 if __name__ == "__main__":
