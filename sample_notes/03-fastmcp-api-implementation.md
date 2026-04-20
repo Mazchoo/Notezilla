@@ -29,6 +29,6 @@ Build the Python API using FastMCP to expose CRUD operations and search capabili
 - [x] `delete_note` tool removes the file from disk and from the vector database.
 - [x] Semantic search resource returns ranked results for a given query string.
 - [x] Metadata filtering resource supports filtering by tags (any/all match) and path prefix.
-- [ ] All endpoints return meaningful error messages for invalid inputs.
+- [x] All endpoints return meaningful error messages for invalid inputs.
 - [ ] The API is usable by MCP-compatible clients (e.g. Claude Desktop).
 - [ ] Add tests that mock the file directory events

@@ -17,6 +17,8 @@ mcp = FastMCP("Notezilla")
 
 
 class NoteQueryResult(TypedDict):
+    """Defines return format of a query from mcp"""
+
     documents: List[str]
     metadatas: List[Dict[str, Any]]
     error: Optional[str]
