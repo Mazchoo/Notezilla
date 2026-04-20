@@ -4,7 +4,7 @@ import os
 import json
 from dataclasses import dataclass
 from datetime import datetime, date
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast, Union
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -15,6 +15,8 @@ from src.note_updates.file_io import delete_all_old_index_folders
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
+VALID_QUERY_TYPES = (str, int, float, bool)
 
 
 @dataclass
@@ -118,15 +120,24 @@ class NoteDatabase:
     def __len__(self) -> int:
         return self._collection.count()
 
-    def query_by_field(self, field: str, value, n_results: int = 10) -> QueryResult:
+    def query_by_field(
+        self, field: str, value: Union[str, bool, int, float], n_results: int = 10
+    ) -> QueryResult:
         """Return documents and metadatas where a metadata field equals the given value"""
+        if not isinstance(value, VALID_QUERY_TYPES):
+            raise ValueError(
+                f"{value}: {type(value)} not in valid query types {VALID_QUERY_TYPES}"
+            )
+
         results = self._collection.get(where={field: value}, limit=n_results)
         return QueryResult(
             documents=results["documents"] or [],
             metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
         )
 
-    def query_field_contains(self, field: str, value: str, n_results: int = 10) -> QueryResult:
+    def query_field_contains(
+        self, field: str, value: str, n_results: int = 10
+    ) -> QueryResult:
         """Return documents and metadatas where a list field contains a value (stored as field.value: True)"""
         return self.query_by_field(f"{field}\t{value}", True, n_results)
 
@@ -158,7 +169,10 @@ class NoteDatabase:
         raw_distances = results.get("distances")
         return QueryResult(
             documents=results["documents"][0] if results["documents"] else [],
-            metadatas=cast(List[Dict[str, Any]], results["metadatas"][0] if results["metadatas"] else []),
+            metadatas=cast(
+                List[Dict[str, Any]],
+                results["metadatas"][0] if results["metadatas"] else [],
+            ),
             distances=raw_distances[0] if raw_distances else [],
         )
 
