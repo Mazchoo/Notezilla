@@ -1,19 +1,49 @@
 """Handle changes to note directory and forward them to database updates"""
 
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional
+from typing_extensions import TypedDict
 
 from fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
+from src.config import MCP_PORT
 from src.note_updates.database_adapter import NoteDatabase
 from src.note_updates.file_io import get_db_column_types, delete_note_file
 from src.note_updates.directory_watcher import PyFileHandler
 from src.note_updates.parse_markdown import MarkdownData
 
 
-DB = NoteDatabase()
-COLUMN_TYPES = get_db_column_types()
-
 mcp = FastMCP("Notezilla")
+
+
+@mcp.custom_route("/tools", methods=["GET"])
+async def list_tools_endpoint(request: Request) -> JSONResponse:
+    tools = await mcp.list_tools()
+    return JSONResponse(
+        [
+            {"name": t.name, "description": t.description, "inputSchema": t.parameters}
+            for t in tools
+        ]
+    )
+
+
+_DB: Optional[NoteDatabase] = None
+_COLUMN_TYPES: Optional[Dict[str, Any]] = None
+
+
+def get_db() -> NoteDatabase:
+    global _DB
+    if _DB is None:
+        _DB = NoteDatabase()
+    return _DB
+
+
+def get_column_types() -> Dict[str, Any]:
+    global _COLUMN_TYPES
+    if _COLUMN_TYPES is None:
+        _COLUMN_TYPES = get_db_column_types()
+    return _COLUMN_TYPES
 
 
 class NoteQueryResult(TypedDict):
@@ -62,7 +92,7 @@ def search_notes_by_field(
         n_results: Maximum number of results to return
     """
     try:
-        result = DB.query_by_field(field, value, n_results)
+        result = get_db().query_by_field(field, value, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -82,7 +112,7 @@ def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQuer
         n_results: Maximum number of results to return
     """
     try:
-        result = DB.query_field_contains(field, value, n_results)
+        result = get_db().query_field_contains(field, value, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -103,7 +133,7 @@ def search_notes_by_path(
         n_results: Maximum number of results to return
     """
     try:
-        result = DB.query_by_path(path_parts, n_results)
+        result = get_db().query_by_path(path_parts, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -122,7 +152,7 @@ def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
         n_results: Maximum number of results to return
     """
     try:
-        result = DB.query_by_text(text, n_results)
+        result = get_db().query_by_text(text, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -133,10 +163,10 @@ def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
 
 
 if __name__ == "__main__":
-    test_observer = PyFileHandler.construct_observer(DB, COLUMN_TYPES, 200)
+    test_observer = PyFileHandler.construct_observer(get_db(), get_column_types(), 200)
 
     try:
-        mcp.run()
+        mcp.run(transport="streamable-http", port=MCP_PORT)
     except KeyboardInterrupt:
         test_observer.stop()
     finally:
