@@ -55,3 +55,23 @@ Each note has:
 | (semantic index)   |  | Markdown Files     |
 +--------------------+  +--------------------+
 ```
+
+## RooCode MCP Settings
+
+Easiest way to make this available for RooCode:
+
+`python -m src.note_updates.main`
+
+After the server is running add a configuration for the MCP server.
+
+```
+{
+  "mcpServers": {
+    "notezilla": {
+      "type": "streamable-http",
+      "url": "http://localhost:8000/mcp",
+      "disabled": false
+    }
+  }
+}
+```
