@@ -1,10 +1,11 @@
 """Handle changes to note directory and forward them to database updates"""
 
-from typing import List
+from typing import List, Annotated
 
 from fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from pydantic import Field
 
 from src.config import MCP_PORT
 from src.note_updates.file_io import delete_note_file
@@ -28,7 +29,18 @@ async def list_tools_endpoint(_request: Request) -> JSONResponse:
 
 
 @MCP.tool()
-def upsert_note(path: str, contents: str, fields: dict) -> str:
+def upsert_note(
+    path: Annotated[
+        str, Field(description='Relative path for the note e.g. "folder/filename.md"')
+    ],
+    contents: Annotated[str, Field(description="The markdown body of the note")],
+    fields: Annotated[
+        dict,
+        Field(
+            description="Dictionary of metadata fields to convert into a YAML header"
+        ),
+    ],
+) -> str:
     """Create or update a note file with a YAML frontmatter header.
 
     Args:
@@ -42,7 +54,14 @@ def upsert_note(path: str, contents: str, fields: dict) -> str:
 
 
 @MCP.tool()
-def delete_note(path: str) -> str:
+def delete_note(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the note to delete e.g. "folder/filename.md"'
+        ),
+    ],
+) -> str:
     """Delete a note file.
 
     Args:
@@ -55,7 +74,13 @@ def delete_note(path: str) -> str:
 
 @MCP.tool()
 def search_notes_by_field(
-    field: str, value: str, n_results: int = 10
+    field: Annotated[
+        str, Field(description='Metadata field name to filter on e.g. "filename"')
+    ],
+    value: Annotated[str, Field(description="Exact value the field must equal")],
+    n_results: Annotated[
+        int, Field(description="Maximum number of results to return")
+    ] = 10,
 ) -> NoteQueryResult:
     """Find notes where a metadata field exactly matches a value.
 
@@ -76,7 +101,13 @@ def search_notes_by_field(
 
 
 @MCP.tool()
-def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQueryResult:
+def search_notes_by_tag(
+    field: Annotated[str, Field(description='List metadata field name e.g. "tags"')],
+    value: Annotated[str, Field(description="Value that the list must contain")],
+    n_results: Annotated[
+        int, Field(description="Maximum number of results to return")
+    ] = 10,
+) -> NoteQueryResult:
     """Find notes where a list metadata field contains a given value.
 
     Args:
@@ -97,7 +128,13 @@ def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQuer
 
 @MCP.tool()
 def search_notes_by_path(
-    path_parts: List[str], n_results: int = 100
+    path_parts: Annotated[
+        List[str],
+        Field(description='Ordered list of path segments e.g. ["2018", "01", "14"]'),
+    ],
+    n_results: Annotated[
+        int, Field(description="Maximum number of results to return")
+    ] = 100,
 ) -> NoteQueryResult:
     """Find notes under a given folder path.
 
@@ -117,7 +154,12 @@ def search_notes_by_path(
 
 
 @MCP.tool()
-def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
+def search_notes_by_text(
+    text: Annotated[str, Field(description="Natural language query to search for")],
+    n_results: Annotated[
+        int, Field(description="Maximum number of results to return")
+    ] = 10,
+) -> NoteQueryResult:
     """Semantically search notes by their content.
 
     Args:

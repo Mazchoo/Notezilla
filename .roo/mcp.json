@@ -1,9 +1,15 @@
 {
-  "mcpServers": {
-    "notezilla": {
-      "type": "streamable-http",
-      "url": "http://localhost:8000/mcp",
-      "disabled": false
-    }
-  }
+	"mcpServers": {
+		"notezilla": {
+			"type": "streamable-http",
+			"url": "http://localhost:8000/mcp",
+			"disabled": false,
+			"alwaysAllow": [
+				"search_notes_by_text",
+				"search_notes_by_path",
+				"search_notes_by_tag",
+				"search_notes_by_field"
+			]
+		}
+	}
 }
