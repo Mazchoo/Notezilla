@@ -19,6 +19,7 @@ MCP = FastMCP("Notezilla")
 
 @MCP.custom_route("/tools", methods=["GET"])
 async def list_tools_endpoint(_request: Request) -> JSONResponse:
+    """MCP to show all available tools"""
     tools = await MCP.list_tools()
     return JSONResponse(
         [

@@ -32,4 +32,4 @@ Build the Python API using FastMCP to expose CRUD operations and search capabili
 - [x] All endpoints return meaningful error messages for invalid inputs.
 - [x] The API is usable by MCP-compatible clients (e.g. Claude Desktop).
 - [x] Add parameter descriptions to MCP server
-- [ ] Add tests that mock the file directory events
+- [x] Add tests that mock the file directory events
