@@ -1,25 +1,24 @@
 """Handle changes to note directory and forward them to database updates"""
 
-from typing import Any, Dict, List, Optional
-from typing_extensions import TypedDict
+from typing import List
 
 from fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from src.config import MCP_PORT
-from src.note_updates.database_adapter import NoteDatabase
-from src.note_updates.file_io import get_db_column_types, delete_note_file
+from src.note_updates.file_io import delete_note_file
 from src.note_updates.directory_watcher import PyFileHandler
 from src.note_updates.parse_markdown import MarkdownData
+from src.note_updates.mcp_interface import init_db, init_column_types, NoteQueryResult
 
 
-mcp = FastMCP("Notezilla")
+MCP = FastMCP("Notezilla")
 
 
-@mcp.custom_route("/tools", methods=["GET"])
-async def list_tools_endpoint(request: Request) -> JSONResponse:
-    tools = await mcp.list_tools()
+@MCP.custom_route("/tools", methods=["GET"])
+async def list_tools_endpoint(_request: Request) -> JSONResponse:
+    tools = await MCP.list_tools()
     return JSONResponse(
         [
             {"name": t.name, "description": t.description, "inputSchema": t.parameters}
@@ -28,33 +27,7 @@ async def list_tools_endpoint(request: Request) -> JSONResponse:
     )
 
 
-_DB: Optional[NoteDatabase] = None
-_COLUMN_TYPES: Optional[Dict[str, Any]] = None
-
-
-def get_db() -> NoteDatabase:
-    global _DB
-    if _DB is None:
-        _DB = NoteDatabase()
-    return _DB
-
-
-def get_column_types() -> Dict[str, Any]:
-    global _COLUMN_TYPES
-    if _COLUMN_TYPES is None:
-        _COLUMN_TYPES = get_db_column_types()
-    return _COLUMN_TYPES
-
-
-class NoteQueryResult(TypedDict):
-    """Defines return format of a query from mcp"""
-
-    documents: List[str]
-    metadatas: List[Dict[str, Any]]
-    error: Optional[str]
-
-
-@mcp.tool()
+@MCP.tool()
 def upsert_note(path: str, contents: str, fields: dict) -> str:
     """Create or update a note file with a YAML frontmatter header.
 
@@ -68,7 +41,7 @@ def upsert_note(path: str, contents: str, fields: dict) -> str:
     return f"Error: Failed to upsert note at '{path}'. Ensure the path ends with .md."
 
 
-@mcp.tool()
+@MCP.tool()
 def delete_note(path: str) -> str:
     """Delete a note file.
 
@@ -80,7 +53,7 @@ def delete_note(path: str) -> str:
     return f"Error: Failed to delete note at '{path}'. Ensure the path is valid."
 
 
-@mcp.tool()
+@MCP.tool()
 def search_notes_by_field(
     field: str, value: str, n_results: int = 10
 ) -> NoteQueryResult:
@@ -92,7 +65,7 @@ def search_notes_by_field(
         n_results: Maximum number of results to return
     """
     try:
-        result = get_db().query_by_field(field, value, n_results)
+        result = init_db().query_by_field(field, value, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -102,7 +75,7 @@ def search_notes_by_field(
         return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
 
 
-@mcp.tool()
+@MCP.tool()
 def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQueryResult:
     """Find notes where a list metadata field contains a given value.
 
@@ -112,7 +85,7 @@ def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQuer
         n_results: Maximum number of results to return
     """
     try:
-        result = get_db().query_field_contains(field, value, n_results)
+        result = init_db().query_field_contains(field, value, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -122,7 +95,7 @@ def search_notes_by_tag(field: str, value: str, n_results: int = 10) -> NoteQuer
         return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
 
 
-@mcp.tool()
+@MCP.tool()
 def search_notes_by_path(
     path_parts: List[str], n_results: int = 100
 ) -> NoteQueryResult:
@@ -133,7 +106,7 @@ def search_notes_by_path(
         n_results: Maximum number of results to return
     """
     try:
-        result = get_db().query_by_path(path_parts, n_results)
+        result = init_db().query_by_path(path_parts, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -143,7 +116,7 @@ def search_notes_by_path(
         return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
 
 
-@mcp.tool()
+@MCP.tool()
 def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
     """Semantically search notes by their content.
 
@@ -152,7 +125,7 @@ def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
         n_results: Maximum number of results to return
     """
     try:
-        result = get_db().query_by_text(text, n_results)
+        result = init_db().query_by_text(text, n_results)
         return NoteQueryResult(
             documents=result.documents, metadatas=result.metadatas, error=None
         )
@@ -163,10 +136,12 @@ def search_notes_by_text(text: str, n_results: int = 10) -> NoteQueryResult:
 
 
 if __name__ == "__main__":
-    test_observer = PyFileHandler.construct_observer(get_db(), get_column_types(), 200)
+    test_observer = PyFileHandler.construct_observer(
+        init_db(), init_column_types(), 200
+    )
 
     try:
-        mcp.run(transport="streamable-http", port=MCP_PORT)
+        MCP.run(transport="streamable-http", port=MCP_PORT)
     except KeyboardInterrupt:
         test_observer.stop()
     finally:
