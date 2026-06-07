@@ -1,0 +1,12 @@
+[build]
+target     = "index.html"
+dist       = "dist"
+public_url = "/"
+
+[watch]
+ignore = ["dist", "target"]
+
+[[proxy]]
+# Proxy /mcp requests to the FastMCP Python backend — avoids CORS in dev
+backend = "http://127.0.0.1:8000"
+rewrite  = "/mcp"

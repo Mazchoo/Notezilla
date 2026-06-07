@@ -1,0 +1,44 @@
+[package]
+name = "notezilla-frontend"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "notezilla-frontend"
+path = "src/main.rs"
+
+[dependencies]
+leptos              = { version = "0.6", features = ["csr"] }
+leptos_icons        = "0.3"
+icondata            = "0.3"
+gloo-net            = { version = "0.5", features = ["http"] }
+pulldown-cmark      = { version = "0.11", default-features = false, features = ["html"] }
+serde               = { version = "1", features = ["derive"] }
+serde_json          = "1"
+wasm-bindgen        = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys             = { version = "0.3", features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlTextAreaElement",
+    "HtmlInputElement",
+    "EventTarget",
+    "Event",
+    "InputEvent",
+    "KeyboardEvent",
+    "FocusEvent",
+    "MouseEvent",
+    "Headers",
+    "Response",
+    "console",
+    "CssStyleDeclaration",
+] }
+js-sys              = "0.3"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level     = "z"
+lto           = true
+codegen-units = 1

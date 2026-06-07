@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notezilla</title>
+
+  <!-- Bulma 1.0 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+
+  <style>
+    /* ── Dark base ─────────────────────────────────────────────────── */
+    :root {
+      --bg-0: #11111b;
+      --bg-1: #181825;
+      --bg-2: #1e1e2e;
+      --bg-3: #313244;
+      --border: #45475a;
+      --text:   #cdd6f4;
+      --text-muted: #6c7086;
+      --accent: #cba6f7;
+    }
+    html, body {
+      background-color: var(--bg-2);
+      color: var(--text);
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ── App shell ─────────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .body-row {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ───────────────────────────────────────────────────── */
+    .top-bar {
+      height: 48px;
+      min-height: 48px;
+      background-color: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 0.5rem;
+      gap: 0.25rem;
+      z-index: 10;
+    }
+
+    /* ── Activity bar ──────────────────────────────────────────────── */
+    .activity-bar {
+      width: 48px;
+      min-width: 48px;
+      background-color: var(--bg-1);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 0.5rem;
+      gap: 0.25rem;
+    }
+    .activity-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      transition: color 0.1s, background 0.1s;
+    }
+    .activity-btn:hover  { color: var(--text); background: var(--bg-3); }
+    .activity-btn.active { color: var(--accent); background: var(--bg-3); }
+    .activity-btn svg    { width: 20px; height: 20px; }
+
+    /* ── Sidebar panel ─────────────────────────────────────────────── */
+    .sidebar-panel {
+      width: 250px;
+      min-width: 250px;
+      background-color: var(--bg-2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      transition: width 0.15s ease, min-width 0.15s ease;
+    }
+    .sidebar-panel.collapsed {
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+    /* Bulma menu dark overrides */
+    .sidebar-panel .menu-label { color: var(--text-muted); }
+    .sidebar-panel .menu-list a {
+      color: var(--text-muted);
+      border-radius: 3px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .sidebar-panel .menu-list a:hover { background: var(--bg-3); color: var(--text); }
+    .sidebar-panel .menu-list a.active { background: var(--bg-3); color: var(--accent); }
+    .sidebar-panel .menu-list ul { border-left: 1px solid var(--border); margin-left: 0.75rem; }
+
+    /* ── Editor area ───────────────────────────────────────────────── */
+    .editor-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 3rem;
+      background-color: var(--bg-2);
+      min-height: 100%;
+    }
+
+    /* ── Markdown blocks ───────────────────────────────────────────── */
+    .editor-block { margin-bottom: 0.15rem; }
+    .block-textarea {
+      width: 100%;
+      resize: none;
+      overflow: hidden;
+      background: var(--bg-3);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .block-textarea:focus { border-color: var(--accent); }
+    .block-render {
+      padding: 0.35rem 0.6rem;
+      border-radius: 4px;
+      cursor: text;
+      min-height: 1.9rem;
+      line-height: 1.6;
+      border: 1px solid transparent;
+      font-size: 0.95rem;
+    }
+    .block-render:hover { background: rgba(49, 50, 68, 0.4); }
+
+    /* Bulma .content dark overrides (markdown output) */
+    .content h1, .content h2, .content h3,
+    .content h4, .content h5, .content h6 { color: var(--text); }
+    .content p, .content li, .content td { color: var(--text); }
+    .content a  { color: var(--accent); }
+    .content hr { background-color: var(--border); }
+    .content code {
+      background: var(--bg-3);
+      color: #f38ba8;
+      border-radius: 3px;
+      padding: 0.1em 0.3em;
+    }
+    .content pre {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .content blockquote {
+      background: var(--bg-3);
+      border-left: 3px solid var(--accent);
+    }
+
+    /* ── Bulma form dark overrides ─────────────────────────────────── */
+    .input, .textarea {
+      background-color: var(--bg-3);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .input::placeholder, .textarea::placeholder { color: var(--text-muted); }
+    .input:focus, .textarea:focus { border-color: var(--accent); box-shadow: none; }
+    .button.is-dark { background: var(--bg-3); border-color: var(--border); color: var(--text); }
+    .button.is-dark:hover { background: var(--border); }
+  </style>
+</head>
+<body>
+  <!-- Leptos mounts into <body> via mount_to_body — no wrapper div needed -->
+</body>
+</html>
