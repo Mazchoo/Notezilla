@@ -8,5 +8,7 @@ ignore = ["dist", "target"]
 
 [[proxy]]
 # Proxy /mcp requests to the FastMCP Python backend — avoids CORS in dev
-backend = "http://127.0.0.1:8000"
+# Trunk strips the `rewrite` prefix then appends the remainder to `backend`.
+# A POST to /mcp → strips "/mcp" → "" → forwarded to http://127.0.0.1:8000/mcp
+backend = "http://127.0.0.1:8000/mcp"
 rewrite  = "/mcp"
