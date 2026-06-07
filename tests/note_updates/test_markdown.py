@@ -45,8 +45,8 @@ class TestMarkdownDataRoundTrip:
         """
         Execute the full round-trip and return (from_data, from_path).
 
-        1. construct_from_data  – write_file_content is replaced by a dict store.
-        2. construct_from_path  – read_file_content returns the stored payload;
+        1. construct_from_data  - write_file_content is replaced by a dict store.
+        2. construct_from_path  - read_file_content returns the stored payload;
            Path predicates are patched to make the path appear valid.
         """
         store = _make_fake_write_store()
