@@ -12,12 +12,6 @@ from src.note_updates.parse_markdown import MarkdownData
 # Helpers
 # ---------------------------------------------------------------------------
 
-
-def _make_fake_write_store() -> dict:
-    """Return a mutable dict used as a fake filesystem store."""
-    return {}
-
-
 def _fake_write_factory(store: dict):
     """Return a write_file_content replacement that saves payload into *store*."""
 
@@ -49,7 +43,7 @@ class TestMarkdownDataRoundTrip:
         2. construct_from_path  - read_file_content returns the stored payload;
            Path predicates are patched to make the path appear valid.
         """
-        store = _make_fake_write_store()
+        store = {}
 
         # --- Phase 1: construct from data ---
         with patch(
@@ -129,7 +123,7 @@ class TestMarkdownDataRoundTrip:
 
     def test_round_trip_does_not_touch_real_filesystem(self):
         """Neither construct_from_data nor construct_from_path calls real open()."""
-        store = _make_fake_write_store()
+        store = {}
 
         with patch("builtins.open") as mock_open:
             with patch(
