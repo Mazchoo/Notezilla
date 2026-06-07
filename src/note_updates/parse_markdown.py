@@ -67,7 +67,10 @@ class MarkdownData:
     def construct_from_data(
         path: str, contents: str, fields: dict
     ) -> Optional["MarkdownData"]:
-        """Construct note from data and return it if it was successfully created"""
+        """
+        Construct note from data and return it if it was successfully created
+        Side Effect: will write content to file path, i.e. update or add new
+        """
 
         path_obj = Path(path)
         if path_obj.suffix != ".md":
