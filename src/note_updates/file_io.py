@@ -10,7 +10,7 @@ import json
 import yaml
 
 from src.config import NOTE_FOLDER, DATABASE_FOLDER
-from src.reserved_fields import ReservedFields
+from src.field_enums import ReservedFields, ColumnTypes
 
 
 def read_file_content(path: str) -> Optional[str]:
@@ -102,17 +102,23 @@ def delete_all_old_index_folders():
             shutil.rmtree(child)
 
 
-def save_db_column_types(column_types: dict):
+def save_db_column_types(column_types: ColumnTypes):
     """Save database column schema"""
     with open(f"{DATABASE_FOLDER}/column_types.json", "w", encoding="utf-8") as f:
         json.dump(column_types, f)
 
 
+def save_frontmatter(payload: str):
+    """Save example front matter"""
+    with open(f"{DATABASE_FOLDER}/example_note.md", "w", encoding="utf-8") as f:
+        f.write(payload)
+
+
 def get_default_column_types() -> dict:
     """Get the default"""
     return {
-        ReservedFields.FILENAME.value: "str",
-        ReservedFields.TEXT.value: "str",
+        ReservedFields.FILENAME: "str",
+        ReservedFields.TEXT: "str",
     }
 
 

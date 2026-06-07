@@ -10,7 +10,7 @@ import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
-from src.reserved_fields import ReservedFields
+from src.field_enums import ReservedFields
 from src.note_updates.file_io import delete_all_old_index_folders
 
 
@@ -81,9 +81,9 @@ class NoteDatabase:
         metadatas = []
 
         for row in rows:
-            text = row.get(ReservedFields.TEXT.value, "")
-            path_parts = row.get(ReservedFields.PATH.value, [])
-            filename = row.get(ReservedFields.FILENAME.value, "")
+            text = row.get(ReservedFields.TEXT, "")
+            path_parts = row.get(ReservedFields.PATH, [])
+            filename = row.get(ReservedFields.FILENAME, "")
 
             doc_id = "/".join(path_parts + [filename])
             for i in range(self._max_path_depth):
@@ -93,7 +93,7 @@ class NoteDatabase:
             metadata = {
                 k: v
                 for k, v in row.items()
-                if v is not None and k != ReservedFields.PATH.value
+                if v is not None and k != ReservedFields.PATH
             }
 
             ids.append(doc_id)

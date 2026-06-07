@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 
 from src.note_updates.database_adapter import NoteDatabase
 from src.note_updates.file_io import get_db_column_types
+from src.field_enums import ColumnTypes
 
 
 @cache
@@ -16,7 +17,7 @@ def init_db() -> NoteDatabase:
 
 
 @cache
-def init_column_types() -> Dict[str, Any]:
+def init_column_types() -> ColumnTypes:
     """Lazily get the column types"""
     return get_db_column_types()
 

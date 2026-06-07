@@ -3,41 +3,41 @@
 from datetime import datetime, date
 
 from src.config import BATCH_SIZE
-from src.reserved_fields import ReservedFields
+from src.field_enums import ReservedFields, FieldTypes, ColumnTypes
 from src.note_updates.file_io import (
     iterate_all_markdowns,
     save_db_column_types,
     get_default_column_types,
+    save_frontmatter,
 )
 from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_adapter import NoteDatabase
 
 
-FIELD_HIERARCHY = ["null", "bool", "int", "float", "date", "list", "str", "json"]
-
-
-def get_field_type(value):
+def get_field_type(value) -> FieldTypes:
     """Identifies the specific YAML/Python type for a single value."""
     if isinstance(value, list):
         # Check if the list contains any nested complexity
         is_nested = any(isinstance(i, (list, dict)) for i in value)
-        return "json" if is_nested else "list"
+        return FieldTypes.JSON if is_nested else FieldTypes.LIST
     if isinstance(value, dict):
-        return "json"
+        return FieldTypes.JSON
     if isinstance(value, (datetime, date)):
-        return "date"
+        return FieldTypes.DATE
     if isinstance(value, bool):
-        return "bool"
+        return FieldTypes.BOOL
     if isinstance(value, int):
-        return "int"
+        return FieldTypes.INT
     if isinstance(value, float):
-        return "float"
+        return FieldTypes.FLOAT
     if isinstance(value, str) or value is None:  # none is a corner case
-        return "str"
-    return "str"  # Catch-all
+        return FieldTypes.STRING
+    return FieldTypes.STRING  # Catch-all
 
 
-def discover_field_schemas(markdown: MarkdownData, column_types: dict) -> dict:
+def discover_field_schemas(
+    markdown: MarkdownData, column_types: ColumnTypes
+) -> ColumnTypes:
     """
     Analyzes markdown fields to find 'Highest Common Factor' type
     for every field (column).
@@ -52,15 +52,25 @@ def discover_field_schemas(markdown: MarkdownData, column_types: dict) -> dict:
             column_types[key] = current_type
         else:
             # Upcast if current value requires a more permissive type
-            if FIELD_HIERARCHY.index(current_type) > FIELD_HIERARCHY.index(
-                column_types[key]
-            ):
+            if current_type.get_priority() > column_types[key].get_priority():
                 column_types[key] = current_type
 
     return column_types
 
 
-def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
+def create_default_front_matter(column_types: ColumnTypes) -> str:
+    """Caches a default markedown to represent each task"""
+    default_fields = "\n".join(
+        [
+            f"{k}: {v.get_default()}"
+            for k, v in column_types.items()
+            if not ReservedFields.contains(k)
+        ]
+    )
+    return f"---\n{default_fields}\n---\n\n"
+
+
+def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> dict:
     """
     Transforms markdown into a row of data
     """
@@ -69,9 +79,9 @@ def prepate_database_row(markdown: MarkdownData, column_types: dict) -> dict:
         val = markdown.fields.get(key)
         row.update(NoteDatabase.cast_value(key, val, target_type))
 
-    row[ReservedFields.PATH.value] = markdown.path
-    row[ReservedFields.FILENAME.value] = markdown.filename
-    row[ReservedFields.TEXT.value] = markdown.text
+    row[ReservedFields.PATH] = markdown.path
+    row[ReservedFields.FILENAME] = markdown.filename
+    row[ReservedFields.TEXT] = markdown.text
 
     return row
 
@@ -102,6 +112,7 @@ def put_all_markdowns_note_folder_into_database():
 
     print(f"Loaded {len(db)} documents into database")
     save_db_column_types(column_types)
+    save_frontmatter(create_default_front_matter(column_types))
 
 
 if __name__ == "__main__":

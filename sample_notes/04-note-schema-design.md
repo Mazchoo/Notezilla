@@ -22,9 +22,9 @@ Make a population job that will populate the database with all defined yaml fiel
 
 ## Acceptance Criteria
 
-- [ ] A documented JSON schema defines all note fields with types and required/optional status.
-- [ ] A corresponding Markdown frontmatter format is defined and documented.
-- [ ] Round-trip conversion (Markdown -> JSON -> Markdown) preserves all data without loss.
+- [x] A documented JSON schema defines all note fields with types and required/optional status.
+- [x] Columns types automatically generate a blank front matter 
+- [ ] Test Round-trip conversion (Markdown -> DB Mock -> Markdown) preserves all data without loss.
 - [ ] Validation rejects notes missing required fields (`path`, `content`) with clear error messages.
 - [ ] The `tags` field accepts a list of strings; the `path` field represents an ordered file tree location.
 - [ ] At least 3 example notes demonstrate the schema in both JSON and Markdown formats.

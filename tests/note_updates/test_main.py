@@ -20,6 +20,7 @@ from src.note_updates.mcp_interface import init_db
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def clear_init_db_cache():
     """Clear the lru_cache on init_db before every test so NoteDatabase() is called fresh."""
@@ -47,6 +48,7 @@ def mock_db():
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_query_result(docs=None, metas=None) -> QueryResult:
     return QueryResult(
         documents=docs if docs is not None else ["doc1"],
@@ -58,6 +60,7 @@ def _make_query_result(docs=None, metas=None) -> QueryResult:
 # upsert_note
 # ---------------------------------------------------------------------------
 
+
 class TestUpsertNote:
     """Tests for the upsert_note MCP tool.
 
@@ -66,7 +69,9 @@ class TestUpsertNote:
 
     def test_upsert_note_success(self):
         """upsert_note returns a success message when the file is written."""
-        with patch("src.note_updates.parse_markdown.write_file_content", return_value=True):
+        with patch(
+            "src.note_updates.parse_markdown.write_file_content", return_value=True
+        ):
             result = upsert_note(
                 path="2024/01/my-note.md",
                 contents="Hello world",
@@ -78,7 +83,9 @@ class TestUpsertNote:
 
     def test_upsert_note_failure_returns_error(self):
         """upsert_note returns an error message when the file cannot be written."""
-        with patch("src.note_updates.parse_markdown.write_file_content", return_value=False):
+        with patch(
+            "src.note_updates.parse_markdown.write_file_content", return_value=False
+        ):
             result = upsert_note(
                 path="2024/01/my-note.md",
                 contents="Hello world",
@@ -89,7 +96,9 @@ class TestUpsertNote:
 
     def test_upsert_note_non_md_path_returns_error(self):
         """upsert_note returns an error for paths that don't end with .md."""
-        with patch("src.note_updates.parse_markdown.write_file_content", return_value=True):
+        with patch(
+            "src.note_updates.parse_markdown.write_file_content", return_value=True
+        ):
             result = upsert_note(
                 path="folder/note.txt",
                 contents="Body text",
@@ -101,7 +110,9 @@ class TestUpsertNote:
 
     def test_upsert_note_does_not_touch_real_filesystem(self):
         """upsert_note never calls the real open() when parse_markdown is mocked."""
-        with patch("src.note_updates.parse_markdown.write_file_content", return_value=True):
+        with patch(
+            "src.note_updates.parse_markdown.write_file_content", return_value=True
+        ):
             with patch("builtins.open") as mock_open:
                 upsert_note(path="a/b.md", contents="text", fields={})
                 mock_open.assert_not_called()
@@ -110,6 +121,7 @@ class TestUpsertNote:
 # ---------------------------------------------------------------------------
 # delete_note
 # ---------------------------------------------------------------------------
+
 
 class TestDeleteNote:
     """Tests for the delete_note MCP tool.
@@ -135,7 +147,9 @@ class TestDeleteNote:
 
     def test_delete_note_calls_delete_with_correct_path(self):
         """delete_note passes the path argument through to delete_note_file."""
-        with patch("src.note_updates.main.delete_note_file", return_value=True) as mock_delete:
+        with patch(
+            "src.note_updates.main.delete_note_file", return_value=True
+        ) as mock_delete:
             delete_note(path="some/path/note.md")
 
         mock_delete.assert_called_once_with("some/path/note.md")
@@ -152,6 +166,7 @@ class TestDeleteNote:
 # search_notes_by_field
 # ---------------------------------------------------------------------------
 
+
 class TestSearchNotesByField:
     """Tests for the search_notes_by_field MCP tool.
 
@@ -161,7 +176,9 @@ class TestSearchNotesByField:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field returns documents from the database."""
-        query_result = _make_query_result(docs=["content of note"], metas=[{"filename": "note.md"}])
+        query_result = _make_query_result(
+            docs=["content of note"], metas=[{"filename": "note.md"}]
+        )
         mock_db.query_by_field.return_value = query_result
 
         result = search_notes_by_field(field="filename", value="note.md")
@@ -225,6 +242,7 @@ class TestSearchNotesByField:
 # search_notes_by_tag
 # ---------------------------------------------------------------------------
 
+
 class TestSearchNotesByTag:
     """Tests for the search_notes_by_tag MCP tool.
 
@@ -233,7 +251,9 @@ class TestSearchNotesByTag:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag returns documents from the database."""
-        query_result = _make_query_result(docs=["tagged note"], metas=[{"tags\tpython": True}])
+        query_result = _make_query_result(
+            docs=["tagged note"], metas=[{"tags\tpython": True}]
+        )
         mock_db.query_field_contains.return_value = query_result
 
         result = search_notes_by_tag(field="tags", value="python")
@@ -281,6 +301,7 @@ class TestSearchNotesByTag:
 # search_notes_by_path
 # ---------------------------------------------------------------------------
 
+
 class TestSearchNotesByPath:
     """Tests for the search_notes_by_path MCP tool.
 
@@ -289,7 +310,9 @@ class TestSearchNotesByPath:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_path returns documents from the database."""
-        query_result = _make_query_result(docs=["note in 2024/01"], metas=[{"filename": "note.md"}])
+        query_result = _make_query_result(
+            docs=["note in 2024/01"], metas=[{"filename": "note.md"}]
+        )
         mock_db.query_by_path.return_value = query_result
 
         result = search_notes_by_path(path_parts=["2024", "01"])
@@ -347,6 +370,7 @@ class TestSearchNotesByPath:
 # search_notes_by_text
 # ---------------------------------------------------------------------------
 
+
 class TestSearchNotesByText:
     """Tests for the search_notes_by_text MCP tool.
 
@@ -355,7 +379,9 @@ class TestSearchNotesByText:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text returns documents from the database."""
-        query_result = _make_query_result(docs=["semantic match"], metas=[{"filename": "result.md"}])
+        query_result = _make_query_result(
+            docs=["semantic match"], metas=[{"filename": "result.md"}]
+        )
         mock_db.query_by_text.return_value = query_result
 
         result = search_notes_by_text(text="find something")

@@ -18,13 +18,14 @@ from src.note_updates.parse_markdown import MarkdownData
 from src.note_updates.database_update import prepate_database_row
 from src.note_updates.file_io import get_normalised_path
 from src.note_updates.logger import LOGGER
+from src.field_enums import ColumnTypes
 
 
 class PyFileHandler(FileSystemEventHandler):
     """Watch the note directory for changes with DEBOUNCE (batching)"""
 
     def __init__(
-        self, database: NoteDatabase, column_types: dict, debounce_delay_ms=200
+        self, database: NoteDatabase, column_types: ColumnTypes, debounce_delay_ms=200
     ):
         self.debounce_delay_s = debounce_delay_ms / 1000.0  # Time to wait for "quiet"
         self.column_types = column_types
@@ -97,7 +98,7 @@ class PyFileHandler(FileSystemEventHandler):
 
     @staticmethod
     def construct_observer(
-        database: NoteDatabase, column_types: dict, debounce_delay: int
+        database: NoteDatabase, column_types: ColumnTypes, debounce_delay: int
     ) -> BaseObserver:
         """Create a note callback watcher for note directory"""
         handler = PyFileHandler(database, column_types, debounce_delay)
