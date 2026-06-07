@@ -135,7 +135,8 @@ def get_db_column_types() -> dict:
 
 def get_normalised_path(path: str) -> Optional[str]:
     """Get standardized path with forward slashes to make path an id"""
+    note_folder = Path(NOTE_FOLDER).resolve()
     resolved_path = Path(path).resolve()
-    if not (Path(NOTE_FOLDER) / resolved_path).is_relative_to(NOTE_FOLDER):
+    if not resolved_path.is_relative_to(note_folder):
         return None
-    return "/".join(resolved_path.relative_to(NOTE_FOLDER).parts)
+    return "/".join(resolved_path.relative_to(note_folder).parts)

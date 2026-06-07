@@ -1,6 +1,6 @@
 """Test high level MCP behavior"""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 
 import pytest
 
@@ -68,26 +68,22 @@ class TestUpsertNote:
     """
 
     def test_upsert_note_success(self):
-        """upsert_note returns a success message when the file is written."""
-        with patch(
-            "src.note_updates.parse_markdown.write_file_content", return_value=True
-        ):
+        """upsert_note returns a success message when open() succeeds."""
+        with patch("src.note_updates.file_io.open", mock_open()):
             result = upsert_note(
-                path="2024/01/my-note.md",
+                path="notes/2024/01/my-note.md",
                 contents="Hello world",
                 fields={"title": "My Note"},
             )
 
-        assert "2024/01/my-note.md" in result
+        assert "notes/2024/01/my-note.md" in result
         assert not result.startswith("Error:")
 
     def test_upsert_note_failure_returns_error(self):
-        """upsert_note returns an error message when the file cannot be written."""
-        with patch(
-            "src.note_updates.parse_markdown.write_file_content", return_value=False
-        ):
+        """upsert_note returns an error message when open() raises OSError."""
+        with patch("src.note_updates.file_io.open", side_effect=OSError("disk full")):
             result = upsert_note(
-                path="2024/01/my-note.md",
+                path="notes/2024/01/my-note.md",
                 contents="Hello world",
                 fields={},
             )
@@ -95,27 +91,33 @@ class TestUpsertNote:
         assert result.startswith("Error:")
 
     def test_upsert_note_non_md_path_returns_error(self):
-        """upsert_note returns an error for paths that don't end with .md."""
-        with patch(
-            "src.note_updates.parse_markdown.write_file_content", return_value=True
-        ):
-            result = upsert_note(
-                path="folder/note.txt",
-                contents="Body text",
-                fields={},
-            )
+        """upsert_note returns an error for paths that don't end with .md.
+
+        MarkdownData.construct_from_data rejects non-.md paths before open() is
+        ever called, so no file-I/O mock is needed here.
+        """
+        result = upsert_note(
+            path="notes/folder/note.txt",
+            contents="Body text",
+            fields={},
+        )
 
         assert result.startswith("Error:")
-        assert "folder/note.txt" in result
+        assert "notes/folder/note.txt" in result
 
-    def test_upsert_note_does_not_touch_real_filesystem(self):
-        """upsert_note never calls the real open() when parse_markdown is mocked."""
-        with patch(
-            "src.note_updates.parse_markdown.write_file_content", return_value=True
-        ):
-            with patch("builtins.open") as mock_open:
-                upsert_note(path="a/b.md", contents="text", fields={})
-                mock_open.assert_not_called()
+    def test_upsert_note_writes_correct_content(self):
+        """upsert_note writes the YAML header + body to open()."""
+        m = mock_open()
+        with patch("src.note_updates.file_io.open", m):
+            upsert_note(
+                path="notes/2024/01/my-note.md",
+                contents="Hello world",
+                fields={"title": "My Note"},
+            )
+
+        written = "".join(call.args[0] for call in m().write.call_args_list)
+        assert "Hello world" in written
+        assert "My Note" in written
 
 
 # ---------------------------------------------------------------------------
