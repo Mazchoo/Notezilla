@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from pydantic import Field
 
-from src.config import MCP_PORT
+from src.config import MCP_PORT, NOTE_FOLDER
 from src.note_updates.file_io import delete_note_file
 from src.note_updates.directory_watcher import PyFileHandler
 from src.note_updates.parse_markdown import MarkdownData
@@ -49,9 +49,10 @@ def upsert_note(
         contents: The markdown body of the note
         fields: Dictionary of metadata fields to convert into a YAML header
     """
-    if note := MarkdownData.construct_from_data(path, contents, fields):
+    note_path = f"{NOTE_FOLDER}/{path}"
+    if note := MarkdownData.construct_from_data(note_path, contents, fields):
         return f"Note upserted at '{note.normalised_path}'"
-    return f"Error: Failed to upsert note at '{path}'."
+    return f"Error: Failed to upsert note at '{note_path}'."
 
 
 @MCP.tool()
@@ -68,9 +69,10 @@ def delete_note(
     Args:
         path: Relative path of the note to delete e.g. "folder/filename.md"
     """
-    if delete_note_file(path):
-        return f"Note deleted at '{path}'"
-    return f"Error: Failed to delete note at '{path}'. Ensure the path is valid."
+    note_path = f"{NOTE_FOLDER}/{path}"
+    if delete_note_file(note_path):
+        return f"Note deleted at '{note_path}'"
+    return f"Error: Failed to delete note at '{note_path}'. Ensure the path is valid."
 
 
 @MCP.tool()

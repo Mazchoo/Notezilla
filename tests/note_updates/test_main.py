@@ -14,6 +14,7 @@ from src.note_updates.main import (
     upsert_note,
 )
 from src.note_updates.mcp_interface import init_db
+from src.config import NOTE_FOLDER
 
 
 # ---------------------------------------------------------------------------
@@ -71,12 +72,12 @@ class TestUpsertNote:
         """upsert_note returns a success message when open() succeeds."""
         with patch("src.note_updates.file_io.open", mock_open()):
             result = upsert_note(
-                path="notes/2024/01/my-note.md",
+                path="2024/01/my-note.md",
                 contents="Hello world",
                 fields={"title": "My Note"},
             )
 
-        assert "notes/2024/01/my-note.md" in result
+        assert "2024/01/my-note.md" in result
         assert not result.startswith("Error:")
 
     def test_upsert_note_failure_returns_error(self):
@@ -97,20 +98,20 @@ class TestUpsertNote:
         ever called, so no file-I/O mock is needed here.
         """
         result = upsert_note(
-            path="notes/folder/note.txt",
+            path="folder/note.txt",
             contents="Body text",
             fields={},
         )
 
         assert result.startswith("Error:")
-        assert "notes/folder/note.txt" in result
+        assert "folder/note.txt" in result
 
     def test_upsert_note_writes_correct_content(self):
         """upsert_note writes the YAML header + body to open()."""
         m = mock_open()
         with patch("src.note_updates.file_io.open", m):
             upsert_note(
-                path="notes/2024/01/my-note.md",
+                path="2024/01/my-note.md",
                 contents="Hello world",
                 fields={"title": "My Note"},
             )
@@ -137,7 +138,7 @@ class TestDeleteNote:
         with patch("src.note_updates.main.delete_note_file", return_value=True):
             result = delete_note(path="2024/01/my-note.md")
 
-        assert result == "Note deleted at '2024/01/my-note.md'"
+        assert "2024/01/my-note.md" in result
 
     def test_delete_note_failure_returns_error(self):
         """delete_note returns an error message when the file cannot be deleted."""
@@ -154,7 +155,7 @@ class TestDeleteNote:
         ) as mock_delete:
             delete_note(path="some/path/note.md")
 
-        mock_delete.assert_called_once_with("some/path/note.md")
+        mock_delete.assert_called_once_with(f"{NOTE_FOLDER}/some/path/note.md")
 
     def test_delete_note_does_not_touch_real_filesystem(self):
         """delete_note never calls Path.unlink() when delete_note_file is mocked."""
