@@ -14,6 +14,12 @@ pub fn Editor() -> impl IntoView {
     // BlockComponent stops propagation on its own click events.
     let on_bg_click = move |_| {
         blocks.update(|b| {
+            if let Some(last) = b.last() {
+                if last.text.get_untracked().is_empty() {
+                    last.focused.set(true);
+                    return;
+                }
+            }
             let new_block = MarkdownBlock::empty();
             new_block.focused.set(true);
             b.push(new_block);
