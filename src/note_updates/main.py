@@ -51,7 +51,7 @@ def upsert_note(
     """
     if note := MarkdownData.construct_from_data(path, contents, fields):
         return f"Note upserted at '{note.normalised_path}'"
-    return f"Error: Failed to upsert note at '{path}'. Ensure the path ends with .md."
+    return f"Error: Failed to upsert note at '{path}'."
 
 
 @MCP.tool()
