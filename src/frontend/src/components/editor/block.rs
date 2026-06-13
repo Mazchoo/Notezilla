@@ -1,14 +1,11 @@
-use leptos::*;
-use leptos::html::Textarea;
 use crate::models::block::MarkdownBlock;
+use leptos::html::Textarea;
+use leptos::*;
 
 #[component]
-pub fn BlockComponent(
-    block: MarkdownBlock,
-    blocks: RwSignal<Vec<MarkdownBlock>>,
-) -> impl IntoView {
+pub fn BlockComponent(block: MarkdownBlock, blocks: RwSignal<Vec<MarkdownBlock>>) -> impl IntoView {
     let textarea_ref = create_node_ref::<Textarea>();
-    let block_id     = block.id;
+    let block_id = block.id;
 
     // Focus the textarea whenever this block switches into edit mode.
     // create_effect runs after the DOM is updated, so the textarea exists by then.

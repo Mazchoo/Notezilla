@@ -1,6 +1,6 @@
+use icondata as id;
 use leptos::*;
 use leptos_icons::Icon;
-use icondata as id;
 
 /// Dummy file tree — static placeholder until backend file listing is wired up.
 #[component]

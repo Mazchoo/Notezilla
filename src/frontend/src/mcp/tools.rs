@@ -1,6 +1,6 @@
-use serde_json::json;
-use crate::models::note::{McpToolResult, SearchResult};
 use super::client::call_tool;
+use crate::models::note::{McpToolResult, SearchResult};
+use serde_json::json;
 
 fn zip_results(raw: McpToolResult) -> Vec<SearchResult> {
     raw.documents
@@ -22,8 +22,8 @@ pub async fn search_by_text(
     )
     .await?;
 
-    let raw: McpToolResult = serde_json::from_value(val)
-        .map_err(|e| format!("Parse error: {e}"))?;
+    let raw: McpToolResult =
+        serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))?;
 
     if let Some(err) = raw.error {
         return Err(format!("Backend error: {err}"));
@@ -44,8 +44,8 @@ pub async fn list_by_path(
     )
     .await?;
 
-    let raw: McpToolResult = serde_json::from_value(val)
-        .map_err(|e| format!("Parse error: {e}"))?;
+    let raw: McpToolResult =
+        serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))?;
 
     Ok(zip_results(raw))
 }

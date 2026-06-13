@@ -1,7 +1,7 @@
+use crate::state::{ActivePanel, AppState};
+use icondata as id;
 use leptos::*;
 use leptos_icons::Icon;
-use icondata as id;
-use crate::state::{ActivePanel, AppState};
 
 #[component]
 pub fn ActivityBar() -> impl IntoView {
@@ -9,7 +9,11 @@ pub fn ActivityBar() -> impl IntoView {
 
     let toggle = move |panel: ActivePanel| {
         state.active_panel.update(|current| {
-            *current = if *current == Some(panel) { None } else { Some(panel) };
+            *current = if *current == Some(panel) {
+                None
+            } else {
+                Some(panel)
+            };
         });
     };
 

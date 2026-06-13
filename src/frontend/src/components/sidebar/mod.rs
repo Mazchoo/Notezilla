@@ -1,9 +1,9 @@
 pub mod file_tree;
 pub mod search_panel;
 
-use leptos::*;
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
+use leptos::*;
 use search_panel::SearchPanel;
 
 #[component]

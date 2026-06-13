@@ -14,10 +14,10 @@ fn next_id() -> u64 {
 /// MarkdownBlock is Copy (all fields are Copy signal handles).
 #[derive(Clone, Copy, Debug)]
 pub struct MarkdownBlock {
-    pub id:      u64,
-    pub text:    RwSignal<String>,  // raw markdown source
-    pub html:    RwSignal<String>,  // cached rendered HTML
-    pub focused: RwSignal<bool>,    // true while the textarea is active
+    pub id: u64,
+    pub text: RwSignal<String>,  // raw markdown source
+    pub html: RwSignal<String>,  // cached rendered HTML
+    pub focused: RwSignal<bool>, // true while the textarea is active
 }
 
 impl MarkdownBlock {
@@ -25,9 +25,9 @@ impl MarkdownBlock {
         let raw_str = raw.into();
         let rendered = render_markdown(&raw_str);
         Self {
-            id:      next_id(),
-            text:    create_rw_signal(raw_str),
-            html:    create_rw_signal(rendered),
+            id: next_id(),
+            text: create_rw_signal(raw_str),
+            html: create_rw_signal(rendered),
             focused: create_rw_signal(false),
         }
     }

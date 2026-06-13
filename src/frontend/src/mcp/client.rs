@@ -9,7 +9,7 @@ const MCP_URL: &str = "/mcp";
 #[derive(Deserialize, Debug)]
 struct JsonRpcResponse {
     result: Option<Value>,
-    error:  Option<Value>,
+    error: Option<Value>,
 }
 
 /// Extract the first `data: ...` line from an SSE body and parse it as JSON.
@@ -103,8 +103,7 @@ pub async fn call_tool(
         .await
         .map_err(|e| format!("Body read error: {e}"))?;
 
-    let rpc = parse_sse(&text)
-        .ok_or_else(|| format!("Could not parse SSE body: {text:?}"))?;
+    let rpc = parse_sse(&text).ok_or_else(|| format!("Could not parse SSE body: {text:?}"))?;
 
     if let Some(err) = rpc.error {
         return Err(format!("RPC error: {err}"));

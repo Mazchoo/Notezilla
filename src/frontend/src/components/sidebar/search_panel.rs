@@ -1,18 +1,20 @@
-use leptos::*;
 use crate::mcp::tools::search_by_text;
 use crate::state::AppState;
+use leptos::*;
 
 #[component]
 pub fn SearchPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let query   = state.search_query;
+    let query = state.search_query;
     let results = state.search_results;
     let session = state.session_id;
 
     // Inline search logic in each handler — closures aren't Clone in Rust.
     let on_click = move |_| {
         let q = query.get_untracked();
-        if q.trim().is_empty() { return; }
+        if q.trim().is_empty() {
+            return;
+        }
         let Some(sid) = session.get_untracked() else {
             web_sys::console::warn_1(&"MCP session not ready".into());
             return;
@@ -20,20 +22,26 @@ pub fn SearchPanel() -> impl IntoView {
         spawn_local(async move {
             match search_by_text(&sid, &q, 10).await {
                 Ok(found) => results.set(found),
-                Err(e)    => web_sys::console::error_1(&e.into()),
+                Err(e) => web_sys::console::error_1(&e.into()),
             }
         });
     };
 
     let on_keydown = move |ev: web_sys::KeyboardEvent| {
-        if ev.key() != "Enter" { return; }
+        if ev.key() != "Enter" {
+            return;
+        }
         let q = query.get_untracked();
-        if q.trim().is_empty() { return; }
-        let Some(sid) = session.get_untracked() else { return; };
+        if q.trim().is_empty() {
+            return;
+        }
+        let Some(sid) = session.get_untracked() else {
+            return;
+        };
         spawn_local(async move {
             match search_by_text(&sid, &q, 10).await {
                 Ok(found) => results.set(found),
-                Err(e)    => web_sys::console::error_1(&e.into()),
+                Err(e) => web_sys::console::error_1(&e.into()),
             }
         });
     };

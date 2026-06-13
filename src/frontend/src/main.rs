@@ -3,9 +3,9 @@ mod mcp;
 mod models;
 mod state;
 
+use components::app_shell::AppShell;
 use leptos::*;
 use state::AppState;
-use components::app_shell::AppShell;
 
 fn main() {
     console_error_panic_hook::set_once();
