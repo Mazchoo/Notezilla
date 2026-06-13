@@ -245,6 +245,20 @@
       border: 1px solid var(--border);
       border-radius: 4px;
     }
+    /* ── Syntax-highlighted code blocks (syntect inline styles) ────────── */
+    .content pre.code-block {
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+    }
+    .content pre.code-block code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
     .content svg {
       max-width: 100%;
     }

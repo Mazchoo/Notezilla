@@ -1,13 +1,16 @@
+mod code;
 mod graphviz;
 mod mermaid;
 
+use code::highlight_code;
 use graphviz::render_dot;
 use mermaid::render_mermaid;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 
-enum DiagramKind {
+enum BlockKind {
     Graphviz,
     Mermaid,
+    Code(String), // language token
 }
 
 pub fn render_markdown(src: &str) -> String {
@@ -18,42 +21,49 @@ pub fn render_markdown(src: &str) -> String {
 
     let parser = Parser::new_ext(src, opts);
     let mut events: Vec<Event> = Vec::new();
-    let mut diagram: Option<DiagramKind> = None;
-    let mut diagram_buf = String::new();
+    let mut block: Option<BlockKind> = None;
+    let mut buf = String::new();
 
     for event in parser {
-        match diagram {
+        match block {
             Some(_) => match event {
                 Event::End(TagEnd::CodeBlock) => {
-                    let svg = match diagram.take().unwrap() {
-                        DiagramKind::Graphviz => render_dot(&diagram_buf).unwrap_or_else(|_| {
-                            let escaped = escape_html(&diagram_buf);
+                    let html_fragment = match block.take().unwrap() {
+                        BlockKind::Graphviz => render_dot(&buf).unwrap_or_else(|_| {
+                            let escaped = escape_html(&buf);
                             format!("<pre><code>{escaped}</code></pre>")
                         }),
-                        DiagramKind::Mermaid => render_mermaid(&diagram_buf),
+                        BlockKind::Mermaid => render_mermaid(&buf),
+                        BlockKind::Code(ref lang) => highlight_code(lang, &buf),
                     };
-                    events.push(Event::Html(svg.into()));
-                    diagram_buf.clear();
+                    events.push(Event::Html(html_fragment.into()));
+                    buf.clear();
                 }
-                Event::Text(text) => diagram_buf.push_str(&text),
+                Event::Text(text) => buf.push_str(&text),
                 _ => {}
             },
             None => {
                 if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) = event {
-                    match lang.as_ref() {
+                    let lang_str = lang.as_ref();
+                    match lang_str {
                         "graphviz" => {
-                            diagram = Some(DiagramKind::Graphviz);
-                            diagram_buf.clear();
+                            block = Some(BlockKind::Graphviz);
+                            buf.clear();
                             continue;
                         }
                         "mermaid" => {
-                            diagram = Some(DiagramKind::Mermaid);
-                            diagram_buf.clear();
+                            block = Some(BlockKind::Mermaid);
+                            buf.clear();
                             continue;
                         }
-                        _ => {}
+                        other => {
+                            block = Some(BlockKind::Code(other.to_string()));
+                            buf.clear();
+                            continue;
+                        }
                     }
                 }
+                // Unfenced code blocks — let pulldown-cmark handle them normally.
                 events.push(event);
             }
         }
