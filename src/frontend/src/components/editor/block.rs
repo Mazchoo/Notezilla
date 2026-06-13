@@ -171,25 +171,42 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     };
 
     view! {
-        <div class="editor-block" on:click=on_block_click>
-            {move || if block.focused.get() {
-                view! {
-                    <textarea
-                        node_ref=textarea_ref
-                        class="block-textarea"
-                        prop:value=move || block.text.get()
-                        on:blur=on_blur
-                        on:input=on_input
-                    />
-                }.into_view()
-            } else {
-                view! {
-                    <div
-                        class="block-render content"
-                        inner_html=move || block.html.get()
-                    />
-                }.into_view()
-            }}
+        <div class="editor-block-row">
+            <div class="editor-block" on:click=on_block_click>
+                {move || if block.focused.get() {
+                    view! {
+                        <textarea
+                            node_ref=textarea_ref
+                            class="block-textarea"
+                            prop:value=move || block.text.get()
+                            on:blur=on_blur
+                            on:input=on_input
+                        />
+                    }.into_view()
+                } else {
+                    view! {
+                        <div
+                            class="block-render content"
+                            inner_html=move || block.html.get()
+                        />
+                    }.into_view()
+                }}
+            </div>
+            <div class="block-actions">
+                <button
+                    class="block-action-btn block-delete-btn"
+                    title="Delete block"
+                    on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6"/>
+                        <path d="M14 11v6"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     }
 }

@@ -166,7 +166,41 @@
     }
 
     /* ── Markdown blocks ───────────────────────────────────────────── */
-    .editor-block { margin-bottom: 0.15rem; }
+    .editor-block-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+      margin-bottom: 0.15rem;
+    }
+    .editor-block {
+      flex: 1;
+      min-width: 0;
+    }
+    .block-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding-top: 0.2rem;
+      width: 28px;
+      flex-shrink: 0;
+    }
+    .block-action-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: none;
+      color: var(--text-muted);
+      transition: color 0.1s, background 0.1s;
+      padding: 0;
+    }
+    .block-action-btn:hover { color: var(--text); background: var(--bg-3); }
+    .block-action-btn svg  { width: 14px; height: 14px; }
+    .block-delete-btn:hover { color: #f38ba8; }
     .block-textarea {
       width: 100%;
       resize: none;
