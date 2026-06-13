@@ -1,6 +1,7 @@
 mod components;
 mod mcp;
 mod models;
+mod rendering;
 mod state;
 
 use components::app_shell::AppShell;
