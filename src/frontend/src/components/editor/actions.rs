@@ -1,3 +1,4 @@
+use crate::models::block::FrontMatterBlock;
 use crate::state::AppState;
 use leptos::*;
 
@@ -11,4 +12,19 @@ pub fn delete_entry(state: &AppState, entry_id: u64) {
     state.entries.update(|entries| {
         entries.retain(|e| e.title.id != entry_id);
     });
+}
+
+/// Clears the front matter for the entry identified by `entry_id`.
+/// Sets the entry's `front_matter` signal to `None`, removing it from the UI.
+pub fn delete_front_matter(state: &AppState, entry_id: u64) {
+    state.entries.with_untracked(|entries| {
+        if let Some(entry) = entries.iter().find(|e| e.title.id == entry_id) {
+            entry.front_matter.set(None);
+        }
+    });
+}
+
+/// Returns a blank [`FrontMatterBlock`] with `tags: []` as default content.
+pub fn blank_front_matter() -> FrontMatterBlock {
+    FrontMatterBlock::new("tags: []")
 }

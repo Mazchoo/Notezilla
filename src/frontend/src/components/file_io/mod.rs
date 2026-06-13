@@ -33,13 +33,16 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
             .expect("FileReader result is not a string");
 
         // Parse front matter (if any), then build the entry.
+        // EditorEntry::new always starts with a blank "tags: []" front matter;
+        // if the file has its own front matter, overwrite the signal with it.
         let entry = if text.is_empty() {
             EditorEntry::empty(file_path)
         } else {
             let (fm_raw, content) = split_front_matter(&text);
-            let mut entry = EditorEntry::new(file_path, content);
+            let entry = EditorEntry::new(file_path, content);
             if let Some(raw) = fm_raw {
-                entry.front_matter = Some(FrontMatterBlock::new(raw));
+                // Override the default blank front matter with the file's own.
+                entry.front_matter.set(Some(FrontMatterBlock::new(raw)));
             }
             entry
         };

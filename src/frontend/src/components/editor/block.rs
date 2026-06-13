@@ -1,4 +1,4 @@
-use crate::components::editor::actions::delete_entry;
+use crate::components::editor::actions::{delete_entry, delete_front_matter};
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
 use leptos::html::{Input, Textarea};
@@ -89,8 +89,10 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
 
 /// Renders YAML front matter as a key-value table (view mode) or editable textarea (edit mode).
 /// Visually distinct from markdown blocks: left-accented border, monospace key-value grid.
+/// Includes a delete button that removes only the front matter from the entry.
 #[component]
-pub fn FrontMatterBlockComponent(block: FrontMatterBlock) -> impl IntoView {
+pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl IntoView {
+    let state = use_context::<AppState>().expect("AppState not provided");
     let textarea_ref = create_node_ref::<Textarea>();
 
     create_effect(move |_| {
@@ -124,29 +126,50 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock) -> impl IntoView {
     };
 
     view! {
-        <div class="frontmatter-block" on:click=on_click>
-            {move || if block.focused.get() {
-                view! {
-                    <textarea
-                        node_ref=textarea_ref
-                        class="frontmatter-textarea"
-                        prop:value=move || block.raw.get()
-                        on:blur=on_blur
-                        on:input=on_input
-                    />
-                }.into_view()
-            } else {
-                let raw = block.raw.get();
-                let fields = FrontMatterBlock::parse_fields(&raw);
-                view! {
-                    <div class="frontmatter-table">
-                        {fields.into_iter().map(|(k, v)| view! {
-                            <span class="frontmatter-key">{k}</span>
-                            <span class="frontmatter-value">{v}</span>
-                        }).collect_view()}
-                    </div>
-                }.into_view()
-            }}
+        <div class="editor-block-row">
+            <div class="frontmatter-block" on:click=on_click>
+                {move || if block.focused.get() {
+                    view! {
+                        <textarea
+                            node_ref=textarea_ref
+                            class="frontmatter-textarea"
+                            prop:value=move || block.raw.get()
+                            on:blur=on_blur
+                            on:input=on_input
+                        />
+                    }.into_view()
+                } else {
+                    let raw = block.raw.get();
+                    let fields = FrontMatterBlock::parse_fields(&raw);
+                    view! {
+                        <div class="frontmatter-table">
+                            {fields.into_iter().map(|(k, v)| view! {
+                                <span class="frontmatter-key">{k}</span>
+                                <span class="frontmatter-value">{v}</span>
+                            }).collect_view()}
+                        </div>
+                    }.into_view()
+                }}
+            </div>
+            <div class="block-actions">
+                <button
+                    class="block-action-btn block-delete-btn"
+                    title="Delete front matter"
+                    on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                    on:click=move |ev: web_sys::MouseEvent| {
+                        ev.stop_propagation();
+                        delete_front_matter(&state, entry_id);
+                    }
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6"/>
+                        <path d="M14 11v6"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     }
 }

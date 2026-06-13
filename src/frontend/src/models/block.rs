@@ -122,10 +122,12 @@ impl MarkdownBlock {
 
 /// A unified editor entry: a title block, optional front matter, and markdown content.
 /// Adding a new entry always produces a divider + title + (front matter?) + markdown in the UI.
+/// `front_matter` is a reactive `RwSignal<Option<FrontMatterBlock>>` so the delete button can
+/// remove it without rebuilding the whole entry.
 #[derive(Clone, Copy, Debug)]
 pub struct EditorEntry {
     pub title: TitleBlock,
-    pub front_matter: Option<FrontMatterBlock>,
+    pub front_matter: RwSignal<Option<FrontMatterBlock>>,
     pub content: MarkdownBlock,
 }
 
@@ -133,7 +135,7 @@ impl EditorEntry {
     pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
         Self {
             title: TitleBlock::new(path),
-            front_matter: None,
+            front_matter: create_rw_signal(Some(FrontMatterBlock::new("tags: []"))),
             content: MarkdownBlock::new(raw),
         }
     }
