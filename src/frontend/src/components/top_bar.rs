@@ -1,4 +1,5 @@
 use crate::components::file_io::load_markdown_file;
+use crate::models::block::MarkdownBlock;
 use crate::state::AppState;
 use icondata as id;
 use leptos::*;
@@ -35,6 +36,15 @@ pub fn TopBar() -> impl IntoView {
         web_sys::console::log_1(&content.into());
     };
 
+    // Append a new empty block and focus it.
+    let on_new_block = move |_| {
+        blocks.update(|b| {
+            let new_block = MarkdownBlock::empty();
+            new_block.focused.set(true);
+            b.push(new_block);
+        });
+    };
+
     view! {
         <div class="top-bar">
             // Hidden file input — accepts markdown and plain-text files.
@@ -52,6 +62,10 @@ pub fn TopBar() -> impl IntoView {
             // Save — logs full markdown to console.
             <button class="activity-btn" title="Save (Ctrl+S)" on:click=on_save>
                 <Icon icon=id::LuSave/>
+            </button>
+            // New Block — appends a fresh empty block.
+            <button class="activity-btn top-bar-new-block" title="New Block" on:click=on_new_block>
+                "＋"
             </button>
         </div>
     }

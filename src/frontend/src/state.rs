@@ -23,12 +23,7 @@ impl AppState {
             session_id: create_rw_signal(None),
             active_panel: create_rw_signal(Some(ActivePanel::Files)),
             blocks: create_rw_signal(vec![
-                MarkdownBlock::new("# Welcome to Notezilla"),
-                MarkdownBlock::new(
-                    "Click any block to edit. Press **Enter** for a new block, \
-                     **Shift+Enter** for a newline within a block.",
-                ),
-                MarkdownBlock::new(""),
+                MarkdownBlock::empty(),
             ]),
             current_path: create_rw_signal(None),
             search_query: create_rw_signal(String::new()),
