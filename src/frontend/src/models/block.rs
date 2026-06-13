@@ -8,6 +8,26 @@ fn next_id() -> u64 {
     BLOCK_COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
+/// A title block that displays the file path of the associated markdown content.
+/// Rendered as a styled label (distinct from markdown `#` titles).
+/// One line; click to edit the path inline.
+#[derive(Clone, Copy, Debug)]
+pub struct TitleBlock {
+    pub id: u64,
+    pub path: RwSignal<String>,
+    pub focused: RwSignal<bool>,
+}
+
+impl TitleBlock {
+    pub fn new(path: impl Into<String>) -> Self {
+        Self {
+            id: next_id(),
+            path: create_rw_signal(path.into()),
+            focused: create_rw_signal(false),
+        }
+    }
+}
+
 /// A single editing unit in the document. The document is a Vec<MarkdownBlock>.
 ///
 /// All fields are reactive signals so only the changed block re-renders.
@@ -41,6 +61,27 @@ impl MarkdownBlock {
     pub fn rerender(self) {
         let raw = self.text.get_untracked();
         self.html.set(render_markdown(&raw));
+    }
+}
+
+/// A unified editor entry: a title block paired with its markdown content block.
+/// Adding a new entry always produces a divider + title + markdown triple in the UI.
+#[derive(Clone, Copy, Debug)]
+pub struct EditorEntry {
+    pub title: TitleBlock,
+    pub content: MarkdownBlock,
+}
+
+impl EditorEntry {
+    pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
+        Self {
+            title: TitleBlock::new(path),
+            content: MarkdownBlock::new(raw),
+        }
+    }
+
+    pub fn empty(path: impl Into<String>) -> Self {
+        Self::new(path, "")
     }
 }
 

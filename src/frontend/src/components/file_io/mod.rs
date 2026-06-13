@@ -1,12 +1,12 @@
-use crate::models::block::MarkdownBlock;
+use crate::models::block::EditorEntry;
 use leptos::*;
 use wasm_bindgen::prelude::*;
 use web_sys::{Event, FileReader, HtmlInputElement};
 
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
-/// and replaces the provided `blocks` signal with a single [`MarkdownBlock`]
-/// containing the entire file content.
-pub fn load_markdown_file(ev: Event, blocks: RwSignal<Vec<MarkdownBlock>>) {
+/// and replaces the provided `entries` signal with a single [`EditorEntry`]
+/// (title block + markdown content block) containing the entire file content.
+pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
     let input = ev
         .target()
         .and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
@@ -16,6 +16,10 @@ pub fn load_markdown_file(ev: Event, blocks: RwSignal<Vec<MarkdownBlock>>) {
         return;
     };
     let Some(file) = file_list.get(0) else { return };
+
+    // Capture the file name to use as the title path.
+    let file_name = file.name();
+    let file_path = format!("./{}", file_name);
 
     let reader = FileReader::new().expect("FileReader not available");
     let reader_clone = reader.clone();
@@ -28,13 +32,13 @@ pub fn load_markdown_file(ev: Event, blocks: RwSignal<Vec<MarkdownBlock>>) {
             .as_string()
             .expect("FileReader result is not a string");
 
-        // The entire file becomes a single block.
-        let block = if text.is_empty() {
-            MarkdownBlock::empty()
+        // The entire file becomes a single entry: title + content block.
+        let entry = if text.is_empty() {
+            EditorEntry::empty(file_path)
         } else {
-            MarkdownBlock::new(text)
+            EditorEntry::new(file_path, text)
         };
-        blocks.set(vec![block]);
+        entries.set(vec![entry]);
 
         // Reset so the same file can be re-imported if needed.
         input.set_value("");

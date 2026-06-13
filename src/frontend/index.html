@@ -121,6 +121,50 @@
       min-height: 100%;
     }
 
+    /* ── Entry divider & title ─────────────────────────────────────── */
+    .entry-divider {
+      display: block;
+      height: 2px;
+      background-color: var(--border);
+      border: none;
+      margin: 2rem 0 1rem 0;
+    }
+    .entry-title {
+      display: block;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.25rem 0.75rem;
+      margin: 0 0 0.75rem 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.8;
+      cursor: text;
+    }
+    .entry-title-input {
+      display: block;
+      width: 100%;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.25rem 0.75rem;
+      margin: 0 0 0.75rem 0;
+      line-height: 1.8;
+      outline: none;
+      box-sizing: border-box;
+    }
+
     /* ── Markdown blocks ───────────────────────────────────────────── */
     .editor-block { margin-bottom: 0.15rem; }
     .block-textarea {

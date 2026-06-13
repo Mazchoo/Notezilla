@@ -1,6 +1,70 @@
-use crate::models::block::MarkdownBlock;
-use leptos::html::Textarea;
+use crate::models::block::{MarkdownBlock, TitleBlock};
+use leptos::html::{Input, Textarea};
 use leptos::*;
+
+/// Renders the file-path title for an editor entry.
+/// Displays the path as a styled label; click to edit inline, blur to confirm.
+/// Always one line — distinct from markdown `#` headings.
+#[component]
+pub fn TitleBlockComponent(title: TitleBlock) -> impl IntoView {
+    let input_ref = create_node_ref::<Input>();
+
+    // Focus the input when entering edit mode.
+    create_effect(move |_| {
+        if title.focused.get() {
+            if let Some(el) = input_ref.get() {
+                let _ = (*el).focus();
+            }
+        }
+    });
+
+    let on_click = move |_: web_sys::MouseEvent| {
+        if !title.focused.get_untracked() {
+            title.focused.set(true);
+        }
+    };
+
+    let on_input = move |ev: web_sys::Event| {
+        title.path.set(event_target_value(&ev));
+    };
+
+    let on_blur = move |_: web_sys::FocusEvent| {
+        title.focused.set(false);
+    };
+
+    // Prevent Enter from doing anything unexpected — just blur.
+    let on_keydown = move |ev: web_sys::KeyboardEvent| {
+        if ev.key() == "Enter" {
+            if let Some(el) = input_ref.get() {
+                let _ = (*el).blur();
+            }
+        }
+    };
+
+    view! {
+        <div>
+            {move || if title.focused.get() {
+                view! {
+                    <input
+                        node_ref=input_ref
+                        class="entry-title-input"
+                        type="text"
+                        prop:value=move || title.path.get()
+                        on:input=on_input
+                        on:blur=on_blur
+                        on:keydown=on_keydown
+                    />
+                }.into_view()
+            } else {
+                view! {
+                    <div class="entry-title" on:click=on_click>
+                        {move || title.path.get()}
+                    </div>
+                }.into_view()
+            }}
+        </div>
+    }
+}
 
 #[component]
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {

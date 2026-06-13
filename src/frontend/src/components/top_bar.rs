@@ -1,5 +1,5 @@
 use crate::components::file_io::load_markdown_file;
-use crate::models::block::MarkdownBlock;
+use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
 use leptos::*;
@@ -9,7 +9,7 @@ use web_sys::Event;
 #[component]
 pub fn TopBar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let blocks = state.blocks;
+    let entries = state.entries;
 
     let file_input_ref = create_node_ref::<leptos::html::Input>();
 
@@ -20,28 +20,28 @@ pub fn TopBar() -> impl IntoView {
         }
     };
 
-    // Delegate file reading + block creation to file_io.
+    // Delegate file reading + entry creation to file_io.
     let on_file_change = move |ev: Event| {
-        load_markdown_file(ev, blocks);
+        load_markdown_file(ev, entries);
     };
 
     let on_save = move |_| {
         let content = state
-            .blocks
+            .entries
             .get()
             .iter()
-            .map(|b| b.text.get_untracked())
+            .map(|e| e.content.text.get_untracked())
             .collect::<Vec<_>>()
             .join("\n\n");
         web_sys::console::log_1(&content.into());
     };
 
-    // Append a new empty block and focus it.
+    // Append a new empty entry (divider + title + blank markdown block) and focus it.
     let on_new_block = move |_| {
-        blocks.update(|b| {
-            let new_block = MarkdownBlock::empty();
-            new_block.focused.set(true);
-            b.push(new_block);
+        entries.update(|list| {
+            let entry = EditorEntry::empty("./new_file.md");
+            entry.content.focused.set(true);
+            list.push(entry);
         });
     };
 
@@ -63,7 +63,7 @@ pub fn TopBar() -> impl IntoView {
             <button class="activity-btn" title="Save (Ctrl+S)" on:click=on_save>
                 <Icon icon=id::LuSave/>
             </button>
-            // New Block — appends a fresh empty block.
+            // New Block — appends a fresh empty entry.
             <button class="activity-btn top-bar-new-block" title="New Block" on:click=on_new_block>
                 "＋"
             </button>
