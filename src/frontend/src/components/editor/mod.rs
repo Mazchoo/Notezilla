@@ -1,7 +1,7 @@
 pub mod block;
 
 use crate::state::AppState;
-use block::{BlockComponent, TitleBlockComponent};
+use block::{BlockComponent, FrontMatterBlockComponent, TitleBlockComponent};
 use leptos::*;
 
 #[component]
@@ -17,6 +17,9 @@ pub fn Editor() -> impl IntoView {
                 children=move |entry| view! {
                     <hr class="entry-divider"/>
                     <TitleBlockComponent title=entry.title/>
+                    {entry.front_matter.map(|fm| view! {
+                        <FrontMatterBlockComponent block=fm/>
+                    })}
                     <BlockComponent block=entry.content/>
                 }
             />

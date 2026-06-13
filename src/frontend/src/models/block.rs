@@ -8,6 +8,62 @@ fn next_id() -> u64 {
     BLOCK_COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
+/// Splits `text` into an optional YAML front matter string and the remaining markdown body.
+/// Expects front matter wrapped in `---` delimiters at the very start of the file.
+pub fn split_front_matter(text: &str) -> (Option<String>, String) {
+    let norm = text.replace("\r\n", "\n");
+    if !norm.starts_with("---\n") {
+        return (None, text.to_string());
+    }
+    let body = &norm[4..]; // after opening ---\n
+    if let Some(close_pos) = body.find("\n---\n") {
+        let fm = body[..close_pos].to_string();
+        let content = body[close_pos + 5..].to_string();
+        (Some(fm), content)
+    } else if body.ends_with("\n---") {
+        // closing --- at end of file with no trailing newline
+        let fm = body[..body.len() - 4].to_string();
+        (Some(fm), String::new())
+    } else {
+        (None, text.to_string())
+    }
+}
+
+/// Holds the raw YAML front matter (without `---` delimiters) for a note.
+/// Displayed as a key-value table in view mode; editable as raw YAML in edit mode.
+#[derive(Clone, Copy, Debug)]
+pub struct FrontMatterBlock {
+    pub id: u64,
+    pub raw: RwSignal<String>,
+    pub focused: RwSignal<bool>,
+}
+
+impl FrontMatterBlock {
+    pub fn new(raw: impl Into<String>) -> Self {
+        Self {
+            id: next_id(),
+            raw: create_rw_signal(raw.into()),
+            focused: create_rw_signal(false),
+        }
+    }
+
+    /// Parses the raw YAML into `(key, value)` pairs for display.
+    /// Handles simple `key: value` lines; skips blank lines and list continuations.
+    pub fn parse_fields(raw: &str) -> Vec<(String, String)> {
+        raw.lines()
+            .filter_map(|line| {
+                let mut parts = line.splitn(2, ':');
+                let key = parts.next()?.trim().to_string();
+                if key.is_empty() || key.starts_with('-') || key.starts_with(' ') {
+                    return None;
+                }
+                let value = parts.next().unwrap_or("").trim().to_string();
+                Some((key, value))
+            })
+            .collect()
+    }
+}
+
 /// A title block that displays the file path of the associated markdown content.
 /// Rendered as a styled label (distinct from markdown `#` titles).
 /// One line; click to edit the path inline.
@@ -64,11 +120,12 @@ impl MarkdownBlock {
     }
 }
 
-/// A unified editor entry: a title block paired with its markdown content block.
-/// Adding a new entry always produces a divider + title + markdown triple in the UI.
+/// A unified editor entry: a title block, optional front matter, and markdown content.
+/// Adding a new entry always produces a divider + title + (front matter?) + markdown in the UI.
 #[derive(Clone, Copy, Debug)]
 pub struct EditorEntry {
     pub title: TitleBlock,
+    pub front_matter: Option<FrontMatterBlock>,
     pub content: MarkdownBlock,
 }
 
@@ -76,6 +133,7 @@ impl EditorEntry {
     pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
         Self {
             title: TitleBlock::new(path),
+            front_matter: None,
             content: MarkdownBlock::new(raw),
         }
     }

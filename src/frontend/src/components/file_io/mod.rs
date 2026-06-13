@@ -1,4 +1,4 @@
-use crate::models::block::EditorEntry;
+use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::*;
 use wasm_bindgen::prelude::*;
 use web_sys::{Event, FileReader, HtmlInputElement};
@@ -32,11 +32,16 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
             .as_string()
             .expect("FileReader result is not a string");
 
-        // The entire file becomes a single entry: title + content block.
+        // Parse front matter (if any), then build the entry.
         let entry = if text.is_empty() {
             EditorEntry::empty(file_path)
         } else {
-            EditorEntry::new(file_path, text)
+            let (fm_raw, content) = split_front_matter(&text);
+            let mut entry = EditorEntry::new(file_path, content);
+            if let Some(raw) = fm_raw {
+                entry.front_matter = Some(FrontMatterBlock::new(raw));
+            }
+            entry
         };
         entries.set(vec![entry]);
 

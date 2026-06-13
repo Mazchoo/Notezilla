@@ -1,4 +1,4 @@
-use crate::models::block::{MarkdownBlock, TitleBlock};
+use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use leptos::html::{Input, Textarea};
 use leptos::*;
 
@@ -59,6 +59,70 @@ pub fn TitleBlockComponent(title: TitleBlock) -> impl IntoView {
                 view! {
                     <div class="entry-title" on:click=on_click>
                         {move || title.path.get()}
+                    </div>
+                }.into_view()
+            }}
+        </div>
+    }
+}
+
+/// Renders YAML front matter as a key-value table (view mode) or editable textarea (edit mode).
+/// Visually distinct from markdown blocks: left-accented border, monospace key-value grid.
+#[component]
+pub fn FrontMatterBlockComponent(block: FrontMatterBlock) -> impl IntoView {
+    let textarea_ref = create_node_ref::<Textarea>();
+
+    create_effect(move |_| {
+        if block.focused.get() {
+            if let Some(el) = textarea_ref.get() {
+                let _ = (*el).focus();
+                let _ = (*el).style().set_property("height", "auto");
+                let h = (*el).scroll_height();
+                let _ = (*el).style().set_property("height", &format!("{}px", h));
+            }
+        }
+    });
+
+    let on_blur = move |_: web_sys::FocusEvent| {
+        block.focused.set(false);
+    };
+
+    let on_input = move |ev: web_sys::Event| {
+        block.raw.set(event_target_value(&ev));
+        if let Some(el) = textarea_ref.get() {
+            let _ = (*el).style().set_property("height", "auto");
+            let h = (*el).scroll_height();
+            let _ = (*el).style().set_property("height", &format!("{}px", h));
+        }
+    };
+
+    let on_click = move |_: web_sys::MouseEvent| {
+        if !block.focused.get_untracked() {
+            block.focused.set(true);
+        }
+    };
+
+    view! {
+        <div class="frontmatter-block" on:click=on_click>
+            {move || if block.focused.get() {
+                view! {
+                    <textarea
+                        node_ref=textarea_ref
+                        class="frontmatter-textarea"
+                        prop:value=move || block.raw.get()
+                        on:blur=on_blur
+                        on:input=on_input
+                    />
+                }.into_view()
+            } else {
+                let raw = block.raw.get();
+                let fields = FrontMatterBlock::parse_fields(&raw);
+                view! {
+                    <div class="frontmatter-table">
+                        {fields.into_iter().map(|(k, v)| view! {
+                            <span class="frontmatter-key">{k}</span>
+                            <span class="frontmatter-value">{v}</span>
+                        }).collect_view()}
                     </div>
                 }.into_view()
             }}

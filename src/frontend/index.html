@@ -216,6 +216,47 @@
       border-left: 3px solid var(--accent);
     }
 
+    /* ── Front matter block ────────────────────────────────────────── */
+    .frontmatter-block {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--border);
+      border-radius: 4px;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      cursor: text;
+    }
+    .frontmatter-block:hover { background: var(--bg-3); }
+    .frontmatter-table {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.2rem 1rem;
+    }
+    .frontmatter-key {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .frontmatter-value {
+      color: var(--text);
+    }
+    .frontmatter-textarea {
+      width: 100%;
+      resize: none;
+      overflow: hidden;
+      background: var(--bg-1);
+      color: var(--text);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      outline: none;
+      box-sizing: border-box;
+    }
+
     /* ── Bulma form dark overrides ─────────────────────────────────── */
     .input, .textarea {
       background-color: var(--bg-3);
