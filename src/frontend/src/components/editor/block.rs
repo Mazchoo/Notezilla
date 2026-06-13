@@ -1,4 +1,6 @@
+use crate::components::editor::actions::delete_entry;
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
+use crate::state::AppState;
 use leptos::html::{Input, Textarea};
 use leptos::*;
 
@@ -131,7 +133,8 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock) -> impl IntoView {
 }
 
 #[component]
-pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
+pub fn BlockComponent(block: MarkdownBlock, entry_id: u64) -> impl IntoView {
+    let state = use_context::<AppState>().expect("AppState not provided");
     let textarea_ref = create_node_ref::<Textarea>();
 
     // Focus the textarea whenever this block switches into edit mode.
@@ -197,6 +200,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
                     class="block-action-btn block-delete-btn"
                     title="Delete block"
                     on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                    on:click=move |_| delete_entry(&state, entry_id)
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"/>
