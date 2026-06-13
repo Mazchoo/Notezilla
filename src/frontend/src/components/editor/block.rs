@@ -11,6 +11,10 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         if block.focused.get() {
             if let Some(el) = textarea_ref.get() {
                 let _ = (*el).focus();
+                // Auto-resize to fit existing content on initial render.
+                let _ = (*el).style().set_property("height", "auto");
+                let h = (*el).scroll_height();
+                let _ = (*el).style().set_property("height", &format!("{}px", h));
             }
         }
     });

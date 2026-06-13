@@ -23,7 +23,7 @@ impl AppState {
             session_id: create_rw_signal(None),
             active_panel: create_rw_signal(Some(ActivePanel::Files)),
             blocks: create_rw_signal(vec![
-                MarkdownBlock::empty(),
+                MarkdownBlock::new("## Example title\nExample text with list\n- list item 1\n- list item 2"),
             ]),
             current_path: create_rw_signal(None),
             search_query: create_rw_signal(String::new()),
