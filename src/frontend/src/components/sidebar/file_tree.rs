@@ -1,3 +1,4 @@
+use crate::state::AppState;
 use icondata as id;
 use leptos::*;
 use leptos_icons::Icon;
@@ -12,16 +13,16 @@ pub fn FileTree() -> impl IntoView {
                 <ul class="menu-list">
                     <TreeFolder name="2024">
                         <TreeFolder name="Projects">
-                            <TreeFile name="notezilla.md"/>
-                            <TreeFile name="roadmap.md"/>
+                            <TreeFile name="notezilla.md" path="2024/Projects/notezilla.md"/>
+                            <TreeFile name="roadmap.md" path="2024/Projects/roadmap.md"/>
                         </TreeFolder>
-                        <TreeFile name="ideas.md"/>
-                        <TreeFile name="getting-started.md"/>
+                        <TreeFile name="ideas.md" path="2024/ideas.md"/>
+                        <TreeFile name="getting-started.md" path="2024/getting-started.md"/>
                     </TreeFolder>
                     <TreeFolder name="Archive">
-                        <TreeFile name="old-notes.md"/>
+                        <TreeFile name="old-notes.md" path="Archive/old-notes.md"/>
                     </TreeFolder>
-                    <TreeFile name="readme.md"/>
+                    <TreeFile name="readme.md" path="readme.md"/>
                 </ul>
             </aside>
         </div>
@@ -51,10 +52,18 @@ fn TreeFolder(name: &'static str, children: Children) -> impl IntoView {
 }
 
 #[component]
-fn TreeFile(name: &'static str) -> impl IntoView {
+fn TreeFile(name: &'static str, path: &'static str) -> impl IntoView {
+    let state = use_context::<AppState>().expect("AppState not provided");
+    let current_path = state.current_path;
+
+    let is_active = move || current_path.get().as_deref() == Some(path);
+
     view! {
         <li>
-            <a>
+            <a
+                class=move || if is_active() { "is-active" } else { "" }
+                on:click=move |_| current_path.set(Some(path.to_string()))
+            >
                 <Icon icon=id::LuFileText/>
                 {name}
             </a>
