@@ -25,7 +25,7 @@ impl AppState {
             entries: create_rw_signal(vec![
                 EditorEntry::new(
                     "./example_folder/new_markdown.md",
-                    "## Example title\nExample text with list\n- list item 1\n- list item 2",
+                    "## Example title\nExample text with list\n- list item 1\n- list item 2\n\n```graphviz\ndigraph {\n    A -> B\n}\n```",
                 ),
             ]),
             current_path: create_rw_signal(None),
