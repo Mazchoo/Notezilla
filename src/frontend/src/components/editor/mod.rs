@@ -19,11 +19,11 @@ pub fn Editor() -> impl IntoView {
                     let entry_id = entry.title.id;
                     view! {
                         <hr class="entry-divider"/>
-                        <TitleBlockComponent title=entry.title/>
+                        <TitleBlockComponent title=entry.title entry_id=entry_id/>
                         {entry.front_matter.map(|fm| view! {
                             <FrontMatterBlockComponent block=fm/>
                         })}
-                        <BlockComponent block=entry.content entry_id=entry_id/>
+                        <BlockComponent block=entry.content/>
                     }
                 }
             />

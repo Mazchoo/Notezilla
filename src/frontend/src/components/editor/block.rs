@@ -8,7 +8,8 @@ use leptos::*;
 /// Displays the path as a styled label; click to edit inline, blur to confirm.
 /// Always one line — distinct from markdown `#` headings.
 #[component]
-pub fn TitleBlockComponent(title: TitleBlock) -> impl IntoView {
+pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
+    let state = use_context::<AppState>().expect("AppState not provided");
     let input_ref = create_node_ref::<Input>();
 
     // Focus the input when entering edit mode.
@@ -44,26 +45,44 @@ pub fn TitleBlockComponent(title: TitleBlock) -> impl IntoView {
     };
 
     view! {
-        <div>
-            {move || if title.focused.get() {
-                view! {
-                    <input
-                        node_ref=input_ref
-                        class="entry-title-input"
-                        type="text"
-                        prop:value=move || title.path.get()
-                        on:input=on_input
-                        on:blur=on_blur
-                        on:keydown=on_keydown
-                    />
-                }.into_view()
-            } else {
-                view! {
-                    <div class="entry-title" on:click=on_click>
-                        {move || title.path.get()}
-                    </div>
-                }.into_view()
-            }}
+        <div class="editor-block-row">
+            <div class="editor-block">
+                {move || if title.focused.get() {
+                    view! {
+                        <input
+                            node_ref=input_ref
+                            class="entry-title-input"
+                            type="text"
+                            prop:value=move || title.path.get()
+                            on:input=on_input
+                            on:blur=on_blur
+                            on:keydown=on_keydown
+                        />
+                    }.into_view()
+                } else {
+                    view! {
+                        <div class="entry-title" on:click=on_click>
+                            {move || title.path.get()}
+                        </div>
+                    }.into_view()
+                }}
+            </div>
+            <div class="block-actions">
+                <button
+                    class="block-action-btn block-delete-btn"
+                    title="Delete block"
+                    on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                    on:click=move |_| delete_entry(&state, entry_id)
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6"/>
+                        <path d="M14 11v6"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     }
 }
@@ -133,8 +152,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock) -> impl IntoView {
 }
 
 #[component]
-pub fn BlockComponent(block: MarkdownBlock, entry_id: u64) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let textarea_ref = create_node_ref::<Textarea>();
 
     // Focus the textarea whenever this block switches into edit mode.
@@ -174,43 +192,25 @@ pub fn BlockComponent(block: MarkdownBlock, entry_id: u64) -> impl IntoView {
     };
 
     view! {
-        <div class="editor-block-row">
-            <div class="editor-block" on:click=on_block_click>
-                {move || if block.focused.get() {
-                    view! {
-                        <textarea
-                            node_ref=textarea_ref
-                            class="block-textarea"
-                            prop:value=move || block.text.get()
-                            on:blur=on_blur
-                            on:input=on_input
-                        />
-                    }.into_view()
-                } else {
-                    view! {
-                        <div
-                            class="block-render content"
-                            inner_html=move || block.html.get()
-                        />
-                    }.into_view()
-                }}
-            </div>
-            <div class="block-actions">
-                <button
-                    class="block-action-btn block-delete-btn"
-                    title="Delete block"
-                    on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
-                    on:click=move |_| delete_entry(&state, entry_id)
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/>
-                        <path d="M14 11v6"/>
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
-                </button>
-            </div>
+        <div class="editor-block" on:click=on_block_click>
+            {move || if block.focused.get() {
+                view! {
+                    <textarea
+                        node_ref=textarea_ref
+                        class="block-textarea"
+                        prop:value=move || block.text.get()
+                        on:blur=on_blur
+                        on:input=on_input
+                    />
+                }.into_view()
+            } else {
+                view! {
+                    <div
+                        class="block-render content"
+                        inner_html=move || block.html.get()
+                    />
+                }.into_view()
+            }}
         </div>
     }
 }
