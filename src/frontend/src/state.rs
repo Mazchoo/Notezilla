@@ -25,7 +25,7 @@ impl AppState {
             entries: create_rw_signal(vec![
                 EditorEntry::new(
                     "./example_folder/new_markdown.md",
-                    "## Example title\nExample text with list\n- list item 1\n- list item 2\n\n```graphviz\ndigraph {\n    A -> B\n}\n```",
+                    "## Example title\nExample text with list\n- list item 1\n- list item 2\n\n```graphviz\ndigraph {\n    A -> B\n}\n```\n```mermaid\ngraph LR\n    A[Square Rect] -- Link text --> B((Circle))\n    A --> C(Round Rect)\n    B --> D{Rhombus}\n    C --> D\n```\n```mermaid\npie title What Voldemort doesn't have?\n\"FRIENDS\" : 2\n\"FAMILY\" : 3\n\"NOSE\" : 4\n```\n",
                 ),
             ]),
             current_path: create_rw_signal(None),

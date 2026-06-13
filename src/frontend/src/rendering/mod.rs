@@ -1,7 +1,14 @@
 mod graphviz;
+mod mermaid;
 
 use graphviz::render_dot;
+use mermaid::render_mermaid;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
+
+enum DiagramKind {
+    Graphviz,
+    Mermaid,
+}
 
 pub fn render_markdown(src: &str) -> String {
     let opts = Options::ENABLE_STRIKETHROUGH
@@ -11,36 +18,42 @@ pub fn render_markdown(src: &str) -> String {
 
     let parser = Parser::new_ext(src, opts);
     let mut events: Vec<Event> = Vec::new();
-    let mut in_graphviz = false;
-    let mut dot_buf = String::new();
+    let mut diagram: Option<DiagramKind> = None;
+    let mut diagram_buf = String::new();
 
     for event in parser {
-        if in_graphviz {
-            match event {
+        match diagram {
+            Some(_) => match event {
                 Event::End(TagEnd::CodeBlock) => {
-                    in_graphviz = false;
-                    let svg = render_dot(&dot_buf).unwrap_or_else(|_| {
-                        let escaped = dot_buf
-                            .replace('&', "&amp;")
-                            .replace('<', "&lt;")
-                            .replace('>', "&gt;");
-                        format!("<pre><code>{escaped}</code></pre>")
-                    });
+                    let svg = match diagram.take().unwrap() {
+                        DiagramKind::Graphviz => render_dot(&diagram_buf).unwrap_or_else(|_| {
+                            let escaped = escape_html(&diagram_buf);
+                            format!("<pre><code>{escaped}</code></pre>")
+                        }),
+                        DiagramKind::Mermaid => render_mermaid(&diagram_buf),
+                    };
                     events.push(Event::Html(svg.into()));
+                    diagram_buf.clear();
                 }
-                Event::Text(text) => dot_buf.push_str(&text),
+                Event::Text(text) => diagram_buf.push_str(&text),
                 _ => {}
-            }
-        } else {
-            let is_graphviz = matches!(
-                &event,
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang)))
-                    if lang.as_ref() == "graphviz"
-            );
-            if is_graphviz {
-                in_graphviz = true;
-                dot_buf.clear();
-            } else {
+            },
+            None => {
+                if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) = event {
+                    match lang.as_ref() {
+                        "graphviz" => {
+                            diagram = Some(DiagramKind::Graphviz);
+                            diagram_buf.clear();
+                            continue;
+                        }
+                        "mermaid" => {
+                            diagram = Some(DiagramKind::Mermaid);
+                            diagram_buf.clear();
+                            continue;
+                        }
+                        _ => {}
+                    }
+                }
                 events.push(event);
             }
         }
@@ -51,3 +64,8 @@ pub fn render_markdown(src: &str) -> String {
     out
 }
 
+fn escape_html(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}

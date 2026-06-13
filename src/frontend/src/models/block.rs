@@ -144,4 +144,3 @@ impl EditorEntry {
         Self::new(path, "")
     }
 }
-
