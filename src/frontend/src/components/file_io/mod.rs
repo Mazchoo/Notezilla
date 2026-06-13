@@ -5,7 +5,7 @@ use web_sys::{Event, FileReader, HtmlInputElement};
 
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
 /// and replaces the provided `blocks` signal with one [`MarkdownBlock`] per
-/// non-empty line.
+/// line, preserving blank lines so that no content is lost on import.
 pub fn load_markdown_file(ev: Event, blocks: RwSignal<Vec<MarkdownBlock>>) {
     let input = ev
         .target()
@@ -28,10 +28,10 @@ pub fn load_markdown_file(ev: Event, blocks: RwSignal<Vec<MarkdownBlock>>) {
             .as_string()
             .expect("FileReader result is not a string");
 
-        // Each non-empty line becomes its own MarkdownBlock.
+        // Every line (including blank ones) becomes its own MarkdownBlock so
+        // that the original structure is preserved on import.
         let new_blocks: Vec<MarkdownBlock> = text
             .lines()
-            .filter(|line| !line.trim().is_empty())
             .map(MarkdownBlock::new)
             .collect();
 
