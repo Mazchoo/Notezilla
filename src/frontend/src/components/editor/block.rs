@@ -14,7 +14,7 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
     let input_ref = create_node_ref::<Input>();
 
     // Focus the input when entering edit mode.
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if title.focused.get() {
             if let Some(el) = input_ref.get() {
                 let _ = (*el).focus();
@@ -96,7 +96,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
     let state = use_context::<AppState>().expect("AppState not provided");
     let textarea_ref = create_node_ref::<Textarea>();
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if block.focused.get() {
             if let Some(el) = textarea_ref.get() {
                 let _ = (*el).focus();
@@ -180,7 +180,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let textarea_ref = create_node_ref::<Textarea>();
 
     // Focus the textarea whenever this block switches into edit mode.
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if block.focused.get() {
             if let Some(el) = textarea_ref.get() {
                 let _ = (*el).focus();
