@@ -1,4 +1,4 @@
-use crate::components::editor::actions::{delete_entry, delete_front_matter};
+use crate::components::editor::actions::{add_front_matter, delete_entry, delete_front_matter};
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
 use leptos::either::Either;
@@ -9,13 +9,17 @@ use leptos::prelude::*;
 /// Displays the path as a styled label; click to edit inline, blur to confirm.
 /// Always one line — distinct from markdown `#` headings.
 #[component]
-pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
+pub fn TitleBlockComponent(
+    title: TitleBlock,
+    entry_id: u64,
+    front_matter: RwSignal<Option<FrontMatterBlock>>,
+) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let input_ref = NodeRef::<Input>::new();
 
     // Focus the input when entering edit mode.
     Effect::new(move |_| {
-        if title.focused.get() {
+        if title.focused.try_get().unwrap_or(false) {
             if let Some(el) = input_ref.get() {
                 let _ = (*el).focus();
             }
@@ -45,16 +49,20 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
         }
     };
 
+    // Clone state into signals so closures can be Fn (not FnOnce).
+    let state_add = state.clone();
+    let state_del = state.clone();
+
     view! {
-        <div class="editor-block-row">
+        <div class="editor-block-row title-block-row">
             <div class="editor-block">
-                {move || if title.focused.get() {
+                {move || if title.focused.try_get().unwrap_or(false) {
                     Either::Left(view! {
                         <input
                             node_ref=input_ref
                             class="entry-title-input"
                             type="text"
-                            prop:value=move || title.path.get()
+                            prop:value=move || title.path.try_get().unwrap_or_default()
                             on:input=on_input
                             on:blur=on_blur
                             on:keydown=on_keydown
@@ -63,17 +71,37 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
                 } else {
                     Either::Right(view! {
                         <div class="entry-title" on:click=on_click>
-                            {move || title.path.get()}
+                            {move || title.path.try_get().unwrap_or_default()}
                         </div>
                     })
                 }}
             </div>
-            <div class="block-actions">
+            <div class="block-actions block-actions-row">
+                {move || {
+                    if front_matter.try_get().unwrap_or(None).is_none() {
+                        let s = state_add.clone();
+                        Either::Left(view! {
+                            <button
+                                class="block-action-btn block-add-frontmatter-btn"
+                                title="Add frontmatter"
+                                on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                                on:click=move |_| add_front_matter(&s, entry_id)
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                            </button>
+                        })
+                    } else {
+                        Either::Right(view! { <span/> })
+                    }
+                }}
                 <button
                     class="block-action-btn block-delete-btn"
                     title="Delete block"
                     on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
-                    on:click=move |_| delete_entry(&state, entry_id)
+                    on:click=move |_| delete_entry(&state_del, entry_id)
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"/>
@@ -97,7 +125,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
     let textarea_ref = NodeRef::<Textarea>::new();
 
     Effect::new(move |_| {
-        if block.focused.get() {
+        if block.focused.try_get().unwrap_or(false) {
             if let Some(el) = textarea_ref.get() {
                 let _ = (*el).focus();
                 let _ = (*el).style().set_property("height", "auto");
@@ -129,18 +157,18 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
     view! {
         <div class="editor-block-row">
             <div class="frontmatter-block" on:click=on_click>
-                {move || if block.focused.get() {
+                {move || if block.focused.try_get().unwrap_or(false) {
                     Either::Left(view! {
                         <textarea
                             node_ref=textarea_ref
                             class="frontmatter-textarea"
-                            prop:value=move || block.raw.get()
+                            prop:value=move || block.raw.try_get().unwrap_or_default()
                             on:blur=on_blur
                             on:input=on_input
                         />
                     })
                 } else {
-                    let raw = block.raw.get();
+                    let raw = block.raw.try_get().unwrap_or_default();
                     let fields = FrontMatterBlock::parse_fields(&raw);
                     Either::Right(view! {
                         <div class="frontmatter-table">
@@ -181,7 +209,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
 
     // Focus the textarea whenever this block switches into edit mode.
     Effect::new(move |_| {
-        if block.focused.get() {
+        if block.focused.try_get().unwrap_or(false) {
             if let Some(el) = textarea_ref.get() {
                 let _ = (*el).focus();
                 // Auto-resize to fit existing content on initial render.
@@ -217,12 +245,12 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
 
     view! {
         <div class="editor-block" on:click=on_block_click>
-            {move || if block.focused.get() {
+            {move || if block.focused.try_get().unwrap_or(false) {
                 Either::Left(view! {
                     <textarea
                         node_ref=textarea_ref
                         class="block-textarea"
-                        prop:value=move || block.text.get()
+                        prop:value=move || block.text.try_get().unwrap_or_default()
                         on:blur=on_blur
                         on:input=on_input
                     />
@@ -231,7 +259,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
                 Either::Right(view! {
                     <div
                         class="block-render content"
-                        inner_html=move || block.html.get()
+                        inner_html=move || block.html.try_get().unwrap_or_default()
                     />
                 })
             }}

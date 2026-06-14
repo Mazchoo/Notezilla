@@ -1,4 +1,4 @@
-use crate::models::block::EditorEntry;
+use crate::models::block::{EditorEntry, FrontMatterBlock};
 use crate::state::AppState;
 use leptos::prelude::*;
 
@@ -20,6 +20,18 @@ pub fn delete_front_matter(state: &AppState, entry_id: u64) {
     state.entries.with_untracked(|entries: &Vec<EditorEntry>| {
         if let Some(entry) = entries.iter().find(|e| e.title.id == entry_id) {
             entry.front_matter.set(None);
+        }
+    });
+}
+
+/// Adds default front matter (`tags: []`) to the entry identified by `entry_id`.
+/// Only has an effect when the entry currently has no front matter.
+pub fn add_front_matter(state: &AppState, entry_id: u64) {
+    state.entries.with_untracked(|entries: &Vec<EditorEntry>| {
+        if let Some(entry) = entries.iter().find(|e| e.title.id == entry_id) {
+            entry
+                .front_matter
+                .set(Some(FrontMatterBlock::new("tags: []")));
         }
     });
 }

@@ -127,7 +127,7 @@ impl EditorEntry {
     pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
         Self {
             title: TitleBlock::new(path),
-            front_matter: RwSignal::new(Some(FrontMatterBlock::new("tags: []"))),
+            front_matter: RwSignal::new(None),
             content: MarkdownBlock::new(raw),
         }
     }
