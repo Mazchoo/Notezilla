@@ -26,14 +26,21 @@ pub fn TopBar() -> impl IntoView {
     };
 
     let on_save = move |_| {
-        let content = state
-            .entries
-            .get()
-            .iter()
-            .map(|e| e.content.text.get_untracked())
-            .collect::<Vec<_>>()
-            .join("\n\n");
-        web_sys::console::log_1(&content.into());
+        for entry in state.entries.get().iter() {
+            let file_name = entry.title.path.get_untracked();
+            let body = entry.content.text.get_untracked();
+
+            let full_content = match entry.front_matter.get_untracked() {
+                Some(fm) => {
+                    let raw = fm.raw.get_untracked();
+                    format!("---\n{}\n---\n{}", raw, body)
+                }
+                None => body,
+            };
+
+            web_sys::console::log_1(&format!("file name: {}", file_name).into());
+            web_sys::console::log_1(&format!("contents:\n{}", full_content).into());
+        }
     };
 
     // Append a new empty entry (divider + title + blank markdown block) and focus it.
