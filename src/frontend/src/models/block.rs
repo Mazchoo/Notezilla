@@ -33,7 +33,6 @@ pub fn split_front_matter(text: &str) -> (Option<String>, String) {
 /// Displayed as a key-value table in view mode; editable as raw YAML in edit mode.
 #[derive(Clone, Copy, Debug)]
 pub struct FrontMatterBlock {
-    pub id: u64,
     pub raw: RwSignal<String>,
     pub focused: RwSignal<bool>,
 }
@@ -41,7 +40,6 @@ pub struct FrontMatterBlock {
 impl FrontMatterBlock {
     pub fn new(raw: impl Into<String>) -> Self {
         Self {
-            id: next_id(),
             raw: create_rw_signal(raw.into()),
             focused: create_rw_signal(false),
         }
@@ -90,7 +88,6 @@ impl TitleBlock {
 /// MarkdownBlock is Copy (all fields are Copy signal handles).
 #[derive(Clone, Copy, Debug)]
 pub struct MarkdownBlock {
-    pub id: u64,
     pub text: RwSignal<String>,  // raw markdown source
     pub html: RwSignal<String>,  // cached rendered HTML
     pub focused: RwSignal<bool>, // true while the textarea is active
@@ -101,7 +98,6 @@ impl MarkdownBlock {
         let raw_str = raw.into();
         let rendered = render_markdown(&raw_str);
         Self {
-            id: next_id(),
             text: create_rw_signal(raw_str),
             html: create_rw_signal(rendered),
             focused: create_rw_signal(false),
