@@ -1,4 +1,3 @@
-use crate::models::block::FrontMatterBlock;
 use crate::state::AppState;
 use leptos::*;
 
@@ -22,9 +21,4 @@ pub fn delete_front_matter(state: &AppState, entry_id: u64) {
             entry.front_matter.set(None);
         }
     });
-}
-
-/// Returns a blank [`FrontMatterBlock`] with `tags: []` as default content.
-pub fn blank_front_matter() -> FrontMatterBlock {
-    FrontMatterBlock::new("tags: []")
 }
