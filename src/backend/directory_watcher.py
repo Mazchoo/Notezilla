@@ -8,16 +8,16 @@ from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
 
 from src.config import BATCH_SIZE
-from src.note_updates.event_handling import (
+from src.backend.event_handling import (
     FileChangeEvent,
     event_is_valid,
     filter_event_list,
 )
-from src.note_updates.database_adapter import NoteDatabase
-from src.note_updates.parse_markdown import MarkdownData
-from src.note_updates.database_update import prepate_database_row
-from src.note_updates.file_io import get_normalised_path
-from src.note_updates.logger import LOGGER
+from src.backend.database_adapter import NoteDatabase
+from src.backend.parse_markdown import MarkdownData
+from src.backend.database_update import prepate_database_row
+from src.backend.file_io import get_normalised_path
+from src.backend.logger import LOGGER
 from src.field_enums import ColumnTypes
 
 

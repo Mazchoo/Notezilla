@@ -4,8 +4,8 @@ from unittest.mock import patch, MagicMock, mock_open
 
 import pytest
 
-from src.note_updates.database_adapter import QueryResult
-from src.note_updates.main import (
+from src.backend.database_adapter import QueryResult
+from src.backend.main import (
     delete_note,
     search_notes_by_field,
     search_notes_by_path,
@@ -13,7 +13,7 @@ from src.note_updates.main import (
     search_notes_by_text,
     upsert_note,
 )
-from src.note_updates.mcp_interface import init_db
+from src.backend.mcp_interface import init_db
 from src.config import NOTE_FOLDER
 
 
@@ -36,7 +36,7 @@ def mock_db():
     Patch NoteDatabase in mcp_interface so init_db() returns a MagicMock instance.
     Only the individual query methods are mocked; the rest of the adapter is untouched.
     """
-    with patch("src.note_updates.mcp_interface.NoteDatabase") as mock_cls:
+    with patch("src.backend.mcp_interface.NoteDatabase") as mock_cls:
         db = mock_cls.return_value
         db.query_by_field = MagicMock()
         db.query_field_contains = MagicMock()
@@ -65,12 +65,12 @@ def _make_query_result(docs=None, metas=None) -> QueryResult:
 class TestUpsertNote:
     """Tests for the upsert_note MCP tool.
 
-    File I/O is mocked at src.note_updates.parse_markdown so no real files are touched.
+    File I/O is mocked at src.backend.parse_markdown so no real files are touched.
     """
 
     def test_upsert_note_success(self):
         """upsert_note returns a success message when open() succeeds."""
-        with patch("src.note_updates.file_io.open", mock_open()):
+        with patch("src.backend.file_io.open", mock_open()):
             result = upsert_note(
                 path="2024/01/my-note.md",
                 contents="Hello world",
@@ -82,7 +82,7 @@ class TestUpsertNote:
 
     def test_upsert_note_failure_returns_error(self):
         """upsert_note returns an error message when open() raises OSError."""
-        with patch("src.note_updates.file_io.open", side_effect=OSError("disk full")):
+        with patch("src.backend.file_io.open", side_effect=OSError("disk full")):
             result = upsert_note(
                 path="notes/2024/01/my-note.md",
                 contents="Hello world",
@@ -109,7 +109,7 @@ class TestUpsertNote:
     def test_upsert_note_writes_correct_content(self):
         """upsert_note writes the YAML header + body to open()."""
         m = mock_open()
-        with patch("src.note_updates.file_io.open", m):
+        with patch("src.backend.file_io.open", m):
             upsert_note(
                 path="2024/01/my-note.md",
                 contents="Hello world",
@@ -129,20 +129,20 @@ class TestUpsertNote:
 class TestDeleteNote:
     """Tests for the delete_note MCP tool.
 
-    delete_note_file is mocked at src.note_updates.main (where it is imported)
+    delete_note_file is mocked at src.backend.main (where it is imported)
     so no real files are touched.
     """
 
     def test_delete_note_success(self):
         """delete_note returns a success message when the file is deleted."""
-        with patch("src.note_updates.main.delete_note_file", return_value=True):
+        with patch("src.backend.main.delete_note_file", return_value=True):
             result = delete_note(path="2024/01/my-note.md")
 
         assert "2024/01/my-note.md" in result
 
     def test_delete_note_failure_returns_error(self):
         """delete_note returns an error message when the file cannot be deleted."""
-        with patch("src.note_updates.main.delete_note_file", return_value=False):
+        with patch("src.backend.main.delete_note_file", return_value=False):
             result = delete_note(path="missing/note.md")
 
         assert result.startswith("Error:")
@@ -151,7 +151,7 @@ class TestDeleteNote:
     def test_delete_note_calls_delete_with_correct_path(self):
         """delete_note passes the path argument through to delete_note_file."""
         with patch(
-            "src.note_updates.main.delete_note_file", return_value=True
+            "src.backend.main.delete_note_file", return_value=True
         ) as mock_delete:
             delete_note(path="some/path/note.md")
 
@@ -159,7 +159,7 @@ class TestDeleteNote:
 
     def test_delete_note_does_not_touch_real_filesystem(self):
         """delete_note never calls Path.unlink() when delete_note_file is mocked."""
-        with patch("src.note_updates.main.delete_note_file", return_value=True):
+        with patch("src.backend.main.delete_note_file", return_value=True):
             with patch("pathlib.Path.unlink") as mock_unlink:
                 delete_note(path="a/b.md")
                 mock_unlink.assert_not_called()

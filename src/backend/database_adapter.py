@@ -11,7 +11,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.field_enums import ReservedFields
-from src.note_updates.file_io import delete_all_old_index_folders
+from src.backend.file_io import delete_all_old_index_folders
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")

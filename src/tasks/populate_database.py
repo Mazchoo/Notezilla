@@ -4,14 +4,14 @@ from datetime import datetime, date
 
 from src.config import BATCH_SIZE
 from src.field_enums import ReservedFields, FieldTypes, ColumnTypes
-from src.note_updates.file_io import (
+from src.backend.file_io import (
     iterate_all_markdowns,
     save_db_column_types,
     get_default_column_types,
     save_frontmatter,
 )
-from src.note_updates.parse_markdown import MarkdownData
-from src.note_updates.database_adapter import NoteDatabase
+from src.backend.parse_markdown import MarkdownData
+from src.backend.database_adapter import NoteDatabase
 
 
 def get_field_type(value) -> FieldTypes:

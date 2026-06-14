@@ -1,8 +1,8 @@
 """Create database updates for note database"""
 
 from src.field_enums import ReservedFields, ColumnTypes
-from src.note_updates.parse_markdown import MarkdownData
-from src.note_updates.database_adapter import NoteDatabase
+from src.backend.parse_markdown import MarkdownData
+from src.backend.database_adapter import NoteDatabase
 
 
 def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> dict:

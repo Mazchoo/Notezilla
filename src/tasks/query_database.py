@@ -3,7 +3,7 @@
 from typing import List
 from time import perf_counter
 
-from src.note_updates.database_adapter import NoteDatabase
+from src.backend.database_adapter import NoteDatabase
 
 
 LIST_FIELD = "tags"

@@ -8,10 +8,10 @@ from starlette.responses import JSONResponse
 from pydantic import Field
 
 from src.config import MCP_PORT, NOTE_FOLDER
-from src.note_updates.file_io import delete_note_file
-from src.note_updates.directory_watcher import PyFileHandler
-from src.note_updates.parse_markdown import MarkdownData
-from src.note_updates.mcp_interface import init_db, init_column_types, NoteQueryResult
+from src.backend.file_io import delete_note_file
+from src.backend.directory_watcher import PyFileHandler
+from src.backend.parse_markdown import MarkdownData
+from src.backend.mcp_interface import init_db, init_column_types, NoteQueryResult
 
 
 MCP = FastMCP("Notezilla")

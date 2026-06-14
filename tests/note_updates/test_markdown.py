@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.note_updates.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownData
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class TestMarkdownDataRoundTrip:
 
         # --- Phase 1: construct from data ---
         with patch(
-            "src.note_updates.parse_markdown.write_file_content",
+            "src.backend.parse_markdown.write_file_content",
             side_effect=_fake_write_factory(store),
         ):
             from_data = MarkdownData.construct_from_data(
@@ -64,7 +64,7 @@ class TestMarkdownDataRoundTrip:
         # --- Phase 2: construct from path ---
         with (
             patch(
-                "src.note_updates.parse_markdown.read_file_content",
+                "src.backend.parse_markdown.read_file_content",
                 return_value=written_payload,
             ),
             patch.object(Path, "exists", return_value=True),
@@ -127,7 +127,7 @@ class TestMarkdownDataRoundTrip:
 
         with patch("builtins.open") as mock_open:
             with patch(
-                "src.note_updates.parse_markdown.write_file_content",
+                "src.backend.parse_markdown.write_file_content",
                 side_effect=_fake_write_factory(store),
             ):
                 MarkdownData.construct_from_data(
@@ -140,7 +140,7 @@ class TestMarkdownDataRoundTrip:
 
             with (
                 patch(
-                    "src.note_updates.parse_markdown.read_file_content",
+                    "src.backend.parse_markdown.read_file_content",
                     return_value=written_payload,
                 ),
                 patch.object(Path, "exists", return_value=True),

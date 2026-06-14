@@ -5,8 +5,8 @@ from functools import cache
 
 from typing_extensions import TypedDict
 
-from src.note_updates.database_adapter import NoteDatabase
-from src.note_updates.file_io import get_db_column_types
+from src.backend.database_adapter import NoteDatabase
+from src.backend.file_io import get_db_column_types
 from src.field_enums import ColumnTypes
 
 

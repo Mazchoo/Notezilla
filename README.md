@@ -60,7 +60,7 @@ Each note has:
 
 Easiest way to make this available for RooCode:
 
-`python -m src.note_updates.main`
+`python -m src.backend.main`
 
 After the server is running add a configuration for the MCP server.
 

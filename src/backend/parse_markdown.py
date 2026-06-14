@@ -4,7 +4,7 @@ from typing import List, Optional
 from pathlib import Path
 from dataclasses import dataclass
 
-from src.note_updates.file_io import (
+from src.backend.file_io import (
     read_file_content,
     extract_yaml_from_file_contents,
     construct_yaml_header,
