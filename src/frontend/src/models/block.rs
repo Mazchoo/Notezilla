@@ -40,8 +40,8 @@ pub struct FrontMatterBlock {
 impl FrontMatterBlock {
     pub fn new(raw: impl Into<String>) -> Self {
         Self {
-            raw: create_rw_signal(raw.into()),
-            focused: create_rw_signal(false),
+            raw: RwSignal::new(raw.into()),
+            focused: RwSignal::new(false),
         }
     }
 
@@ -76,8 +76,8 @@ impl TitleBlock {
     pub fn new(path: impl Into<String>) -> Self {
         Self {
             id: next_id(),
-            path: create_rw_signal(path.into()),
-            focused: create_rw_signal(false),
+            path: RwSignal::new(path.into()),
+            focused: RwSignal::new(false),
         }
     }
 }
@@ -98,9 +98,9 @@ impl MarkdownBlock {
         let raw_str = raw.into();
         let rendered = render_markdown(&raw_str);
         Self {
-            text: create_rw_signal(raw_str),
-            html: create_rw_signal(rendered),
-            focused: create_rw_signal(false),
+            text: RwSignal::new(raw_str),
+            html: RwSignal::new(rendered),
+            focused: RwSignal::new(false),
         }
     }
 
@@ -127,7 +127,7 @@ impl EditorEntry {
     pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
         Self {
             title: TitleBlock::new(path),
-            front_matter: create_rw_signal(Some(FrontMatterBlock::new("tags: []"))),
+            front_matter: RwSignal::new(Some(FrontMatterBlock::new("tags: []"))),
             content: MarkdownBlock::new(raw),
         }
     }

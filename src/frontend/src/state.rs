@@ -20,17 +20,17 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
-            session_id: create_rw_signal(None),
-            active_panel: create_rw_signal(Some(ActivePanel::Files)),
-            entries: create_rw_signal(vec![
+            session_id: RwSignal::new(None),
+            active_panel: RwSignal::new(Some(ActivePanel::Files)),
+            entries: RwSignal::new(vec![
                 EditorEntry::new(
                     "./example_folder/new_markdown.md",
                     "## Example title\nExample text with list\n- list item 1\n- list item 2\n\n```graphviz\ndigraph {\n    A -> B\n}\n```\n```mermaid\ngraph LR\n    A[Square Rect] -- Link text --> B((Circle))\n    A --> C(Round Rect)\n    B --> D{Rhombus}\n    C --> D\n```\n```mermaid\npie title What Voldemort doesn't have?\n\"FRIENDS\" : 2\n\"FAMILY\" : 3\n\"NOSE\" : 4\n```\n\n```python\nprint('Hello dude')\n```",
                 ),
             ]),
-            current_path: create_rw_signal(None),
-            search_query: create_rw_signal(String::new()),
-            search_results: create_rw_signal(vec![]),
+            current_path: RwSignal::new(None),
+            search_query: RwSignal::new(String::new()),
+            search_results: RwSignal::new(vec![]),
         }
     }
 }

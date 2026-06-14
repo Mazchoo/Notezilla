@@ -32,7 +32,7 @@ pub fn FileTree() -> impl IntoView {
 
 #[component]
 fn TreeFolder(name: &'static str, children: Children) -> impl IntoView {
-    let open = create_rw_signal(true);
+    let open = RwSignal::new(true);
 
     view! {
         <li>
