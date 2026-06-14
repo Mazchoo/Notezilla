@@ -11,7 +11,7 @@ use leptos::prelude::*;
 #[component]
 pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let input_ref = create_node_ref::<Input>();
+    let input_ref = NodeRef::<Input>::new();
 
     // Focus the input when entering edit mode.
     Effect::new(move |_| {
@@ -94,7 +94,7 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
 #[component]
 pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let textarea_ref = create_node_ref::<Textarea>();
+    let textarea_ref = NodeRef::<Textarea>::new();
 
     Effect::new(move |_| {
         if block.focused.get() {
@@ -177,7 +177,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 
 #[component]
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
-    let textarea_ref = create_node_ref::<Textarea>();
+    let textarea_ref = NodeRef::<Textarea>::new();
 
     // Focus the textarea whenever this block switches into edit mode.
     Effect::new(move |_| {
