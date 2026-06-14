@@ -108,10 +108,6 @@ impl MarkdownBlock {
         }
     }
 
-    pub fn empty() -> Self {
-        Self::new("")
-    }
-
     /// Re-render markdown → HTML and update the cache.
     /// Call before setting focused=false so the div shows fresh HTML on switch.
     pub fn rerender(self) {
