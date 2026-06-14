@@ -5,7 +5,8 @@ mod rendering;
 mod state;
 
 use components::app_shell::AppShell;
-use leptos::*;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
 use state::AppState;
 
 fn main() {

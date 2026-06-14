@@ -1,6 +1,6 @@
 use crate::state::{ActivePanel, AppState};
 use icondata as id;
-use leptos::*;
+use leptos::prelude::*;
 use leptos_icons::Icon;
 
 #[component]

@@ -1,5 +1,5 @@
 use crate::models::{block::EditorEntry, note::SearchResult};
-use leptos::*;
+use leptos::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ActivePanel {

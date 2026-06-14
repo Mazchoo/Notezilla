@@ -1,6 +1,8 @@
 use crate::mcp::tools::search_by_text;
+use crate::models::note::SearchResult;
 use crate::state::AppState;
-use leptos::*;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
 
 #[component]
 pub fn SearchPanel() -> impl IntoView {
@@ -15,9 +17,12 @@ pub fn SearchPanel() -> impl IntoView {
         if q.trim().is_empty() {
             return;
         }
-        let Some(sid) = session.get_untracked() else {
-            web_sys::console::warn_1(&"MCP session not ready".into());
-            return;
+        let sid = match session.get_untracked() {
+            Some(s) => s,
+            None => {
+                web_sys::console::warn_1(&"MCP session not ready".into());
+                return;
+            }
         };
         spawn_local(async move {
             match search_by_text(&sid, &q, 10).await {
@@ -35,8 +40,9 @@ pub fn SearchPanel() -> impl IntoView {
         if q.trim().is_empty() {
             return;
         }
-        let Some(sid) = session.get_untracked() else {
-            return;
+        let sid = match session.get_untracked() {
+            Some(s) => s,
+            None => return,
         };
         spawn_local(async move {
             match search_by_text(&sid, &q, 10).await {
@@ -70,8 +76,8 @@ pub fn SearchPanel() -> impl IntoView {
             <div class="mt-3">
                 <For
                     each=move || results.get()
-                    key=|r| r.path()
-                    children=|result| {
+                    key=|r: &SearchResult| r.path()
+                    children=|result: SearchResult| {
                         let title = result.title();
                         let path  = result.path();
                         view! {

@@ -2,7 +2,7 @@ use crate::components::file_io::load_markdown_file;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
-use leptos::*;
+use leptos::prelude::*;
 use leptos_icons::Icon;
 use web_sys::Event;
 
@@ -11,7 +11,7 @@ pub fn TopBar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let entries = state.entries;
 
-    let file_input_ref = create_node_ref::<leptos::html::Input>();
+    let file_input_ref: NodeRef<leptos::html::Input> = NodeRef::new();
 
     // Open the OS file-picker when the Import button is clicked.
     let on_import_click = move |_| {
@@ -45,7 +45,7 @@ pub fn TopBar() -> impl IntoView {
 
     // Append a new empty entry (divider + title + blank markdown block) and focus it.
     let on_new_block = move |_| {
-        entries.update(|list| {
+        entries.update(|list: &mut Vec<EditorEntry>| {
             let entry = EditorEntry::empty("./new_file.md");
             entry.content.focused.set(true);
             list.push(entry);

@@ -1,6 +1,7 @@
 use crate::state::AppState;
 use icondata as id;
-use leptos::*;
+use leptos::either::Either;
+use leptos::prelude::*;
 use leptos_icons::Icon;
 
 /// Dummy file tree — static placeholder until backend file listing is wired up.
@@ -38,9 +39,9 @@ fn TreeFolder(name: &'static str, children: Children) -> impl IntoView {
             <a on:click=move |_| open.update(|o| *o = !*o)>
                 // Show open/closed folder icon based on state
                 {move || if open.get() {
-                    view! { <Icon icon=id::LuFolderOpen/> }.into_view()
+                    Either::Left(view! { <Icon icon=id::LuFolderOpen/> })
                 } else {
-                    view! { <Icon icon=id::LuFolder/> }.into_view()
+                    Either::Right(view! { <Icon icon=id::LuFolder/> })
                 }}
                 {name}
             </a>

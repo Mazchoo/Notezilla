@@ -1,8 +1,9 @@
 use crate::components::editor::actions::{delete_entry, delete_front_matter};
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
+use leptos::either::Either;
 use leptos::html::{Input, Textarea};
-use leptos::*;
+use leptos::prelude::*;
 
 /// Renders the file-path title for an editor entry.
 /// Displays the path as a styled label; click to edit inline, blur to confirm.
@@ -48,7 +49,7 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
         <div class="editor-block-row">
             <div class="editor-block">
                 {move || if title.focused.get() {
-                    view! {
+                    Either::Left(view! {
                         <input
                             node_ref=input_ref
                             class="entry-title-input"
@@ -58,13 +59,13 @@ pub fn TitleBlockComponent(title: TitleBlock, entry_id: u64) -> impl IntoView {
                             on:blur=on_blur
                             on:keydown=on_keydown
                         />
-                    }.into_view()
+                    })
                 } else {
-                    view! {
+                    Either::Right(view! {
                         <div class="entry-title" on:click=on_click>
                             {move || title.path.get()}
                         </div>
-                    }.into_view()
+                    })
                 }}
             </div>
             <div class="block-actions">
@@ -129,7 +130,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
         <div class="editor-block-row">
             <div class="frontmatter-block" on:click=on_click>
                 {move || if block.focused.get() {
-                    view! {
+                    Either::Left(view! {
                         <textarea
                             node_ref=textarea_ref
                             class="frontmatter-textarea"
@@ -137,18 +138,18 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
                             on:blur=on_blur
                             on:input=on_input
                         />
-                    }.into_view()
+                    })
                 } else {
                     let raw = block.raw.get();
                     let fields = FrontMatterBlock::parse_fields(&raw);
-                    view! {
+                    Either::Right(view! {
                         <div class="frontmatter-table">
                             {fields.into_iter().map(|(k, v)| view! {
                                 <span class="frontmatter-key">{k}</span>
                                 <span class="frontmatter-value">{v}</span>
                             }).collect_view()}
                         </div>
-                    }.into_view()
+                    })
                 }}
             </div>
             <div class="block-actions">
@@ -217,7 +218,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     view! {
         <div class="editor-block" on:click=on_block_click>
             {move || if block.focused.get() {
-                view! {
+                Either::Left(view! {
                     <textarea
                         node_ref=textarea_ref
                         class="block-textarea"
@@ -225,14 +226,14 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
                         on:blur=on_blur
                         on:input=on_input
                     />
-                }.into_view()
+                })
             } else {
-                view! {
+                Either::Right(view! {
                     <div
                         class="block-render content"
                         inner_html=move || block.html.get()
                     />
-                }.into_view()
+                })
             }}
         </div>
     }

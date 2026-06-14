@@ -3,7 +3,7 @@ pub mod block;
 
 use crate::state::AppState;
 use block::{BlockComponent, FrontMatterBlockComponent, TitleBlockComponent};
-use leptos::*;
+use leptos::prelude::*;
 
 #[component]
 pub fn Editor() -> impl IntoView {

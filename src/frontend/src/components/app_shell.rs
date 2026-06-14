@@ -1,7 +1,7 @@
 use crate::components::{
     activity_bar::ActivityBar, editor::Editor, sidebar::Sidebar, top_bar::TopBar,
 };
-use leptos::*;
+use leptos::prelude::*;
 
 #[component]
 pub fn AppShell() -> impl IntoView {

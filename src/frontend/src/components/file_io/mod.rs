@@ -1,5 +1,5 @@
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
-use leptos::*;
+use leptos::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::{Event, FileReader, HtmlInputElement};
 

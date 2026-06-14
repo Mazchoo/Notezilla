@@ -1,5 +1,5 @@
 use crate::rendering::render_markdown;
-use leptos::*;
+use leptos::prelude::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static BLOCK_COUNTER: AtomicU64 = AtomicU64::new(0);
