@@ -19,12 +19,42 @@ pub fn render_markdown(src: &str) -> String {
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_FOOTNOTES;
 
-    let parser = Parser::new_ext(src, opts);
+    let parser = Parser::new_ext(src, opts).into_offset_iter();
     let mut events: Vec<Event> = Vec::new();
     let mut block: Option<BlockKind> = None;
     let mut buf = String::new();
+    let mut depth: i32 = 0;
+    let mut last_top_end: usize = 0;
 
-    for event in parser {
+    for (event, range) in parser {
+        // Inject one <br> per blank line between top-level blocks beyond the
+        // first (which is the implicit paragraph separator). This makes
+        // intentional vertical spacing — e.g. between diagrams — visible in
+        // the rendered output instead of being collapsed by the parser.
+        if depth == 0 && block.is_none() && last_top_end > 0 && range.start > last_top_end {
+            let gap = &src[last_top_end..range.start];
+            let newlines = gap.matches('\n').count();
+            if newlines > 2 {
+                for _ in 2..newlines {
+                    events.push(Event::Html("<br>\n".into()));
+                }
+            }
+        }
+
+        match &event {
+            Event::Start(_) => depth += 1,
+            Event::End(_) => {
+                depth -= 1;
+                if depth == 0 {
+                    last_top_end = range.end;
+                }
+            }
+            _ if depth == 0 => {
+                last_top_end = range.end;
+            }
+            _ => {}
+        }
+
         match block {
             Some(_) => match event {
                 Event::End(TagEnd::CodeBlock) => {
