@@ -126,12 +126,14 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 
     Effect::new(move |_| {
         if block.focused.try_get().unwrap_or(false) {
-            if let Some(el) = textarea_ref.get() {
-                let _ = (*el).focus();
-                let _ = (*el).style().set_property("height", "auto");
-                let h = (*el).scroll_height();
-                let _ = (*el).style().set_property("height", &format!("{}px", h));
-            }
+            request_animation_frame(move || {
+                if let Some(el) = textarea_ref.get_untracked() {
+                    let _ = (*el).focus();
+                    let _ = (*el).style().set_property("height", "auto");
+                    let h = (*el).scroll_height();
+                    let _ = (*el).style().set_property("height", &format!("{}px", h));
+                }
+            });
         }
     });
 
@@ -141,7 +143,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 
     let on_input = move |ev: web_sys::Event| {
         block.raw.set(event_target_value(&ev));
-        if let Some(el) = textarea_ref.get() {
+        if let Some(el) = textarea_ref.get_untracked() {
             let _ = (*el).style().set_property("height", "auto");
             let h = (*el).scroll_height();
             let _ = (*el).style().set_property("height", &format!("{}px", h));
@@ -207,16 +209,24 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
 
-    // Focus the textarea whenever this block switches into edit mode.
+    // Focus & auto-size the textarea once it's switched into edit mode.
+    //
+    // The resize is deferred to `request_animation_frame` so the new
+    // textarea has already been mounted and the browser has laid it out
+    // before we read `scrollHeight`. Without this, the user Effect
+    // (scheduled before the view's RenderEffect under Leptos 0.8's async
+    // scheduler) can run while `textarea_ref` is still empty, leaving the
+    // textarea stuck at the HTML default of two visible rows.
     Effect::new(move |_| {
         if block.focused.try_get().unwrap_or(false) {
-            if let Some(el) = textarea_ref.get() {
-                let _ = (*el).focus();
-                // Auto-resize to fit existing content on initial render.
-                let _ = (*el).style().set_property("height", "auto");
-                let h = (*el).scroll_height();
-                let _ = (*el).style().set_property("height", &format!("{}px", h));
-            }
+            request_animation_frame(move || {
+                if let Some(el) = textarea_ref.get_untracked() {
+                    let _ = (*el).focus();
+                    let _ = (*el).style().set_property("height", "auto");
+                    let h = (*el).scroll_height();
+                    let _ = (*el).style().set_property("height", &format!("{}px", h));
+                }
+            });
         }
     });
 
@@ -229,7 +239,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let on_input = move |ev: web_sys::Event| {
         block.text.set(event_target_value(&ev));
         // Auto-resize textarea to fit content.
-        if let Some(el) = textarea_ref.get() {
+        if let Some(el) = textarea_ref.get_untracked() {
             let _ = (*el).style().set_property("height", "auto");
             let h = (*el).scroll_height();
             let _ = (*el).style().set_property("height", &format!("{}px", h));

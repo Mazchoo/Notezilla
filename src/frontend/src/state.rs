@@ -9,6 +9,10 @@ pub enum ActivePanel {
 
 #[derive(Clone)]
 pub struct AppState {
+    /// Owner of the App component scope. Used to attach signals created later
+    /// (e.g. front matter added at runtime) to a long-lived scope so they
+    /// aren't disposed when transient handler scopes go away.
+    pub root_owner: Owner,
     pub session_id: RwSignal<Option<String>>,
     pub active_panel: RwSignal<Option<ActivePanel>>,
     pub entries: RwSignal<Vec<EditorEntry>>,
@@ -20,6 +24,8 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
+            root_owner: Owner::current()
+                .expect("AppState::new must be called within a reactive Owner scope"),
             session_id: RwSignal::new(None),
             active_panel: RwSignal::new(Some(ActivePanel::Files)),
             entries: RwSignal::new(vec![

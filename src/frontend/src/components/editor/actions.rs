@@ -26,12 +26,19 @@ pub fn delete_front_matter(state: &AppState, entry_id: u64) {
 
 /// Adds default front matter (`tags: []`) to the entry identified by `entry_id`.
 /// Only has an effect when the entry currently has no front matter.
+///
+/// The new `FrontMatterBlock`'s signals are created within `state.root_owner`
+/// so they outlive the click-handler scope that triggered this call. Without
+/// this, the inner branch of the parent `move ||` closure that owns the
+/// "add" button is disposed the moment `front_matter` becomes `Some(_)`,
+/// taking the just-created signals with it.
 pub fn add_front_matter(state: &AppState, entry_id: u64) {
     state.entries.with_untracked(|entries: &Vec<EditorEntry>| {
         if let Some(entry) = entries.iter().find(|e| e.title.id == entry_id) {
-            entry
-                .front_matter
-                .set(Some(FrontMatterBlock::new("tags: []")));
+            let fm = state
+                .root_owner
+                .with(|| FrontMatterBlock::new("tags: []"));
+            entry.front_matter.set(Some(fm));
         }
     });
 }
