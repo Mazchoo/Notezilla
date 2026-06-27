@@ -332,23 +332,8 @@
   </style>
 </head>
 <body>
-  <!-- Leptos mounts into <body> via mount_to_body — no wrapper div needed -->
-
-  <!-- Mermaid.js: renders <div class="mermaid"> blocks produced by the Rust
-       markdown pipeline on WASM targets.  startOnLoad:false lets us call
-       mermaid.run() manually after Leptos has updated the DOM. -->
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-
-    // Re-render any .mermaid divs whenever the DOM changes (Leptos re-renders).
-    const observer = new MutationObserver(() => {
-      const pending = document.querySelectorAll('.mermaid:not([data-processed])');
-      if (pending.length > 0) {
-        mermaid.run({ nodes: pending });
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  </script>
+  <!-- Leptos mounts into <body> via mount_to_body — no wrapper div needed.
+       Mermaid diagrams are pre-rendered to inline SVG in WASM by the Rust
+       `rusty-mermaid` crate, so no JavaScript runtime is involved. -->
 </body>
 </html>

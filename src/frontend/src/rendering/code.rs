@@ -1,3 +1,10 @@
+use std::sync::LazyLock;
+use syntect::highlighting::ThemeSet;
+use syntect::parsing::SyntaxSet;
+
+static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
+
 /// Render a fenced code block with syntax highlighting using syntect.
 ///
 /// Uses the `fancy-regex` backend so this compiles to both native and
@@ -5,13 +12,10 @@
 /// Output is inline-styled HTML — no external stylesheet required.
 pub fn highlight_code(lang: &str, src: &str) -> String {
     use syntect::easy::HighlightLines;
-    use syntect::highlighting::ThemeSet;
     use syntect::html::{styled_line_to_highlighted_html, IncludeBackground};
-    use syntect::parsing::SyntaxSet;
 
-    let ss = SyntaxSet::load_defaults_newlines();
-    let ts = ThemeSet::load_defaults();
-    let theme = &ts.themes["base16-ocean.dark"];
+    let ss = &*SYNTAX_SET;
+    let theme = &THEME_SET.themes["base16-ocean.dark"];
 
     let syntax = if lang.is_empty() {
         ss.find_syntax_plain_text()
@@ -24,7 +28,7 @@ pub fn highlight_code(lang: &str, src: &str) -> String {
     let mut html = String::from("<pre class=\"code-block\"><code>");
 
     for line in syntect::util::LinesWithEndings::from(src) {
-        match h.highlight_line(line, &ss) {
+        match h.highlight_line(line, ss) {
             Ok(ranges) => {
                 match styled_line_to_highlighted_html(&ranges[..], IncludeBackground::No) {
                     Ok(line_html) => html.push_str(&line_html),

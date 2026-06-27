@@ -203,7 +203,7 @@ dependencies = [
  "pathdiff",
  "serde_core",
  "toml",
- "winnow",
+ "winnow 1.0.3",
 ]
 
 [[package]]
@@ -1280,7 +1280,7 @@ dependencies = [
  "leptos",
  "leptos_icons",
  "pulldown-cmark",
- "rusty-mermaid-svg",
+ "rusty-mermaid",
  "serde",
  "serde_json",
  "syntect",
@@ -1610,10 +1610,53 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
+name = "rusty-mermaid"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5115ba3fb2c2c5b3f02490619416574f90c676837d6bce5de11a5f46f1e574a3"
+dependencies = [
+ "rusty-mermaid-core",
+ "rusty-mermaid-diagrams",
+ "rusty-mermaid-svg",
+]
+
+[[package]]
 name = "rusty-mermaid-core"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5f52a4bbcf5e0a71cb3196ba21d3aeafee381a49d8d861e2af56a4f54cb047d"
+
+[[package]]
+name = "rusty-mermaid-dagre"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8975006c080286313a4f2b5a9fe90727fc10d4905781082ea21a8890017800ee"
+dependencies = [
+ "rusty-mermaid-core",
+ "rusty-mermaid-graph",
+]
+
+[[package]]
+name = "rusty-mermaid-diagrams"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0e9e654d4f8738698f83a1258cf590334ec8de439fcffb486903d53875d2414"
+dependencies = [
+ "rusty-mermaid-core",
+ "rusty-mermaid-dagre",
+ "rusty-mermaid-graph",
+ "thiserror 2.0.18",
+ "winnow 0.7.15",
+]
+
+[[package]]
+name = "rusty-mermaid-graph"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e443f9d7228eafea805c54d8eadd606613709d99ab7cdb3808d5600da96ecde"
+dependencies = [
+ "rusty-mermaid-core",
+]
 
 [[package]]
 name = "rusty-mermaid-svg"
@@ -1966,7 +2009,7 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "toml_parser",
- "winnow",
+ "winnow 1.0.3",
 ]
 
 [[package]]
@@ -1984,7 +2027,7 @@ version = "1.1.2+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2abe9b86193656635d2411dc43050282ca48aa31c2451210f4202550afb7526"
 dependencies = [
- "winnow",
+ "winnow 1.0.3",
 ]
 
 [[package]]
@@ -2262,6 +2305,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc"
 dependencies = [
  "windows-link",
+]
+
+[[package]]
+name = "winnow"
+version = "0.7.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
