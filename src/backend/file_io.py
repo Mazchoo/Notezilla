@@ -12,6 +12,8 @@ import yaml
 from src.config import NOTE_FOLDER, DATABASE_FOLDER
 from src.field_enums import ReservedFields, ColumnTypes
 
+RESOLVED_NOTE_FOLDER = Path(NOTE_FOLDER).resolve()
+
 
 def read_file_content(path: str) -> Optional[str]:
     """Return file contents or None is file cannot be read"""
@@ -135,8 +137,7 @@ def get_db_column_types() -> dict:
 
 def get_normalised_path(path: str) -> Optional[str]:
     """Get standardized path with forward slashes to make path an id"""
-    note_folder = Path(NOTE_FOLDER).resolve()
     resolved_path = Path(path).resolve()
-    if not resolved_path.is_relative_to(note_folder):
+    if not resolved_path.is_relative_to(RESOLVED_NOTE_FOLDER):
         return None
-    return "/".join(resolved_path.relative_to(note_folder).parts)
+    return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
