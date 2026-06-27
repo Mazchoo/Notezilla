@@ -120,6 +120,11 @@
       background-color: var(--bg-2);
       min-height: 100%;
     }
+    /* Disable scroll-anchoring inside the editor: when a block textarea
+       auto-resizes (height: auto → scrollHeight), the browser would
+       otherwise pick a node below as anchor and shift scrollTop upward
+       to compensate — that's the jarring "snap up" when editing. */
+    .editor-area, .editor-area * { overflow-anchor: none; }
 
     /* ── Entry divider & title ─────────────────────────────────────── */
     .entry-divider {
