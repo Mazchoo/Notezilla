@@ -2,6 +2,7 @@ use crate::components::file_io::load_markdown_file;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
+use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_icons::Icon;
 use web_sys::Event;
@@ -45,11 +46,19 @@ pub fn TopBar() -> impl IntoView {
 
     // Append a new empty entry (divider + title + blank markdown block) and focus it.
     let on_new_block = move |_| {
+        let editing_enabled = state.markdown_editing_enabled.get_untracked();
         entries.update(|list: &mut Vec<EditorEntry>| {
             let entry = EditorEntry::empty("./new_file.md");
-            entry.content.focused.set(true);
+            if editing_enabled {
+                entry.content.focused.set(true);
+            }
             list.push(entry);
         });
+    };
+
+    let markdown_editing_enabled = state.markdown_editing_enabled;
+    let on_toggle_markdown_editing = move |_| {
+        markdown_editing_enabled.update(|enabled| *enabled = !*enabled);
     };
 
     view! {
@@ -69,6 +78,26 @@ pub fn TopBar() -> impl IntoView {
             // Save — logs full markdown to console.
             <button class="activity-btn" title="Save (Ctrl+S)" on:click=on_save>
                 <Icon icon=id::LuSave/>
+            </button>
+            // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
+            <button
+                class=move || if markdown_editing_enabled.get() {
+                    "activity-btn active"
+                } else {
+                    "activity-btn"
+                }
+                title=move || if markdown_editing_enabled.get() {
+                    "Edit main text (on)"
+                } else {
+                    "Main text frozen — select and copy without opening the editor"
+                }
+                on:click=on_toggle_markdown_editing
+            >
+                {move || if markdown_editing_enabled.get() {
+                    Either::Left(view! { <Icon icon=id::LuPencil/> })
+                } else {
+                    Either::Right(view! { <Icon icon=id::LuLock/> })
+                }}
             </button>
             // New Block — appends a fresh empty entry.
             <button class="activity-btn top-bar-new-block" title="New Block" on:click=on_new_block>

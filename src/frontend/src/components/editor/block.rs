@@ -207,7 +207,17 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 
 #[component]
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
+    let state = use_context::<AppState>().expect("AppState not provided");
+    let markdown_editing_enabled = state.markdown_editing_enabled;
     let textarea_ref = NodeRef::<Textarea>::new();
+
+    // Leave edit mode when main-text editing is turned off.
+    Effect::new(move |_| {
+        if !markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {
+            block.rerender();
+            block.focused.set(false);
+        }
+    });
 
     // Focus & auto-size the textarea once it's switched into edit mode.
     //
@@ -218,7 +228,9 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     // scheduler) can run while `textarea_ref` is still empty, leaving the
     // textarea stuck at the HTML default of two visible rows.
     Effect::new(move |_| {
-        if block.focused.try_get().unwrap_or(false) {
+        if markdown_editing_enabled.get()
+            && block.focused.try_get().unwrap_or(false)
+        {
             request_animation_frame(move || {
                 if let Some(el) = textarea_ref.get_untracked() {
                     let _ = (*el).focus();
@@ -248,13 +260,20 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
 
     // Click anywhere on the block wrapper to enter edit mode.
     let on_block_click = move |_: web_sys::MouseEvent| {
-        if !block.focused.get_untracked() {
+        if markdown_editing_enabled.get_untracked() && !block.focused.get_untracked() {
             block.focused.set(true);
         }
     };
 
     view! {
-        <div class="editor-block" on:click=on_block_click>
+        <div
+            class=move || if markdown_editing_enabled.get() {
+                "editor-block"
+            } else {
+                "editor-block editor-block-frozen"
+            }
+            on:click=on_block_click
+        >
             {move || if block.focused.try_get().unwrap_or(false) {
                 Either::Left(view! {
                     <textarea
