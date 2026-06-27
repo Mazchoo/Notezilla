@@ -1,4 +1,4 @@
-use rusty_mermaid::{to_svg, Theme};
+use rusty_mermaid::{to_svg, Color, Theme};
 
 /// Render a Mermaid diagram source string to an inline SVG string.
 ///
@@ -6,7 +6,14 @@ use rusty_mermaid::{to_svg, Theme};
 /// same code runs in WASM and on native, with no JavaScript runtime, no CDN
 /// script, and no DOM post-processing step.
 pub fn render_mermaid(src: &str) -> String {
-    let theme = Theme::default();
+    // The dark theme's text (#cdd6f4) matches the app's --text so labels read
+    // correctly both on shape fills and on the diagram background. Setting
+    // `background` to white suppresses the background <rect> in the SVG (the
+    // renderer skips it for white), letting the editor surface show through.
+    let theme = Theme {
+        background: Color::WHITE,
+        ..Theme::dark()
+    };
     match to_svg(src, &theme) {
         Ok(svg) => svg,
         Err(e) => {
