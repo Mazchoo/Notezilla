@@ -3,7 +3,6 @@ pub mod search_panel;
 
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
-use leptos::either::EitherOf3;
 use leptos::prelude::*;
 use search_panel::SearchPanel;
 
@@ -19,11 +18,24 @@ pub fn Sidebar() -> impl IntoView {
                 "sidebar-panel"
             }
         }>
-            {move || match state.active_panel.get() {
-                Some(ActivePanel::Files)  => EitherOf3::A(view! { <FileTree/> }),
-                Some(ActivePanel::Search) => EitherOf3::B(view! { <SearchPanel/> }),
-                None => EitherOf3::C(()),
-            }}
+            <div class=move || {
+                if state.active_panel.get() == Some(ActivePanel::Files) {
+                    ""
+                } else {
+                    "is-hidden"
+                }
+            }>
+                <FileTree/>
+            </div>
+            <div class=move || {
+                if state.active_panel.get() == Some(ActivePanel::Search) {
+                    ""
+                } else {
+                    "is-hidden"
+                }
+            }>
+                <SearchPanel/>
+            </div>
         </div>
     }
 }
