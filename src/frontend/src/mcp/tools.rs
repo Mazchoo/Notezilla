@@ -1,5 +1,5 @@
 use super::client::call_tool;
-use crate::models::note::{McpToolResult, SearchResult};
+use crate::models::note::{DirectoryContents, McpToolResult, SearchResult};
 use serde_json::json;
 
 fn zip_results(raw: McpToolResult) -> Vec<SearchResult> {
@@ -76,4 +76,15 @@ pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "delete_note", json!({ "path": path }))
         .await
         .map(|_| ())
+}
+
+pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
+    let val = call_tool(
+        session_id,
+        "get_dir_contents",
+        json!({ "path": path }),
+    )
+    .await?;
+
+    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }

@@ -25,6 +25,15 @@ impl SearchResult {
     }
 }
 
+/// Raw shape returned by get_dir_contents.
+#[derive(Clone, Debug, Deserialize)]
+pub struct DirectoryContents {
+    pub folders: Vec<String>,
+    pub files: Vec<String>,
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
 /// Raw shape returned by every MCP search tool.
 #[derive(Debug, Deserialize)]
 pub struct McpToolResult {
