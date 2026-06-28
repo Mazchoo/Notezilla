@@ -31,7 +31,7 @@ def _parse_sse(text: str) -> dict:
     """
     for line in text.splitlines():
         if line.startswith("data:"):
-            return json.loads(line[len("data:"):].strip())
+            return json.loads(line[len("data:") :].strip())
     return {}
 
 
@@ -112,13 +112,23 @@ if __name__ == "__main__":
     print(call_tool(session, "get_dir_contents", {"path": "."}))
 
     print("\n=== search_notes_by_text ===")
-    print(call_tool(session, "search_notes_by_text", {"text": "python async", "n_results": 5}))
+    print(
+        call_tool(
+            session, "search_notes_by_text", {"text": "python async", "n_results": 5}
+        )
+    )
 
     print("\n=== search_notes_by_field ===")
-    print(call_tool(session, "search_notes_by_field", {"field": "date", "value": "2020-02-09"}))
+    print(
+        call_tool(
+            session, "search_notes_by_field", {"field": "date", "value": "2020-02-09"}
+        )
+    )
 
     print("\n=== search_notes_by_tag ===")
-    print(call_tool(session, "search_notes_by_tag", {"field": "tags", "value": "journal"}))
+    print(
+        call_tool(session, "search_notes_by_tag", {"field": "tags", "value": "journal"})
+    )
 
     print("\n=== search_notes_by_path ===")
     print(call_tool(session, "search_notes_by_path", {"path_parts": ["2024", "01"]}))

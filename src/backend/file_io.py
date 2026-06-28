@@ -26,8 +26,8 @@ def read_file_content(path: str) -> Optional[str]:
 
 def get_normalised_path(path: str) -> Optional[str]:
     """
-        Get standardized path with forward slashes to make path a unique identifier
-        Trailing . and * will be removed
+    Get standardized path with forward slashes to make path a unique identifier
+    Trailing . and * will be removed
     """
     if len(path) > 0 and path[-1] in [".", "*"]:
         path = path[:-1]
@@ -38,11 +38,16 @@ def get_normalised_path(path: str) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
-def get_dirs_and_md_files(target_dir: str) -> Tuple[list[str], list[str]]:
-    """List immediate child folders and file names under a note-folder path."""
+def get_dirs_and_md_files(
+    target_dir: str,
+) -> Tuple[list[str], list[str], Optional[str]]:
+    """
+    List immediate child folders and file names under a note-folder path.
+    An error message will return if any error is thrown
+    """
     normed_path = get_normalised_path(target_dir)
     if normed_path is None:
-        return [], []
+        return [], [], f"Path not recognised in note folder {target_dir}"
 
     folders: list[str] = []
     files: list[str] = []
@@ -53,12 +58,15 @@ def get_dirs_and_md_files(target_dir: str) -> Tuple[list[str], list[str]]:
             for entry in entries:
                 if entry.is_dir(follow_symlinks=False):
                     folders.append(entry.name)
-                elif entry.is_file(follow_symlinks=False) and Path(entry.path).suffix == ".md":
+                elif (
+                    entry.is_file(follow_symlinks=False)
+                    and Path(entry.path).suffix == ".md"
+                ):
                     files.append(entry.name)
-    except OSError:
-        return [], []
+    except OSError as e:
+        return [], [], f"File failed in {path}: {e}"
 
-    return folders, files
+    return folders, files, None
 
 
 def ensure_note_parent_dirs(path: str) -> bool:

@@ -11,7 +11,12 @@ from src.config import MCP_PORT, NOTE_FOLDER
 from src.backend.file_io import delete_note_file, get_dirs_and_md_files
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import MarkdownData
-from src.backend.mcp_interface import init_db, init_column_types, NoteQueryResult
+from src.backend.mcp_interface import (
+    init_db,
+    init_column_types,
+    NoteQueryResult,
+    DirectoryContentsResult,
+)
 
 
 MCP = FastMCP("Notezilla")
@@ -79,19 +84,17 @@ def delete_note(
 def get_dir_contents(
     path: Annotated[
         str,
-        Field(
-            description='Relative path of the directory to list e.g. "folder" or ""'
-        ),
+        Field(description='Relative path of the directory to list e.g. "folder" or ""'),
     ] = "",
-) -> dict:
+) -> DirectoryContentsResult:
     """List immediate child folders and file names under a directory in the note folder.
 
     Args:
         path: Relative path of the directory to list e.g. "folder".
     """
     dir_path = f"{NOTE_FOLDER}/{path}"
-    folders, files = get_dirs_and_md_files(dir_path)
-    return {"folders": folders, "files": files}
+    folders, files, error = get_dirs_and_md_files(dir_path)
+    return DirectoryContentsResult(folders=folders, files=files, error=error)
 
 
 @MCP.tool()

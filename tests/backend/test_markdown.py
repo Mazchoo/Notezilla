@@ -12,6 +12,7 @@ from src.backend.parse_markdown import MarkdownData
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _fake_write_factory(store: dict):
     """Return a write_file_content replacement that saves payload into *store*."""
 

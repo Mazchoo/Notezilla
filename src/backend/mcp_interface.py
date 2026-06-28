@@ -28,3 +28,11 @@ class NoteQueryResult(TypedDict):
     documents: List[str]
     metadatas: List[Dict[str, Any]]
     error: Optional[str]
+
+
+class DirectoryContentsResult(TypedDict):
+    """Defines content of directroy contents query"""
+
+    folders: List[str]
+    files: List[str]
+    error: Optional[str]
