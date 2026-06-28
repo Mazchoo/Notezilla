@@ -46,9 +46,15 @@ class TestMarkdownDataRoundTrip:
         store = {}
 
         # --- Phase 1: construct from data ---
-        with patch(
-            "src.backend.parse_markdown.write_file_content",
-            side_effect=_fake_write_factory(store),
+        with (
+            patch(
+                "src.backend.parse_markdown.ensure_note_parent_dirs",
+                return_value=True,
+            ),
+            patch(
+                "src.backend.parse_markdown.write_file_content",
+                side_effect=_fake_write_factory(store),
+            ),
         ):
             from_data = MarkdownData.construct_from_data(
                 path=path, contents=contents, fields=fields
@@ -126,9 +132,15 @@ class TestMarkdownDataRoundTrip:
         store = {}
 
         with patch("builtins.open") as mock_open:
-            with patch(
-                "src.backend.parse_markdown.write_file_content",
-                side_effect=_fake_write_factory(store),
+            with (
+                patch(
+                    "src.backend.parse_markdown.ensure_note_parent_dirs",
+                    return_value=True,
+                ),
+                patch(
+                    "src.backend.parse_markdown.write_file_content",
+                    side_effect=_fake_write_factory(store),
+                ),
             ):
                 MarkdownData.construct_from_data(
                     path="2024/01/safe.md",

@@ -24,6 +24,25 @@ def read_file_content(path: str) -> Optional[str]:
         return None
 
 
+def ensure_note_parent_dirs(path: str) -> bool:
+    """
+    Create parent directories for a note path within the note folder.
+    Returns True on success, False if path is outside note folder or on error.
+    """
+    if not (normed_path := get_normalised_path(path)):
+        return False
+
+    parent_parts = Path(normed_path).parent
+    if parent_parts == Path("."):
+        return True
+
+    try:
+        (RESOLVED_NOTE_FOLDER / parent_parts).mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return False
+    return True
+
+
 def write_file_content(path: str, contents: str) -> bool:
     """
     Write file contents to relative path and return True on success

@@ -8,6 +8,7 @@ from src.backend.file_io import (
     read_file_content,
     extract_yaml_from_file_contents,
     construct_yaml_header,
+    ensure_note_parent_dirs,
     write_file_content,
 )
 from src.config import NOTE_FOLDER
@@ -77,6 +78,8 @@ class MarkdownData:
             return None
 
         payload = construct_yaml_header(fields) + contents
+        if not ensure_note_parent_dirs(path):
+            return None
         if not write_file_content(path, payload):
             return None
 
