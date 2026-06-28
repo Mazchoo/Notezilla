@@ -4,8 +4,8 @@ use wasm_bindgen::prelude::*;
 use web_sys::{Event, FileReader, HtmlInputElement};
 
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
-/// and replaces the provided `entries` signal with a single [`EditorEntry`]
-/// (title block + markdown content block) containing the entire file content.
+/// and appends a new [`EditorEntry`] (title block + markdown content block)
+/// containing the entire file content.
 pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
     let input = ev
         .target()
@@ -46,7 +46,7 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
             }
             entry
         };
-        entries.set(vec![entry]);
+        entries.update(|list| list.push(entry));
 
         // Reset so the same file can be re-imported if needed.
         input.set_value("");
