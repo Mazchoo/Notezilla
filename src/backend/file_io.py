@@ -60,7 +60,7 @@ def get_dirs_and_md_files(
                     folders.append(entry.name)
                 elif (
                     entry.is_file(follow_symlinks=False)
-                    and Path(entry.path).suffix == ".md"
+                    and entry.name.endswith(".md")
                 ):
                     files.append(entry.name)
     except OSError as e:
