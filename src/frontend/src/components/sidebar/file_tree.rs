@@ -7,6 +7,14 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_icons::Icon;
 
+fn join_path(dir: &str, name: &str) -> String {
+    if dir.is_empty() {
+        name.to_string()
+    } else {
+        format!("{dir}/{name}")
+    }
+}
+
 /// File tree listing top-level note-folder entries from the MCP backend.
 #[component]
 pub fn FileTree() -> impl IntoView {
@@ -47,7 +55,9 @@ pub fn FileTree() -> impl IntoView {
                                     .unwrap_or_default()
                             }
                             key=|name| name.clone()
-                            children=|name: String| view! { <TreeFolder name=name/> }
+                            children=|name: String| {
+                                view! { <TreeFolder name=name.clone() path=name/> }
+                            }
                         />
                         <For
                             each=move || {
@@ -69,16 +79,46 @@ pub fn FileTree() -> impl IntoView {
 }
 
 #[component]
-fn TreeFolder(
-    name: String,
-    #[prop(optional)]
-    children: Option<Children>,
-) -> impl IntoView {
+fn TreeFolder(name: String, path: String) -> AnyView {
+    let state = use_context::<AppState>().expect("AppState not provided");
+    let session = state.session_id;
     let open = RwSignal::new(false);
+    let dir_contents = RwSignal::new(None::<DirectoryContents>);
+    let path_for_fetch = path.clone();
+
+    let toggle = move |_| {
+        let will_open = !open.get_untracked();
+        open.set(will_open);
+
+        if will_open {
+            let sid = match session.get_untracked() {
+                Some(s) => s,
+                None => return,
+            };
+            let fetch_path = path_for_fetch.clone();
+            spawn_local(async move {
+                match get_dir_contents(&sid, &fetch_path).await {
+                    Ok(contents) if contents.error.is_none() => {
+                        if open.get_untracked() {
+                            dir_contents.set(Some(contents));
+                        }
+                    }
+                    Ok(contents) => {
+                        web_sys::console::warn_1(
+                            &format!("get_dir_contents: {:?}", contents.error).into(),
+                        );
+                    }
+                    Err(e) => web_sys::console::error_1(&e.into()),
+                }
+            });
+        } else {
+            dir_contents.set(None);
+        }
+    };
 
     view! {
         <li>
-            <a on:click=move |_| open.update(|o| *o = !*o)>
+            <a on:click=toggle>
                 {move || if open.get() {
                     Either::Left(view! { <Icon icon=id::LuFolderOpen/> })
                 } else {
@@ -87,10 +127,44 @@ fn TreeFolder(
                 {name.clone()}
             </a>
             <ul class=move || if open.get() { "" } else { "is-hidden" }>
-                {children.map(|c| c()).unwrap_or_else(|| view! {}.into_any())}
+                <Show when=move || dir_contents.get().is_some()>
+                    <For
+                        each=move || {
+                            dir_contents
+                                .get()
+                                .map(|c| c.folders)
+                                .unwrap_or_default()
+                        }
+                        key=|name| name.clone()
+                        children={
+                            let folder_path = path.clone();
+                            move |child_name: String| {
+                                let child_path = join_path(&folder_path, &child_name);
+                                view! { <TreeFolder name=child_name path=child_path/> }
+                            }
+                        }
+                    />
+                    <For
+                        each=move || {
+                            dir_contents
+                                .get()
+                                .map(|c| c.files)
+                                .unwrap_or_default()
+                        }
+                        key=|name| name.clone()
+                        children={
+                            let folder_path = path.clone();
+                            move |file_name: String| {
+                                let file_path = join_path(&folder_path, &file_name);
+                                view! { <TreeFile name=file_name.clone() path=file_path/> }
+                            }
+                        }
+                    />
+                </Show>
             </ul>
         </li>
     }
+    .into_any()
 }
 
 #[component]
