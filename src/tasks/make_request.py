@@ -108,6 +108,9 @@ if __name__ == "__main__":
     print("\n=== tools/list ===")
     print(list_tools(session))
 
+    print("\n=== get_note ===")
+    print(call_tool(session, "get_note", {"path": "new_file.md"}))
+
     print("\n=== get_dir_contents ===")
     print(call_tool(session, "get_dir_contents", {"path": "."}))
 
