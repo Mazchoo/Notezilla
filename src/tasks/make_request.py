@@ -108,6 +108,9 @@ if __name__ == "__main__":
     print("\n=== tools/list ===")
     print(list_tools(session))
 
+    print("\n=== get_dir_contents ===")
+    print(call_tool(session, "get_dir_contents", {"path": "."}))
+
     print("\n=== search_notes_by_text ===")
     print(call_tool(session, "search_notes_by_text", {"text": "python async", "n_results": 5}))
 

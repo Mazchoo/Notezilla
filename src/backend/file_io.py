@@ -24,6 +24,43 @@ def read_file_content(path: str) -> Optional[str]:
         return None
 
 
+def get_normalised_path(path: str) -> Optional[str]:
+    """
+        Get standardized path with forward slashes to make path a unique identifier
+        Trailing . and * will be removed
+    """
+    if len(path) > 0 and path[-1] in [".", "*"]:
+        path = path[:-1]
+
+    resolved_path = Path(path).resolve()
+    if not resolved_path.is_relative_to(RESOLVED_NOTE_FOLDER):
+        return None
+    return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
+
+
+def get_dirs_and_md_files(target_dir: str) -> Tuple[list[str], list[str]]:
+    """List immediate child folders and file names under a note-folder path."""
+    normed_path = get_normalised_path(target_dir)
+    if normed_path is None:
+        return [], []
+
+    folders: list[str] = []
+    files: list[str] = []
+    path = f"{NOTE_FOLDER}/{normed_path}" if normed_path else NOTE_FOLDER
+
+    try:
+        with os.scandir(Path(path)) as entries:
+            for entry in entries:
+                if entry.is_dir(follow_symlinks=False):
+                    folders.append(entry.name)
+                elif entry.is_file(follow_symlinks=False) and Path(entry.path).suffix == ".md":
+                    files.append(entry.name)
+    except OSError:
+        return [], []
+
+    return folders, files
+
+
 def ensure_note_parent_dirs(path: str) -> bool:
     """
     Create parent directories for a note path within the note folder.
@@ -152,11 +189,3 @@ def get_db_column_types() -> dict:
         data = get_default_column_types()
 
     return data
-
-
-def get_normalised_path(path: str) -> Optional[str]:
-    """Get standardized path with forward slashes to make path an id"""
-    resolved_path = Path(path).resolve()
-    if not resolved_path.is_relative_to(RESOLVED_NOTE_FOLDER):
-        return None
-    return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)

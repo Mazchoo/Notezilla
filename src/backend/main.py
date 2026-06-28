@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from pydantic import Field
 
 from src.config import MCP_PORT, NOTE_FOLDER
-from src.backend.file_io import delete_note_file
+from src.backend.file_io import delete_note_file, get_dirs_and_md_files
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import MarkdownData
 from src.backend.mcp_interface import init_db, init_column_types, NoteQueryResult
@@ -73,6 +73,25 @@ def delete_note(
     if delete_note_file(note_path):
         return f"Note deleted at '{note_path}'"
     return f"Error: Failed to delete note at '{note_path}'. Ensure the path is valid."
+
+
+@MCP.tool()
+def get_dir_contents(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the directory to list e.g. "folder" or ""'
+        ),
+    ] = "",
+) -> dict:
+    """List immediate child folders and file names under a directory in the note folder.
+
+    Args:
+        path: Relative path of the directory to list e.g. "folder".
+    """
+    dir_path = f"{NOTE_FOLDER}/{path}"
+    folders, files = get_dirs_and_md_files(dir_path)
+    return {"folders": folders, "files": files}
 
 
 @MCP.tool()
