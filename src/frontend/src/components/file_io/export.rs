@@ -16,11 +16,39 @@ pub fn export_entries_as_html(entries: &[EditorEntry]) {
         let body_html = entry_to_html_body(*entry);
         let document = build_html_document(&page_title, &body_html);
 
-        if let Err(err) = download_text_file(&filename, &document) {
+        if let Err(err) = download_text_file(&filename, &document, "text/html;charset=utf-8") {
             web_sys::console::error_1(
                 &format!("Export failed for {filename}: {err:?}").into(),
             );
         }
+    }
+}
+
+/// Prompts the browser to save each editor entry as a markdown file.
+pub fn export_entries_as_markdown(entries: &[EditorEntry]) {
+    for entry in entries {
+        let path = entry.title.path.get_untracked();
+        let filename = path_to_markdown_filename(&path);
+        let content = entry_to_markdown(*entry);
+
+        if let Err(err) = download_text_file(&filename, &content, "text/markdown;charset=utf-8") {
+            web_sys::console::error_1(
+                &format!("Export failed for {filename}: {err:?}").into(),
+            );
+        }
+    }
+}
+
+fn path_to_markdown_filename(path: &str) -> String {
+    let name = path
+        .rsplit(['/', '\\'])
+        .next()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(path);
+    if name.ends_with(".md") || name.ends_with(".markdown") {
+        name.to_string()
+    } else {
+        format!("{name}.md")
     }
 }
 
@@ -42,6 +70,21 @@ fn html_page_title(path: &str) -> String {
         .strip_suffix(".html")
         .unwrap_or("export")
         .to_string()
+}
+
+fn entry_to_markdown(entry: EditorEntry) -> String {
+    let body = entry.content.text.get_untracked();
+    match entry.front_matter.get_untracked() {
+        Some(fm) => {
+            let raw = fm.raw.get_untracked();
+            if raw.is_empty() {
+                body
+            } else {
+                format!("---\n{raw}\n---\n{body}")
+            }
+        }
+        None => body,
+    }
 }
 
 fn entry_to_html_body(entry: EditorEntry) -> String {
@@ -67,7 +110,7 @@ fn build_html_document(title: &str, body_html: &str) -> String {
         .replace("{{BODY}}", body_html)
 }
 
-fn download_text_file(filename: &str, content: &str) -> Result<(), JsValue> {
+fn download_text_file(filename: &str, content: &str, mime_type: &str) -> Result<(), JsValue> {
     let window = web_sys::window().ok_or(JsValue::NULL)?;
     let document = window.document().ok_or(JsValue::NULL)?;
 
@@ -75,7 +118,7 @@ fn download_text_file(filename: &str, content: &str) -> Result<(), JsValue> {
     parts.push(&JsValue::from_str(content));
 
     let props = BlobPropertyBag::new();
-    props.set_type("text/html;charset=utf-8");
+    props.set_type(mime_type);
 
     let blob = Blob::new_with_str_sequence_and_options(&parts, &props)?;
     let url = web_sys::Url::create_object_url_with_blob(&blob)?;

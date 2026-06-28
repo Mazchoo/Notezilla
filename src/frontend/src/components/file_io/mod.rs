@@ -1,6 +1,6 @@
 mod export;
 
-pub use export::export_entries_as_html;
+pub use export::{export_entries_as_html, export_entries_as_markdown};
 
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
