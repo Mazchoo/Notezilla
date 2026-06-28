@@ -27,10 +27,15 @@ fn yaml_to_fields(raw: &str) -> Value {
     }
 }
 
+// Platform independent
+fn normalize_markdown_body(text: &str) -> String {
+    text.replace("\r\n", "\n")
+}
+
 /// Path, markdown body, and front-matter fields for `upsert_note`.
 pub fn entry_save_params(entry: EditorEntry) -> (String, String, Value) {
     let path = normalize_note_path(&entry.title.path.get_untracked());
-    let contents = entry.content.text.get_untracked();
+    let contents = normalize_markdown_body(&entry.content.text.get_untracked());
     let fields = match entry.front_matter.get_untracked() {
         Some(fm) => yaml_to_fields(&fm.raw.get_untracked()),
         None => json!({}),
