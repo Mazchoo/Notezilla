@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 // Proxied by Trunk to http://127.0.0.1:8000 in development.
 const MCP_URL: &str = "/mcp";
+static CALL_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Deserialize, Debug)]
 struct JsonRpcResponse {
@@ -67,8 +68,6 @@ pub async fn initialize_session() -> Result<String, String> {
     Ok(session_id)
 }
 
-static CALL_ID: AtomicU64 = AtomicU64::new(1);
-
 /// Call any MCP tool and return the parsed inner result value.
 ///
 /// FastMCP wraps every tool result as:
@@ -117,5 +116,9 @@ pub async fn call_tool(
         .and_then(|v| v.as_str())
         .ok_or_else(|| format!("Unexpected result shape: {result}"))?;
 
-    serde_json::from_str(inner_json).map_err(|e| format!("Inner JSON parse: {e}"))
+    // Tool results are JSON for search tools, or plain text for upsert/delete.
+    match serde_json::from_str(inner_json) {
+        Ok(v) => Ok(v),
+        Err(_) => Ok(Value::String(inner_json.to_string())),
+    }
 }

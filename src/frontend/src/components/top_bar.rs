@@ -1,11 +1,13 @@
 use crate::components::file_io::{
-    export_entries_as_html, export_entries_as_markdown, load_markdown_file,
+    entry_save_params, export_entries_as_html, export_entries_as_markdown, load_markdown_file,
 };
+use crate::mcp::tools::upsert_note;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
 use leptos::either::Either;
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use leptos_icons::Icon;
 use web_sys::Event;
 
@@ -28,22 +30,37 @@ pub fn TopBar() -> impl IntoView {
         load_markdown_file(ev, entries);
     };
 
+    let session = state.session_id;
     let on_save = move |_| {
-        for entry in state.entries.get().iter() {
-            let file_name = entry.title.path.get_untracked();
-            let body = entry.content.text.get_untracked();
+        let sid = match session.get_untracked() {
+            Some(s) => s,
+            None => {
+                web_sys::console::warn_1(&"MCP session not ready".into());
+                return;
+            }
+        };
 
-            let full_content = match entry.front_matter.get_untracked() {
-                Some(fm) => {
-                    let raw = fm.raw.get_untracked();
-                    format!("---\n{}\n---\n{}", raw, body)
+        let items: Vec<_> = state
+            .entries
+            .get_untracked()
+            .iter()
+            .map(|entry| entry_save_params(*entry))
+            .collect();
+
+        spawn_local(async move {
+            for (path, contents, fields) in items {
+                match upsert_note(&sid, &path, &contents, fields).await {
+                    Ok(()) => {
+                        web_sys::console::log_1(&format!("Saved {path}").into());
+                    }
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("Save failed for {path}: {e}").into(),
+                        );
+                    }
                 }
-                None => body,
-            };
-
-            web_sys::console::log_1(&format!("file name: {}", file_name).into());
-            web_sys::console::log_1(&format!("contents:\n{}", full_content).into());
-        }
+            }
+        });
     };
 
     let on_export_html = move |_| {
@@ -85,7 +102,7 @@ pub fn TopBar() -> impl IntoView {
             <button class="activity-btn" title="Import Markdown" on:click=on_import_click>
                 <Icon icon=id::LuUpload/>
             </button>
-            // Save — logs full markdown to console.
+            // Save — upserts each entry via the MCP backend.
             <button class="activity-btn" title="Save (Ctrl+S)" on:click=on_save>
                 <Icon icon=id::LuSave/>
             </button>

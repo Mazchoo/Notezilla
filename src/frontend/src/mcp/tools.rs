@@ -56,13 +56,20 @@ pub async fn upsert_note(
     contents: &str,
     fields: serde_json::Value,
 ) -> Result<(), String> {
-    call_tool(
+    let val = call_tool(
         session_id,
         "upsert_note",
         json!({ "path": path, "contents": contents, "fields": fields }),
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    if let Some(msg) = val.as_str() {
+        if msg.starts_with("Error:") {
+            return Err(msg.to_string());
+        }
+    }
+
+    Ok(())
 }
 
 pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
