@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{TITLE}}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+  <style>
+    :root {
+      --bg-0: #11111b;
+      --bg-1: #181825;
+      --bg-2: #1e1e2e;
+      --bg-3: #313244;
+      --border: #45475a;
+      --text: #cdd6f4;
+      --text-muted: #6c7086;
+      --accent: #cba6f7;
+    }
+    html, body {
+      background-color: var(--bg-2);
+      color: var(--text);
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    main {
+      max-width: 52rem;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
+    }
+    .frontmatter {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .frontmatter h2 {
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 0.5rem;
+    }
+    .frontmatter pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    .content h1, .content h2, .content h3,
+    .content h4, .content h5, .content h6 { color: var(--text); }
+    .content p, .content li, .content td { color: var(--text); }
+    .content a { color: var(--accent); }
+    .content hr { background-color: var(--border); }
+    .content code {
+      background: var(--bg-3);
+      color: #f38ba8;
+      border-radius: 3px;
+      padding: 0.1em 0.3em;
+    }
+    .content pre {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .content pre.code-block {
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+    }
+    .content pre.code-block code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .content svg { max-width: 100%; }
+    .content blockquote {
+      background: var(--bg-3);
+      border-left: 3px solid var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+{{BODY}}
+  </main>
+</body>
+</html>

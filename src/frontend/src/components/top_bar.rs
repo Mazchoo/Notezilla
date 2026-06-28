@@ -1,4 +1,4 @@
-use crate::components::file_io::load_markdown_file;
+use crate::components::file_io::{export_entries_as_html, load_markdown_file};
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
@@ -44,6 +44,10 @@ pub fn TopBar() -> impl IntoView {
         }
     };
 
+    let on_export = move |_| {
+        export_entries_as_html(&state.entries.get_untracked());
+    };
+
     // Append a new empty entry (divider + title + blank markdown block) and focus it.
     let on_new_block = move |_| {
         let editing_enabled = state.markdown_editing_enabled.get_untracked();
@@ -78,6 +82,10 @@ pub fn TopBar() -> impl IntoView {
             // Save — logs full markdown to console.
             <button class="activity-btn" title="Save (Ctrl+S)" on:click=on_save>
                 <Icon icon=id::LuSave/>
+            </button>
+            // Export — save each entry as a standalone HTML file.
+            <button class="activity-btn" title="Export as HTML" on:click=on_export>
+                <Icon icon=id::LuDownload/>
             </button>
             // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
             <button

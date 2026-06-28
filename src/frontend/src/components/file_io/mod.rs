@@ -1,6 +1,11 @@
+mod export;
+
+pub use export::export_entries_as_html;
+
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 use web_sys::{Event, FileReader, HtmlInputElement};
 
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
