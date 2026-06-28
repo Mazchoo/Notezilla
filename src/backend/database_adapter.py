@@ -120,6 +120,14 @@ class NoteDatabase:
     def __len__(self) -> int:
         return self._collection.count()
 
+    def query_by_id(self, doc_id: str) -> QueryResult:
+        """Return a single document and metadata by its path id"""
+        results = self._collection.get(ids=[doc_id])
+        return QueryResult(
+            documents=results["documents"] or [],
+            metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
+        )
+
     def query_by_field(
         self, field: str, value: Union[str, bool, int, float], n_results: int = 10
     ) -> QueryResult:

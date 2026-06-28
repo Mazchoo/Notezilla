@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from pydantic import Field
 
 from src.config import MCP_PORT, NOTE_FOLDER
-from src.backend.file_io import delete_note_file, get_dirs_and_md_files
+from src.backend.file_io import delete_note_file, get_dirs_and_md_files, get_normalised_path
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import MarkdownData
 from src.backend.mcp_interface import (
@@ -95,6 +95,41 @@ def get_dir_contents(
     dir_path = f"{NOTE_FOLDER}/{path}"
     folders, files, error = get_dirs_and_md_files(dir_path)
     return DirectoryContentsResult(folders=folders, files=files, error=error)
+
+
+@MCP.tool()
+def get_note(
+    path: Annotated[
+        str,
+        Field(description='Relative path of the note e.g. "folder/filename.md"'),
+    ],
+) -> NoteQueryResult:
+    """Get a single note by its file path.
+
+    Args:
+        path: Relative path of the note e.g. "folder/filename.md"
+    """
+    note_path = f"{NOTE_FOLDER}/{path}"
+    normed_path = get_normalised_path(note_path)
+    if normed_path is None:
+        error_msg = f"Path not recognised in note folder {path}"
+        return NoteQueryResult(documents=[], metadatas=[], error=error_msg)
+
+    try:
+        result = init_db().query_by_id(normed_path)
+        if not result.documents:
+            return NoteQueryResult(
+                documents=[],
+                metadatas=[],
+                error=f"Note not found at '{normed_path}'",
+            )
+        return NoteQueryResult(
+            documents=result.documents, metadatas=result.metadatas, error=None
+        )
+    except ValueError as e:
+        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+    except Exception as e:  # pylint: disable=broad-except
+        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
 
 
 @MCP.tool()
