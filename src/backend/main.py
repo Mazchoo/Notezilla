@@ -19,6 +19,9 @@ from src.backend.mcp_interface import (
 )
 
 
+# ToDo - MPC appears to send content and strucuted content which are the same, optimize this
+# ToDo - MCP has the text field in the document and the metadata, optimize this
+
 MCP = FastMCP("Notezilla")
 
 
