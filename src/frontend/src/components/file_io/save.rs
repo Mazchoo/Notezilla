@@ -12,6 +12,15 @@ pub fn normalize_note_path(path: &str) -> String {
     path.replace('\\', "/")
 }
 
+/// Format a relative note path for display in the editor title block.
+pub fn display_note_path(relative: &str) -> String {
+    let relative = relative.trim().replace('\\', "/");
+    let relative = relative
+        .strip_prefix("./")
+        .unwrap_or(relative.as_str());
+    format!("./{relative}")
+}
+
 fn yaml_to_fields(raw: &str) -> Value {
     if raw.trim().is_empty() {
         return json!({});

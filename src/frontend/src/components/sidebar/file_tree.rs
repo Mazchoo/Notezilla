@@ -1,4 +1,4 @@
-use crate::components::file_io::{entry_from_note, open_note_in_editor};
+use crate::components::file_io::{display_note_path, entry_from_note, open_note_in_editor};
 use crate::mcp::tools::{get_dir_contents, get_note};
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -202,7 +202,7 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                         return;
                     };
                     let metadata = result.metadatas.into_iter().next().unwrap_or_default();
-                    let display_path = format!("./{fetch_path}");
+                    let display_path = display_note_path(&fetch_path);
                     let entry = entry_from_note(display_path, &document, &metadata);
                     open_note_in_editor(entries, entry);
                 }

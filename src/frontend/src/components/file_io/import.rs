@@ -1,5 +1,5 @@
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
-use super::save::normalize_note_path;
+use super::save::{display_note_path, normalize_note_path};
 use leptos::prelude::*;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -47,7 +47,7 @@ pub fn entry_from_note(
     entry_from_content(path, body, front_matter_from_metadata(metadata))
 }
 
-/// Replace any open entry with the same path, then append the new one.
+/// Replace any open entry with the same full path, then append the new one.
 pub fn open_note_in_editor(entries: RwSignal<Vec<EditorEntry>>, entry: EditorEntry) {
     let path = normalize_note_path(&entry.title.path.get_untracked());
     entries.update(|list| {
@@ -56,8 +56,17 @@ pub fn open_note_in_editor(entries: RwSignal<Vec<EditorEntry>>, entry: EditorEnt
     });
 }
 
+/// Relative path for an imported file (directory structure when available).
+fn relative_path_from_file(file: &web_sys::File) -> String {
+    js_sys::Reflect::get(file as &JsValue, &JsValue::from_str("webkitRelativePath"))
+        .ok()
+        .and_then(|v| v.as_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| file.name())
+}
+
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
-/// and appends a new [`EditorEntry`] containing the entire file content.
+/// and opens it in the editor, keyed by its full relative path.
 pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
     let input = ev
         .target()
@@ -69,8 +78,7 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
     };
     let Some(file) = file_list.get(0) else { return };
 
-    let file_name = file.name();
-    let file_path = format!("./{file_name}");
+    let file_path = display_note_path(&relative_path_from_file(&file));
 
     let reader = FileReader::new().expect("FileReader not available");
     let reader_clone = reader.clone();
@@ -84,7 +92,7 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
             .expect("FileReader result is not a string");
 
         let entry = entry_from_markdown(file_path, &text);
-        entries.update(|list| list.push(entry));
+        open_note_in_editor(entries, entry);
 
         input.set_value("");
     });
