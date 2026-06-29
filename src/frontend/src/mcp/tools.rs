@@ -88,3 +88,9 @@ pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryC
 
     serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }
+
+pub async fn get_note(session_id: &str, path: &str) -> Result<McpToolResult, String> {
+    let val = call_tool(session_id, "get_note", json!({ "path": path })).await?;
+
+    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+}

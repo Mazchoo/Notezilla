@@ -1,4 +1,5 @@
-use crate::mcp::tools::get_dir_contents;
+use crate::components::file_io::{entry_from_note, open_note_in_editor};
+use crate::mcp::tools::{get_dir_contents, get_note};
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
 use icondata as id;
@@ -171,15 +172,50 @@ fn TreeFolder(name: String, path: String) -> AnyView {
 fn TreeFile(name: String, path: String) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let current_path = state.current_path;
+    let entries = state.entries;
+    let session = state.session_id;
     let path_for_active = path.clone();
 
     let is_active = move || current_path.get().as_deref() == Some(path_for_active.as_str());
+
+    let on_click = move |_| {
+        current_path.set(Some(path.clone()));
+
+        let sid = match session.get_untracked() {
+            Some(s) => s,
+            None => {
+                web_sys::console::warn_1(&"MCP session not ready".into());
+                return;
+            }
+        };
+
+        let fetch_path = path.clone();
+        spawn_local(async move {
+            match get_note(&sid, &fetch_path).await {
+                Ok(result) => {
+                    if let Some(err) = result.error {
+                        web_sys::console::warn_1(&format!("get_note: {err}").into());
+                        return;
+                    }
+                    let Some(document) = result.documents.into_iter().next() else {
+                        web_sys::console::warn_1(&"get_note: empty document".into());
+                        return;
+                    };
+                    let metadata = result.metadatas.into_iter().next().unwrap_or_default();
+                    let display_path = format!("./{fetch_path}");
+                    let entry = entry_from_note(display_path, &document, &metadata);
+                    open_note_in_editor(entries, entry);
+                }
+                Err(e) => web_sys::console::error_1(&e.into()),
+            }
+        });
+    };
 
     view! {
         <li>
             <a
                 class=move || if is_active() { "is-active" } else { "" }
-                on:click=move |_| current_path.set(Some(path.clone()))
+                on:click=on_click
             >
                 <Icon icon=id::LuFileText/>
                 {name}
