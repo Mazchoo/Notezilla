@@ -1,0 +1,64 @@
+"""Tests for the search_notes_by_tag MCP tool."""
+
+import pytest
+
+from helpers import _make_query_result, clear_init_db_cache, mock_db
+from src.backend.main import search_notes_by_tag
+
+
+class TestSearchNotesByTag:
+    """Tests for the search_notes_by_tag MCP tool.
+
+    The NoteDatabase.query_field_contains method is mocked directly on the instance.
+    """
+
+    def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_tag returns documents from the database."""
+        query_result = _make_query_result(
+            docs=["tagged note"], metas=[{"tags\tpython": True}]
+        )
+        mock_db.query_field_contains.return_value = query_result
+
+        result = search_notes_by_tag(field="tags", value="python")
+
+        assert result["documents"] == ["tagged note"]
+        assert result["error"] is None
+
+    def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_tag passes field, value, and n_results to the DB."""
+        mock_db.query_field_contains.return_value = _make_query_result()
+
+        search_notes_by_tag(field="tags", value="python", n_results=3)
+
+        mock_db.query_field_contains.assert_called_once_with("tags", "python", 3)
+
+    def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_tag uses n_results=10 by default."""
+        mock_db.query_field_contains.return_value = _make_query_result()
+
+        search_notes_by_tag(field="tags", value="python")
+
+        mock_db.query_field_contains.assert_called_once_with("tags", "python", 10)
+
+    def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_tag wraps ValueError in an error NoteQueryResult."""
+        mock_db.query_field_contains.side_effect = ValueError("invalid")
+
+        result = search_notes_by_tag(field="tags", value="x")
+
+        assert result["error"] is not None
+        assert "Type error" in result["error"]
+
+    def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_tag wraps unexpected exceptions in an error NoteQueryResult."""
+        mock_db.query_field_contains.side_effect = Exception("boom")
+
+        result = search_notes_by_tag(field="tags", value="x")
+
+        assert result["error"] is not None
+        assert "DB error" in result["error"]
+        assert "boom" in result["error"]
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-x", "--verbose"])
