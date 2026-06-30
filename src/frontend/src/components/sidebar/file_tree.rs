@@ -31,12 +31,7 @@ pub fn FileTree() -> impl IntoView {
 
         spawn_local(async move {
             match get_dir_contents(&sid, "").await {
-                Ok(contents) if contents.error.is_none() => dir_contents.set(Some(contents)),
-                Ok(contents) => {
-                    web_sys::console::warn_1(
-                        &format!("get_dir_contents: {:?}", contents.error).into(),
-                    );
-                }
+                Ok(contents) => dir_contents.set(Some(contents)),
                 Err(e) => web_sys::console::error_1(&e.into()),
             }
         });
@@ -99,15 +94,10 @@ fn TreeFolder(name: String, path: String) -> AnyView {
             let fetch_path = path_for_fetch.clone();
             spawn_local(async move {
                 match get_dir_contents(&sid, &fetch_path).await {
-                    Ok(contents) if contents.error.is_none() => {
+                    Ok(contents) => {
                         if open.get_untracked() {
                             dir_contents.set(Some(contents));
                         }
-                    }
-                    Ok(contents) => {
-                        web_sys::console::warn_1(
-                            &format!("get_dir_contents: {:?}", contents.error).into(),
-                        );
                     }
                     Err(e) => web_sys::console::error_1(&e.into()),
                 }
@@ -192,18 +182,14 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
         let fetch_path = path.clone();
         spawn_local(async move {
             match get_note(&sid, &fetch_path).await {
-                Ok(result) => {
-                    if let Some(err) = result.error {
-                        web_sys::console::warn_1(&format!("get_note: {err}").into());
-                        return;
-                    }
-                    let Some(document) = result.documents.into_iter().next() else {
-                        web_sys::console::warn_1(&"get_note: empty document".into());
-                        return;
-                    };
-                    let metadata = result.metadatas.into_iter().next().unwrap_or_default();
+                Ok(note) => {
                     let display_path = display_note_path(&fetch_path);
-                    let entry = entry_from_note(display_path, &document, &metadata);
+                    let mut metadata = std::collections::HashMap::new();
+                    metadata.insert(
+                        "filename".to_string(),
+                        serde_json::json!(note.filename),
+                    );
+                    let entry = entry_from_note(display_path, &note.text, &metadata);
                     open_note_in_editor(entries, entry);
                 }
                 Err(e) => web_sys::console::error_1(&e.into()),

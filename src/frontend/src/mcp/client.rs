@@ -68,11 +68,12 @@ pub async fn initialize_session() -> Result<String, String> {
     Ok(session_id)
 }
 
-/// Call any MCP tool and return the parsed inner result value.
+/// Call any MCP tool and return its structured payload.
 ///
 /// FastMCP wraps every tool result as:
-///   { "result": { "content": [{ "type": "text", "text": "<json-string>" }] } }
-/// This function unwraps that envelope and returns the parsed inner JSON.
+///   { "result": { "content": [{ "type": "text", "text": "Success" | "Error: ..." }],
+///                 "structuredContent": { ... } } }
+/// Errors are surfaced from the text message; successful calls return structuredContent.
 pub async fn call_tool(
     session_id: &str,
     tool_name: &str,
@@ -110,15 +111,21 @@ pub async fn call_tool(
 
     let result = rpc.result.ok_or("Empty RPC result")?;
 
-    // Unwrap the FastMCP TextContent envelope
-    let inner_json = result
+    let message = result
         .pointer("/content/0/text")
         .and_then(|v| v.as_str())
         .ok_or_else(|| format!("Unexpected result shape: {result}"))?;
 
-    // Tool results are JSON for search tools, or plain text for upsert/delete.
-    match serde_json::from_str(inner_json) {
-        Ok(v) => Ok(v),
-        Err(_) => Ok(Value::String(inner_json.to_string())),
+    if let Some(error_message) = message.strip_prefix("Error: ") {
+        return Err(error_message.to_string());
     }
+
+    if message != "Success" {
+        return Err(format!("Unexpected tool message: {message}"));
+    }
+
+    Ok(result
+        .get("structuredContent")
+        .cloned()
+        .unwrap_or_else(|| json!({})))
 }

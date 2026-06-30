@@ -1,12 +1,29 @@
 use super::client::call_tool;
-use crate::models::note::{DirectoryContents, McpToolResult, SearchResult};
-use serde_json::json;
+use crate::models::note::{DirectoryContents, NoteFile, SearchResult};
+use serde_json::{json, Value};
+use std::collections::HashMap;
 
-fn zip_results(raw: McpToolResult) -> Vec<SearchResult> {
-    raw.documents
-        .into_iter()
-        .zip(raw.metadatas.into_iter())
-        .map(|(document, metadata)| SearchResult { document, metadata })
+fn notes_from_structured(val: &Value) -> Result<Vec<SearchResult>, String> {
+    let notes = val
+        .get("notes")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Missing notes in MCP response".to_string())?;
+
+    notes
+        .iter()
+        .map(|item| {
+            let filename = item
+                .get("filename")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown.md");
+            let text = item.get("text").and_then(|v| v.as_str()).unwrap_or("");
+            let mut metadata = HashMap::new();
+            metadata.insert("filename".to_string(), json!(filename));
+            Ok(SearchResult {
+                document: text.to_string(),
+                metadata,
+            })
+        })
         .collect()
 }
 
@@ -22,14 +39,7 @@ pub async fn search_by_text(
     )
     .await?;
 
-    let raw: McpToolResult =
-        serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))?;
-
-    if let Some(err) = raw.error {
-        return Err(format!("Backend error: {err}"));
-    }
-
-    Ok(zip_results(raw))
+    notes_from_structured(&val)
 }
 
 pub async fn list_by_path(
@@ -44,10 +54,7 @@ pub async fn list_by_path(
     )
     .await?;
 
-    let raw: McpToolResult =
-        serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))?;
-
-    Ok(zip_results(raw))
+    notes_from_structured(&val)
 }
 
 pub async fn upsert_note(
@@ -56,20 +63,13 @@ pub async fn upsert_note(
     contents: &str,
     fields: serde_json::Value,
 ) -> Result<(), String> {
-    let val = call_tool(
+    call_tool(
         session_id,
         "upsert_note",
         json!({ "path": path, "contents": contents, "fields": fields }),
     )
-    .await?;
-
-    if let Some(msg) = val.as_str() {
-        if msg.starts_with("Error:") {
-            return Err(msg.to_string());
-        }
-    }
-
-    Ok(())
+    .await
+    .map(|_| ())
 }
 
 pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
@@ -89,8 +89,17 @@ pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryC
     serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }
 
-pub async fn get_note(session_id: &str, path: &str) -> Result<McpToolResult, String> {
+pub async fn get_note(session_id: &str, path: &str) -> Result<NoteFile, String> {
     let val = call_tool(session_id, "get_note", json!({ "path": path })).await?;
 
-    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+    let notes = val
+        .get("notes")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Missing notes in MCP response".to_string())?;
+
+    let item = notes
+        .first()
+        .ok_or_else(|| format!("Note not found at '{path}'"))?;
+
+    serde_json::from_value(item.clone()).map_err(|e| format!("Parse error: {e}"))
 }
