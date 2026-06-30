@@ -12,9 +12,10 @@ from src.backend.file_io import (
 )
 from src.backend.parse_markdown import MarkdownData
 from src.backend.database_adapter import NoteDatabase
+from src.backend.database_update import prepate_database_row
 
 
-def get_field_type(value) -> FieldTypes:
+def get_field_type(value) -> FieldTypes:  # pylint: disable=too-many-return-statements
     """Identifies the specific YAML/Python type for a single value."""
     if isinstance(value, list):
         # Check if the list contains any nested complexity
@@ -68,22 +69,6 @@ def create_default_front_matter(column_types: ColumnTypes) -> str:
         ]
     )
     return f"---\n{default_fields}\n---\n\n"
-
-
-def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> dict:
-    """
-    Transforms markdown into a row of data
-    """
-    row = {}
-    for key, target_type in column_types.items():
-        val = markdown.fields.get(key)
-        row.update(NoteDatabase.cast_value(key, val, target_type))
-
-    row[ReservedFields.PATH] = markdown.path
-    row[ReservedFields.FILENAME] = markdown.filename
-    row[ReservedFields.TEXT] = markdown.text
-
-    return row
 
 
 def put_all_markdowns_note_folder_into_database():

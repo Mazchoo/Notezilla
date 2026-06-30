@@ -58,7 +58,7 @@ def upsert_note(
         fields: Dictionary of metadata fields to convert into a YAML header
     """
     note_path = f"{NOTE_FOLDER}/{path}"
-    if note := MarkdownData.construct_from_data(note_path, contents, fields):
+    if MarkdownData.construct_from_data(note_path, contents, fields):
         return McpResponse.success()
     return McpResponse.error(f"Failed to upsert note at '{note_path}'.")
 

@@ -51,7 +51,7 @@ class FieldTypes(StrEnum):
         """Fields with a higher priority are more permissive and subsume other types"""
         return self.hierarchy.index(self)
 
-    def get_default(self) -> Any:
+    def get_default(self) -> Any:  # pylint: disable=too-many-return-statements
         """Return an example value for a give field type"""
         if self == FieldTypes.NULL:
             return None
@@ -69,6 +69,7 @@ class FieldTypes(StrEnum):
             return ""
         if self == FieldTypes.JSON:
             return {}
+        return None
 
 
 ColumnTypes = Dict[str, FieldTypes]

@@ -21,6 +21,8 @@ VALID_QUERY_TYPES = (str, int, float, bool)
 
 @dataclass
 class QueryResult:
+    """Documents and metadata returned from a database query."""
+
     documents: List[str]
     metadatas: List[Dict[str, Any]]
     distances: Optional[List[float]] = None
@@ -44,7 +46,7 @@ class NoteDatabase:
         )
 
     @staticmethod
-    def cast_value(key: str, val, target_type: str) -> dict:
+    def cast_value(key: str, val, target_type: str) -> dict:  # pylint: disable=too-many-return-statements
         """Cast a value to the target type and return as dict entries for a row"""
         if val is None:
             return {key: None}
@@ -146,7 +148,10 @@ class NoteDatabase:
     def query_field_contains(
         self, field: str, value: str, n_results: int = 10
     ) -> QueryResult:
-        """Return documents and metadatas where a list field contains a value (stored as field.value: True)"""
+        """Return documents where a list field contains a value.
+
+        List values are stored as ``field.value: True`` metadata keys.
+        """
         return self.query_by_field(f"{field}\t{value}", True, n_results)
 
     def query_by_path(self, path_parts: List[str], n_results: int = 100) -> QueryResult:

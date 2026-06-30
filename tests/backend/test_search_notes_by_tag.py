@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import _make_query_result
+from tests.backend.helpers import _make_query_result
 from src.backend.main import search_notes_by_tag
 
 
