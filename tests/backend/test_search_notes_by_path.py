@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import _make_query_result, clear_init_db_cache, mock_db
+from helpers import _make_query_result
 from src.backend.main import search_notes_by_path
 
 
@@ -21,8 +21,10 @@ class TestSearchNotesByPath:
 
         result = search_notes_by_path(path_parts=["2024", "01"])
 
-        assert result["documents"] == ["note in 2024/01"]
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            {"filename": "note.md", "text": "note in 2024/01"}
+        ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_path passes path_parts and n_results to the DB."""
@@ -47,27 +49,23 @@ class TestSearchNotesByPath:
         result = search_notes_by_path(path_parts=[])
 
         mock_db.query_by_path.assert_called_once_with([], 100)
-        assert result["documents"] == []
+        assert result.structured_content["notes"] == []
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_path wraps ValueError in an error NoteQueryResult."""
+        """search_notes_by_path wraps ValueError in an error response."""
         mock_db.query_by_path.side_effect = ValueError("bad path")
 
         result = search_notes_by_path(path_parts=["x"])
 
-        assert result["error"] is not None
-        assert "Type error" in result["error"]
-        assert "bad path" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_path wraps unexpected exceptions in an error NoteQueryResult."""
+        """search_notes_by_path wraps unexpected exceptions in an error response."""
         mock_db.query_by_path.side_effect = RuntimeError("timeout")
 
         result = search_notes_by_path(path_parts=["x"])
 
-        assert result["error"] is not None
-        assert "DB error" in result["error"]
-        assert "timeout" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
 
 if __name__ == "__main__":

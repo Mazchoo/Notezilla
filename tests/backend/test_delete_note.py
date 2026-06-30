@@ -20,15 +20,14 @@ class TestDeleteNote:
         with patch("src.backend.main.delete_note_file", return_value=True):
             result = delete_note(path="2024/01/my-note.md")
 
-        assert "2024/01/my-note.md" in result
+        assert result.content[0].text == "Success"
 
     def test_delete_note_failure_returns_error(self):
         """delete_note returns an error message when the file cannot be deleted."""
         with patch("src.backend.main.delete_note_file", return_value=False):
             result = delete_note(path="missing/note.md")
 
-        assert result.startswith("Error:")
-        assert "missing/note.md" in result
+        assert result.content[0].text.startswith("Error")
 
     def test_delete_note_calls_delete_with_correct_path(self):
         """delete_note passes the path argument through to delete_note_file."""

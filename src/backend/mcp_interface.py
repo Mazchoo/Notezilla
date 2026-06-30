@@ -1,11 +1,11 @@
-"""Definitions of interatactions between mcp and other objects"""
+"""Definitions of interactions between MCP and other objects."""
 
-from typing import Any, Dict, List, Optional
 from functools import cache
+from typing import Any, Dict, List
 
-from typing_extensions import TypedDict
+from fastmcp.tools.tool import ToolResult
 
-from src.backend.database_adapter import NoteDatabase
+from src.backend.database_adapter import NoteDatabase, QueryResult
 from src.backend.file_io import get_db_column_types
 from src.field_enums import ColumnTypes
 
@@ -22,17 +22,48 @@ def init_column_types() -> ColumnTypes:
     return get_db_column_types()
 
 
-class NoteQueryResult(TypedDict):
-    """Defines return format of a query from mcp"""
+class McpResponse:
+    """Build consistent MCP tool results with a text message and structured payload."""
 
-    documents: List[str]
-    metadatas: List[Dict[str, Any]]
-    error: Optional[str]
+    @staticmethod
+    def success(
+        structured_content: Dict[str, Any] | None = None,
+    ) -> ToolResult:
+        """Return a successful tool result."""
+        return ToolResult(
+            content="Success",
+            structured_content=structured_content or {},
+        )
 
+    @staticmethod
+    def error(
+        message: str,
+        structured_content: Dict[str, Any] | None = None,
+    ) -> ToolResult:
+        """Return a failed tool result."""
+        return ToolResult(
+            content=f"Error: {message}",
+            structured_content=structured_content or {},
+        )
 
-class DirectoryContentsResult(TypedDict):
-    """Defines content of directroy contents query"""
+    @staticmethod
+    def notes(items: List[Dict[str, str]]) -> ToolResult:
+        """Return note file data as minimal filename/text records."""
+        return McpResponse.success({"notes": items})
 
-    folders: List[str]
-    files: List[str]
-    error: Optional[str]
+    @staticmethod
+    def notes_from_query(result: QueryResult) -> ToolResult:
+        """Convert a database query result into minimal note file records."""
+        items = [
+            {
+                "filename": str(metadata.get("filename", "")),
+                "text": text,
+            }
+            for text, metadata in zip(result.documents, result.metadatas)
+        ]
+        return McpResponse.notes(items)
+
+    @staticmethod
+    def directory(folders: List[str], files: List[str]) -> ToolResult:
+        """Return immediate child folders and markdown file names."""
+        return McpResponse.success({"folders": folders, "files": files})

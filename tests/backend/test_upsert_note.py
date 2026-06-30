@@ -22,8 +22,7 @@ class TestUpsertNote:
                 fields={"title": "My Note"},
             )
 
-        assert "2024/01/my-note.md" in result
-        assert not result.startswith("Error:")
+        assert result.content[0].text == "Success"
 
     def test_upsert_note_failure_returns_error(self):
         """upsert_note returns an error message when open() raises OSError."""
@@ -34,7 +33,7 @@ class TestUpsertNote:
                 fields={},
             )
 
-        assert result.startswith("Error:")
+        assert result.content[0].text.startswith("Error")
 
     def test_upsert_note_non_md_path_returns_error(self):
         """upsert_note returns an error for paths that don't end with .md.
@@ -48,8 +47,7 @@ class TestUpsertNote:
             fields={},
         )
 
-        assert result.startswith("Error:")
-        assert "folder/note.txt" in result
+        assert result.content[0].text.startswith("Error")
 
     def test_upsert_note_writes_correct_content(self):
         """upsert_note writes the YAML header + body to open()."""

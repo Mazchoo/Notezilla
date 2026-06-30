@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import _make_query_result, clear_init_db_cache, mock_db
+from helpers import _make_query_result
 from src.backend.main import search_notes_by_field
 
 
@@ -22,9 +22,10 @@ class TestSearchNotesByField:
 
         result = search_notes_by_field(field="filename", value="note.md")
 
-        assert result["documents"] == ["content of note"]
-        assert result["metadatas"] == [{"filename": "note.md"}]
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            {"filename": "note.md", "text": "content of note"}
+        ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field passes field, value, and n_results to the DB."""
@@ -43,28 +44,20 @@ class TestSearchNotesByField:
         mock_db.query_by_field.assert_called_once_with("title", "hello", 10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_field wraps ValueError in an error NoteQueryResult."""
+        """search_notes_by_field wraps ValueError in an error response."""
         mock_db.query_by_field.side_effect = ValueError("bad type")
 
         result = search_notes_by_field(field="x", value="y")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is not None
-        assert "Type error" in result["error"]
-        assert "bad type" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_field wraps unexpected exceptions in an error NoteQueryResult."""
+        """search_notes_by_field wraps unexpected exceptions in an error response."""
         mock_db.query_by_field.side_effect = RuntimeError("connection lost")
 
         result = search_notes_by_field(field="x", value="y")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is not None
-        assert "DB error" in result["error"]
-        assert "connection lost" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_empty_result_from_db(self, mock_db):
         """search_notes_by_field handles an empty result set gracefully."""
@@ -72,9 +65,8 @@ class TestSearchNotesByField:
 
         result = search_notes_by_field(field="title", value="nonexistent")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == []
 
 
 if __name__ == "__main__":

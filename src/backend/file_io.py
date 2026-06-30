@@ -58,9 +58,8 @@ def get_dirs_and_md_files(
             for entry in entries:
                 if entry.is_dir(follow_symlinks=False):
                     folders.append(entry.name)
-                elif (
-                    entry.is_file(follow_symlinks=False)
-                    and entry.name.endswith(".md")
+                elif entry.is_file(follow_symlinks=False) and entry.name.endswith(
+                    ".md"
                 ):
                     files.append(entry.name)
     except OSError as e:

@@ -3,24 +3,24 @@
 from typing import List, Annotated
 
 from fastmcp import FastMCP
+from fastmcp.tools.tool import ToolResult
+from pydantic import Field
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from pydantic import Field
 
 from src.config import MCP_PORT, NOTE_FOLDER
-from src.backend.file_io import delete_note_file, get_dirs_and_md_files, get_normalised_path
+from src.backend.file_io import (
+    delete_note_file,
+    get_dirs_and_md_files,
+    get_normalised_path,
+)
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import MarkdownData
 from src.backend.mcp_interface import (
     init_db,
     init_column_types,
-    NoteQueryResult,
-    DirectoryContentsResult,
+    McpResponse,
 )
-
-
-# ToDo - MPC appears to send content and strucuted content which are the same, optimize this
-# ToDo - MCP has the text field in the document and the metadata, optimize this
 
 MCP = FastMCP("Notezilla")
 
@@ -49,7 +49,7 @@ def upsert_note(
             description="Dictionary of metadata fields to convert into a YAML header"
         ),
     ],
-) -> str:
+) -> ToolResult:
     """Create or update a note file with a YAML frontmatter header.
 
     Args:
@@ -59,8 +59,8 @@ def upsert_note(
     """
     note_path = f"{NOTE_FOLDER}/{path}"
     if note := MarkdownData.construct_from_data(note_path, contents, fields):
-        return f"Note upserted at '{note.normalised_path}'"
-    return f"Error: Failed to upsert note at '{note_path}'."
+        return McpResponse.success()
+    return McpResponse.error(f"Failed to upsert note at '{note_path}'.")
 
 
 @MCP.tool()
@@ -71,7 +71,7 @@ def delete_note(
             description='Relative path of the note to delete e.g. "folder/filename.md"'
         ),
     ],
-) -> str:
+) -> ToolResult:
     """Delete a note file.
 
     Args:
@@ -79,8 +79,10 @@ def delete_note(
     """
     note_path = f"{NOTE_FOLDER}/{path}"
     if delete_note_file(note_path):
-        return f"Note deleted at '{note_path}'"
-    return f"Error: Failed to delete note at '{note_path}'. Ensure the path is valid."
+        return McpResponse.success()
+    return McpResponse.error(
+        f"Failed to delete note at '{note_path}'. Ensure the path is valid."
+    )
 
 
 @MCP.tool()
@@ -89,7 +91,7 @@ def get_dir_contents(
         str,
         Field(description='Relative path of the directory to list e.g. "folder" or ""'),
     ] = "",
-) -> DirectoryContentsResult:
+) -> ToolResult:
     """List immediate child folders and file names under a directory in the note folder.
 
     Args:
@@ -97,7 +99,9 @@ def get_dir_contents(
     """
     dir_path = f"{NOTE_FOLDER}/{path}"
     folders, files, error = get_dirs_and_md_files(dir_path)
-    return DirectoryContentsResult(folders=folders, files=files, error=error)
+    if error:
+        return McpResponse.error(error, {"folders": folders, "files": files})
+    return McpResponse.directory(folders, files)
 
 
 @MCP.tool()
@@ -106,7 +110,7 @@ def get_note(
         str,
         Field(description='Relative path of the note e.g. "folder/filename.md"'),
     ],
-) -> NoteQueryResult:
+) -> ToolResult:
     """Get a single note by its file path.
 
     Args:
@@ -115,24 +119,16 @@ def get_note(
     note_path = f"{NOTE_FOLDER}/{path}"
     normed_path = get_normalised_path(note_path)
     if normed_path is None:
-        error_msg = f"Path not recognised in note folder {path}"
-        return NoteQueryResult(documents=[], metadatas=[], error=error_msg)
-
+        return McpResponse.error(f"Path not recognised in note folder {path}")
     try:
         result = init_db().query_by_id(normed_path)
         if not result.documents:
-            return NoteQueryResult(
-                documents=[],
-                metadatas=[],
-                error=f"Note not found at '{normed_path}'",
-            )
-        return NoteQueryResult(
-            documents=result.documents, metadatas=result.metadatas, error=None
-        )
+            return McpResponse.error(f"Note not found at '{normed_path}'")
+        return McpResponse.notes_from_query(result)
     except ValueError as e:
-        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+        return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
-        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
+        return McpResponse.error(f"DB error: {e}")
 
 
 @MCP.tool()
@@ -144,7 +140,7 @@ def search_notes_by_field(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
-) -> NoteQueryResult:
+) -> ToolResult:
     """Find notes where a metadata field exactly matches a value.
 
     Args:
@@ -154,13 +150,11 @@ def search_notes_by_field(
     """
     try:
         result = init_db().query_by_field(field, value, n_results)
-        return NoteQueryResult(
-            documents=result.documents, metadatas=result.metadatas, error=None
-        )
+        return McpResponse.notes_from_query(result)
     except ValueError as e:
-        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+        return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
-        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
+        return McpResponse.error(f"DB error: {e}")
 
 
 @MCP.tool()
@@ -170,7 +164,7 @@ def search_notes_by_tag(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
-) -> NoteQueryResult:
+) -> ToolResult:
     """Find notes where a list metadata field contains a given value.
 
     Args:
@@ -180,13 +174,11 @@ def search_notes_by_tag(
     """
     try:
         result = init_db().query_field_contains(field, value, n_results)
-        return NoteQueryResult(
-            documents=result.documents, metadatas=result.metadatas, error=None
-        )
+        return McpResponse.notes_from_query(result)
     except ValueError as e:
-        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+        return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
-        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
+        return McpResponse.error(f"DB error: {e}")
 
 
 @MCP.tool()
@@ -198,7 +190,7 @@ def search_notes_by_path(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 100,
-) -> NoteQueryResult:
+) -> ToolResult:
     """Find notes under a given folder path.
 
     Args:
@@ -207,13 +199,11 @@ def search_notes_by_path(
     """
     try:
         result = init_db().query_by_path(path_parts, n_results)
-        return NoteQueryResult(
-            documents=result.documents, metadatas=result.metadatas, error=None
-        )
+        return McpResponse.notes_from_query(result)
     except ValueError as e:
-        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+        return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
-        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
+        return McpResponse.error(f"DB error: {e}")
 
 
 @MCP.tool()
@@ -222,7 +212,7 @@ def search_notes_by_text(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
-) -> NoteQueryResult:
+) -> ToolResult:
     """Semantically search notes by their content.
 
     Args:
@@ -231,20 +221,17 @@ def search_notes_by_text(
     """
     try:
         result = init_db().query_by_text(text, n_results)
-        return NoteQueryResult(
-            documents=result.documents, metadatas=result.metadatas, error=None
-        )
+        return McpResponse.notes_from_query(result)
     except ValueError as e:
-        return NoteQueryResult(documents=[], metadatas=[], error=f"Type error: {e}")
+        return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
-        return NoteQueryResult(documents=[], metadatas=[], error=f"DB error: {e}")
+        return McpResponse.error(f"DB error: {e}")
 
 
 if __name__ == "__main__":
     test_observer = PyFileHandler.construct_observer(
         init_db(), init_column_types(), 200
     )
-
     try:
         MCP.run(transport="streamable-http", port=MCP_PORT)
     except KeyboardInterrupt:

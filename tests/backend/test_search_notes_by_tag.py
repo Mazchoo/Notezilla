@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import _make_query_result, clear_init_db_cache, mock_db
+from helpers import _make_query_result
 from src.backend.main import search_notes_by_tag
 
 
@@ -15,14 +15,16 @@ class TestSearchNotesByTag:
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag returns documents from the database."""
         query_result = _make_query_result(
-            docs=["tagged note"], metas=[{"tags\tpython": True}]
+            docs=["tagged note"], metas=[{"tags\tpython": True, "filename": "note.md"}]
         )
         mock_db.query_field_contains.return_value = query_result
 
         result = search_notes_by_tag(field="tags", value="python")
 
-        assert result["documents"] == ["tagged note"]
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            {"filename": "note.md", "text": "tagged note"}
+        ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag passes field, value, and n_results to the DB."""
@@ -41,23 +43,20 @@ class TestSearchNotesByTag:
         mock_db.query_field_contains.assert_called_once_with("tags", "python", 10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_tag wraps ValueError in an error NoteQueryResult."""
+        """search_notes_by_tag wraps ValueError in an error response."""
         mock_db.query_field_contains.side_effect = ValueError("invalid")
 
         result = search_notes_by_tag(field="tags", value="x")
 
-        assert result["error"] is not None
-        assert "Type error" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_tag wraps unexpected exceptions in an error NoteQueryResult."""
+        """search_notes_by_tag wraps unexpected exceptions in an error response."""
         mock_db.query_field_contains.side_effect = Exception("boom")
 
         result = search_notes_by_tag(field="tags", value="x")
 
-        assert result["error"] is not None
-        assert "DB error" in result["error"]
-        assert "boom" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
 
 if __name__ == "__main__":

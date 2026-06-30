@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import _make_query_result, clear_init_db_cache, mock_db
+from helpers import _make_query_result
 from src.backend.main import search_notes_by_text
 
 
@@ -21,9 +21,10 @@ class TestSearchNotesByText:
 
         result = search_notes_by_text(text="find something")
 
-        assert result["documents"] == ["semantic match"]
-        assert result["metadatas"] == [{"filename": "result.md"}]
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            {"filename": "result.md", "text": "semantic match"}
+        ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text passes text and n_results to the DB."""
@@ -42,28 +43,20 @@ class TestSearchNotesByText:
         mock_db.query_by_text.assert_called_once_with("query", 10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text wraps ValueError in an error NoteQueryResult."""
+        """search_notes_by_text wraps ValueError in an error response."""
         mock_db.query_by_text.side_effect = ValueError("invalid text")
 
         result = search_notes_by_text(text="query")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is not None
-        assert "Type error" in result["error"]
-        assert "invalid text" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text wraps unexpected exceptions in an error NoteQueryResult."""
+        """search_notes_by_text wraps unexpected exceptions in an error response."""
         mock_db.query_by_text.side_effect = Exception("embedding failure")
 
         result = search_notes_by_text(text="query")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is not None
-        assert "DB error" in result["error"]
-        assert "embedding failure" in result["error"]
+        assert result.content[0].text.startswith("Error")
 
     def test_empty_result_from_db(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text handles an empty result set gracefully."""
@@ -71,9 +64,8 @@ class TestSearchNotesByText:
 
         result = search_notes_by_text(text="nothing matches")
 
-        assert result["documents"] == []
-        assert result["metadatas"] == []
-        assert result["error"] is None
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == []
 
     def test_multiple_results_returned(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text returns all documents from the DB result."""
@@ -85,8 +77,7 @@ class TestSearchNotesByText:
 
         result = search_notes_by_text(text="broad query", n_results=3)
 
-        assert len(result["documents"]) == 3
-        assert len(result["metadatas"]) == 3
+        assert len(result.structured_content["notes"]) == 3
 
 
 if __name__ == "__main__":
