@@ -142,7 +142,7 @@ if __name__ == "__main__":
             session,
             "upsert_note",
             {
-                "path": "2024/01/my-note.md",
+                "path": "my-note.md",
                 "contents": "Hello world",
                 "fields": {"title": "My Note"},
             },
@@ -150,4 +150,4 @@ if __name__ == "__main__":
     )
 
     print("\n=== delete_note ===")
-    print(call_tool(session, "delete_note", {"path": "2024/01/my-note.md"}))
+    print(call_tool(session, "delete_note", {"path": "my-note.md"}))
