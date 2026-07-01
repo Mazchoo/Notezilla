@@ -12,13 +12,16 @@ fn notes_from_structured(val: &Value) -> Result<Vec<SearchResult>, String> {
     notes
         .iter()
         .map(|item| {
-            let filename = item
-                .get("filename")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown.md");
             let text = item.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            let mut metadata = HashMap::new();
-            metadata.insert("filename".to_string(), json!(filename));
+            let mut metadata: HashMap<String, Value> = item
+                .get("metadata")
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default();
+            if metadata.is_empty() {
+                if let Some(filename) = item.get("filename").and_then(|v| v.as_str()) {
+                    metadata.insert("filename".to_string(), json!(filename));
+                }
+            }
             Ok(SearchResult {
                 document: text.to_string(),
                 metadata,
@@ -79,12 +82,7 @@ pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
 }
 
 pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
-    let val = call_tool(
-        session_id,
-        "get_dir_contents",
-        json!({ "path": path }),
-    )
-    .await?;
+    let val = call_tool(session_id, "get_dir_contents", json!({ "path": path })).await?;
 
     serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }

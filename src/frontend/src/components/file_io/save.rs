@@ -15,9 +15,7 @@ pub fn normalize_note_path(path: &str) -> String {
 /// Format a relative note path for display in the editor title block.
 pub fn display_note_path(relative: &str) -> String {
     let relative = relative.trim().replace('\\', "/");
-    let relative = relative
-        .strip_prefix("./")
-        .unwrap_or(relative.as_str());
+    let relative = relative.strip_prefix("./").unwrap_or(relative.as_str());
     format!("./{relative}")
 }
 

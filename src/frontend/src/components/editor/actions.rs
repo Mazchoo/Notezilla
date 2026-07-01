@@ -35,9 +35,7 @@ pub fn delete_front_matter(state: &AppState, entry_id: u64) {
 pub fn add_front_matter(state: &AppState, entry_id: u64) {
     state.entries.with_untracked(|entries: &Vec<EditorEntry>| {
         if let Some(entry) = entries.iter().find(|e| e.title.id == entry_id) {
-            let fm = state
-                .root_owner
-                .with(|| FrontMatterBlock::new("tags: []"));
+            let fm = state.root_owner.with(|| FrontMatterBlock::new("tags: []"));
             entry.front_matter.set(Some(fm));
         }
     });

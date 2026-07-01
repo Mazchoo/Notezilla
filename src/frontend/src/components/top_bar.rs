@@ -54,9 +54,7 @@ pub fn TopBar() -> impl IntoView {
                         web_sys::console::log_1(&format!("Saved {path}").into());
                     }
                     Err(e) => {
-                        web_sys::console::error_1(
-                            &format!("Save failed for {path}: {e}").into(),
-                        );
+                        web_sys::console::error_1(&format!("Save failed for {path}: {e}").into());
                     }
                 }
             }

@@ -1,5 +1,6 @@
-use crate::components::file_io::{display_note_path, entry_from_note, open_note_in_editor};
-use crate::mcp::tools::{get_dir_contents, get_note};
+use crate::components::file_io::open_note_at_path;
+use crate::components::sidebar::context_menu::FileContextMenu;
+use crate::mcp::tools::get_dir_contents;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
 use icondata as id;
@@ -165,36 +166,27 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
     let entries = state.entries;
     let session = state.session_id;
     let path_for_active = path.clone();
+    let menu_visible = RwSignal::new(false);
+    let menu_x = RwSignal::new(0.0);
+    let menu_y = RwSignal::new(0.0);
 
     let is_active = move || current_path.get().as_deref() == Some(path_for_active.as_str());
 
-    let on_click = move |_| {
-        current_path.set(Some(path.clone()));
+    let open_note = {
+        let path = path.clone();
+        move || open_note_at_path(path.clone(), current_path, entries, session)
+    };
 
-        let sid = match session.get_untracked() {
-            Some(s) => s,
-            None => {
-                web_sys::console::warn_1(&"MCP session not ready".into());
-                return;
-            }
-        };
+    let on_click = {
+        let open_note = open_note.clone();
+        move |_| open_note()
+    };
 
-        let fetch_path = path.clone();
-        spawn_local(async move {
-            match get_note(&sid, &fetch_path).await {
-                Ok(note) => {
-                    let display_path = display_note_path(&fetch_path);
-                    let mut metadata = std::collections::HashMap::new();
-                    metadata.insert(
-                        "filename".to_string(),
-                        serde_json::json!(note.filename),
-                    );
-                    let entry = entry_from_note(display_path, &note.text, &metadata);
-                    open_note_in_editor(entries, entry);
-                }
-                Err(e) => web_sys::console::error_1(&e.into()),
-            }
-        });
+    let on_contextmenu = move |ev: web_sys::MouseEvent| {
+        ev.prevent_default();
+        menu_x.set(ev.client_x() as f64);
+        menu_y.set(ev.client_y() as f64);
+        menu_visible.set(true);
     };
 
     view! {
@@ -202,10 +194,17 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
             <a
                 class=move || if is_active() { "is-active" } else { "" }
                 on:click=on_click
+                on:contextmenu=on_contextmenu
             >
                 <Icon icon=id::LuFileText/>
                 {name}
             </a>
+            <FileContextMenu
+                visible=menu_visible
+                x=menu_x
+                y=menu_y
+                on_open=open_note
+            />
         </li>
     }
 }

@@ -228,9 +228,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     // scheduler) can run while `textarea_ref` is still empty, leaving the
     // textarea stuck at the HTML default of two visible rows.
     Effect::new(move |_| {
-        if markdown_editing_enabled.get()
-            && block.focused.try_get().unwrap_or(false)
-        {
+        if markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {
             request_animation_frame(move || {
                 if let Some(el) = textarea_ref.get_untracked() {
                     let _ = (*el).focus();

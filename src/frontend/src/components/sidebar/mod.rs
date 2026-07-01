@@ -1,3 +1,4 @@
+pub mod context_menu;
 pub mod file_tree;
 pub mod search_panel;
 

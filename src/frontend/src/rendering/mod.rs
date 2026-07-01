@@ -49,8 +49,7 @@ impl<'a> InterceptedMarkdown<'a> {
             let newlines = gap.matches('\n').count();
             if newlines > 2 {
                 for _ in 2..newlines {
-                    self.pending
-                        .push_back(Event::Html("<br>\n".into()));
+                    self.pending.push_back(Event::Html("<br>\n".into()));
                 }
             }
         }
@@ -81,8 +80,7 @@ impl<'a> InterceptedMarkdown<'a> {
             BlockKind::Mermaid => render_mermaid(&self.buf),
             BlockKind::Code(ref lang) => highlight_code(lang, &self.buf),
         };
-        self.pending
-            .push_back(Event::Html(html_fragment.into()));
+        self.pending.push_back(Event::Html(html_fragment.into()));
         self.buf.clear();
     }
 

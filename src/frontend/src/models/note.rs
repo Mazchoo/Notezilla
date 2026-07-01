@@ -30,6 +30,8 @@ impl SearchResult {
 pub struct NoteFile {
     pub filename: String,
     pub text: String,
+    #[serde(default)]
+    pub metadata: HashMap<String, serde_json::Value>,
 }
 
 /// Directory listing returned by get_dir_contents.
