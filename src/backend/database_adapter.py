@@ -10,7 +10,7 @@ import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
-from src.field_enums import ReservedFields
+from src.field_enums import ReservedFields, FieldTypes
 from src.backend.file_io import delete_all_old_index_folders
 
 
@@ -46,26 +46,26 @@ class NoteDatabase:
         )
 
     @staticmethod
-    def cast_value(key: str, val, target_type: str) -> dict:  # pylint: disable=too-many-return-statements
+    def cast_value(key: str, val, target_type: FieldTypes) -> dict:  # pylint: disable=too-many-return-statements
         """Cast a value to the target type and return as dict entries for a row"""
         if val is None:
             return {key: None}
-        if target_type == "json":
+        if target_type == FieldTypes.JSON:
             return {key: json.dumps(val, default=str)}
-        if target_type == "list":
+        if target_type == FieldTypes.LIST:
             parsed_list = val if isinstance(val, list) else [val]
             return {f"{key}\t{item}": True for item in parsed_list}
-        if target_type == "date":
+        if target_type == FieldTypes.DATE:
             return {
                 key: val.isoformat() if isinstance(val, (datetime, date)) else str(val)
             }
-        if target_type == "str":
+        if target_type == FieldTypes.STRING:
             return {key: str(val)}
-        if target_type == "float":
+        if target_type == FieldTypes.FLOAT:
             return {key: float(val)}
-        if target_type == "int":
+        if target_type == FieldTypes.INT:
             return {key: int(val)}
-        if target_type == "bool":
+        if target_type == FieldTypes.BOOL:
             return {key: bool(val)}
         return {key: val}
 
