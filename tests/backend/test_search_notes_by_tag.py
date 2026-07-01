@@ -4,6 +4,7 @@ import pytest
 
 from tests.backend.helpers import _make_query_result
 from src.backend.main import search_notes_by_tag
+from src.backend.mcp_interface import McpResponse
 
 
 class TestSearchNotesByTag:
@@ -23,7 +24,10 @@ class TestSearchNotesByTag:
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            {"filename": "note.md", "text": "tagged note"}
+            McpResponse.note_item(
+                "tagged note",
+                {"tags\tpython": True, "filename": "note.md"},
+            )
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name

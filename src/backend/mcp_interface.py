@@ -1,13 +1,21 @@
 """Definitions of interactions between MCP and other objects."""
 
 from functools import cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TypedDict
 
 from fastmcp.tools.tool import ToolResult
 
 from src.backend.database_adapter import NoteDatabase, QueryResult
 from src.backend.file_io import get_db_column_types
 from src.field_enums import ColumnTypes
+
+
+class McpNoteItem(TypedDict):
+    """A single note returned by MCP query tools."""
+
+    filename: str
+    text: str
+    metadata: Dict[str, Any]
 
 
 @cache
@@ -47,18 +55,33 @@ class McpResponse:
         )
 
     @staticmethod
-    def notes(items: List[Dict[str, str]]) -> ToolResult:
+    def notes(items: List[McpNoteItem]) -> ToolResult:
         """Return note file data as minimal filename/text records."""
         return McpResponse.success({"notes": items})
 
     @staticmethod
+    def _note_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Return user-facing metadata, excluding internal storage keys."""
+        return {
+            key: value
+            for key, value in metadata.items()
+            if key != "text" and not key.startswith("\n")
+        }
+
+    @staticmethod
+    def note_item(text: str, metadata: Dict[str, Any]) -> McpNoteItem:
+        """Build one note record from query document text and raw metadata."""
+        return {
+            "filename": str(metadata.get("filename", "")),
+            "text": text,
+            "metadata": McpResponse._note_metadata(metadata),
+        }
+
+    @staticmethod
     def notes_from_query(result: QueryResult) -> ToolResult:
-        """Convert a database query result into minimal note file records."""
+        """Convert a database query result into note file records."""
         items = [
-            {
-                "filename": str(metadata.get("filename", "")),
-                "text": text,
-            }
+            McpResponse.note_item(text, metadata)
             for text, metadata in zip(result.documents, result.metadatas)
         ]
         return McpResponse.notes(items)

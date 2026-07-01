@@ -2,8 +2,9 @@
 
 import pytest
 
-from tests.backend.helpers import _make_query_result
 from src.backend.main import get_note
+from src.backend.mcp_interface import McpResponse
+from tests.backend.helpers import _make_query_result
 
 
 class TestGetNote:
@@ -20,9 +21,35 @@ class TestGetNote:
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            {"filename": "note.md", "text": "note content"}
+            McpResponse.note_item("note content", {"filename": "note.md"})
         ]
         mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
+
+    def test_returns_metadata_for_front_matter(self, mock_db):  # pylint: disable=redefined-outer-name
+        """get_note includes metadata fields needed to reconstruct front matter."""
+        meta = {
+            "filename": "note.md",
+            "title": "My Note",
+            "tags\twork": True,
+            "\npath_depth_0": "2024",
+            "text": "ignored body copy",
+        }
+        query_result = _make_query_result(docs=["note content"], metas=[meta])
+        mock_db.query_by_id.return_value = query_result
+
+        result = get_note(path="2024/01/note.md")
+
+        assert result.structured_content["notes"] == [
+            {
+                "filename": "note.md",
+                "text": "note content",
+                "metadata": {
+                    "filename": "note.md",
+                    "title": "My Note",
+                    "tags\twork": True,
+                },
+            }
+        ]
 
     def test_backslash_path_calls_normalised_path(self, mock_db):  # pylint: disable=redefined-outer-name
         """Expect key to be universal to get the same result each time"""

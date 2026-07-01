@@ -4,6 +4,7 @@ import pytest
 
 from tests.backend.helpers import _make_query_result
 from src.backend.main import search_notes_by_field
+from src.backend.mcp_interface import McpResponse
 
 
 class TestSearchNotesByField:
@@ -24,7 +25,7 @@ class TestSearchNotesByField:
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            {"filename": "note.md", "text": "content of note"}
+            McpResponse.note_item("content of note", {"filename": "note.md"})
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
