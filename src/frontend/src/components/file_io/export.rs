@@ -17,9 +17,7 @@ pub fn export_entries_as_html(entries: &[EditorEntry]) {
         let document = build_html_document(&page_title, &body_html);
 
         if let Err(err) = download_text_file(&filename, &document, "text/html;charset=utf-8") {
-            web_sys::console::error_1(
-                &format!("Export failed for {filename}: {err:?}").into(),
-            );
+            web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
         }
     }
 }
@@ -32,9 +30,7 @@ pub fn export_entries_as_markdown(entries: &[EditorEntry]) {
         let content = entry_to_markdown(*entry);
 
         if let Err(err) = download_text_file(&filename, &content, "text/markdown;charset=utf-8") {
-            web_sys::console::error_1(
-                &format!("Export failed for {filename}: {err:?}").into(),
-            );
+            web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
         }
     }
 }

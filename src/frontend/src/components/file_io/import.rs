@@ -1,5 +1,5 @@
-use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use super::save::{display_note_path, normalize_note_path};
+use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use serde_json::Value;
 use std::collections::HashMap;
