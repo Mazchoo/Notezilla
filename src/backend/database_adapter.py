@@ -69,7 +69,7 @@ class NoteDatabase:
             return {key: bool(val)}
         return {key: val}
 
-    def upsert_batch(self, rows: List[dict]) -> int:
+    def upsert_batch(self, rows: List[dict]):
         """
         Upserts a list of prepared rows into the collection.
         Each row must contain ReservedFields (path, filename, text).
@@ -102,11 +102,9 @@ class NoteDatabase:
             documents.append(text)
             metadatas.append(metadata)
 
-        count_before = len(self)
         self._collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
-        return len(self) - count_before
 
-    def delete_batch(self, paths: List[str]) -> int:
+    def delete_batch(self, paths: List[str]):
         """
         Upserts a list of prepared rows into the collection.
         Each row must contain ReservedFields (path, filename, text).
@@ -115,9 +113,7 @@ class NoteDatabase:
         if not paths:
             return 0
 
-        count_before = len(self)
         self._collection.delete(ids=paths)
-        return len(self) - count_before
 
     def __len__(self) -> int:
         return self._collection.count()
