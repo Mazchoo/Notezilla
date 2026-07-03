@@ -65,38 +65,39 @@ class PyFileHandler(FileSystemEventHandler):
             if not self._queue:
                 return
 
-            queue = filter_event_list(self._queue)
-
-            total_upserted = 0
-            batch = []
-            for update in [u for u in queue if u.event_type in ["created", "modified"]]:
-                total_upserted += 1
-                if markdown := MarkdownData.construct_from_path(str(update.src_path)):
-                    batch.append(prepate_database_row(markdown, self.column_types))
-                    if len(batch) >= BATCH_SIZE:
-                        self.database.upsert_batch(batch)
-                        batch = []
-
-            self.database.upsert_batch(batch)
-            LOGGER.info("Upserted %s files to database", total_upserted)
-
-            total_removed = 0
-            batch = []
-            for update in [u for u in queue if u.event_type == "deleted"]:
-                total_removed += 1
-                if not (normed_path := get_normalised_path(str(update.src_path))):
-                    continue
-                batch.append(normed_path)
-                if len(batch) >= BATCH_SIZE:
-                    self.database.delete_batch(batch)
-                    batch = []
-
-            self.database.delete_batch(batch)
-            LOGGER.info("Command to delete %s files to database", total_removed)
-
             # Process and then clear
+            queue = filter_event_list(self._queue)
             self._queue.clear()
             self._timer = None
+
+        total_upserted = 0
+        batch = []
+        for update in [u for u in queue if u.event_type in ["created", "modified"]]:
+            total_upserted += 1
+            if markdown := MarkdownData.construct_from_path(str(update.src_path)):
+                batch.append(prepate_database_row(markdown, self.column_types))
+                if len(batch) >= BATCH_SIZE:
+                    self.database.upsert_batch(batch)
+                    batch = []
+
+        self.database.upsert_batch(batch)
+        LOGGER.info("Upserted %s files to database", total_upserted)
+
+        total_removed = 0
+        batch = []
+        for update in [u for u in queue if u.event_type == "deleted"]:
+            total_removed += 1
+            if not (normed_path := get_normalised_path(str(update.src_path))):
+                continue
+            batch.append(normed_path)
+            if len(batch) >= BATCH_SIZE:
+                self.database.delete_batch(batch)
+                batch = []
+
+        self.database.delete_batch(batch)
+        LOGGER.info("Command to delete %s files to database", total_removed)
+
+
 
     @staticmethod
     def construct_observer(
