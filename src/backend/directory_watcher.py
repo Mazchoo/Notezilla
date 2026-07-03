@@ -7,7 +7,6 @@ from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 from watchdog.events import FileSystemEventHandler
 
-from src.config import BATCH_SIZE
 from src.backend.event_handling import (
     FileChangeEvent,
     event_is_valid,
@@ -33,7 +32,8 @@ class PyFileHandler(FileSystemEventHandler):
 
         self._queue: List[FileChangeEvent] = []  # Queue to hold recent events
         self._timer = None
-        self._lock = threading.Lock()  # Ensure thread safety
+        self._event_lock = threading.Lock()  # Ensure thread safety
+        self._database_lock = threading.Lock()  # Ensure safe execution on database
 
     def on_modified(self, event: FileChangeEvent):
         self._handle_event(event)
@@ -48,7 +48,7 @@ class PyFileHandler(FileSystemEventHandler):
         if not event_is_valid(event):
             return
 
-        with self._lock:
+        with self._event_lock:
             # Add to batch
             self._queue.append(event)
 
@@ -61,42 +61,37 @@ class PyFileHandler(FileSystemEventHandler):
             self._timer.start()
 
     def _process_batch(self):
-        with self._lock:
+        with self._event_lock:
             if not self._queue:
                 return
 
             queue = filter_event_list(self._queue)
 
-            total_upserted = 0
-            batch = []
-            for update in [u for u in queue if u.event_type in ["created", "modified"]]:
-                total_upserted += 1
-                if markdown := MarkdownData.construct_from_path(str(update.src_path)):
-                    batch.append(prepate_database_row(markdown, self.column_types))
-                    if len(batch) >= BATCH_SIZE:
-                        self.database.upsert_batch(batch)
-                        batch = []
-
-            self.database.upsert_batch(batch)
-            LOGGER.info("Upserted %s files to database", total_upserted)
-
-            total_removed = 0
-            batch = []
-            for update in [u for u in queue if u.event_type == "deleted"]:
-                total_removed += 1
-                if not (normed_path := get_normalised_path(str(update.src_path))):
-                    continue
-                batch.append(normed_path)
-                if len(batch) >= BATCH_SIZE:
-                    self.database.delete_batch(batch)
-                    batch = []
-
-            self.database.delete_batch(batch)
-            LOGGER.info("Command to delete %s files to database", total_removed)
-
-            # Process and then clear
             self._queue.clear()
             self._timer = None
+
+        upsert_batch = []
+        total_upserted = 0
+        for update in [u for u in queue if u.event_type in ["created", "modified"]]:
+            total_upserted += 1
+            if markdown := MarkdownData.construct_from_path(str(update.src_path)):
+                upsert_batch.append(prepate_database_row(markdown, self.column_types))
+
+        delete_batch = []
+        total_removed = 0
+        for update in [u for u in queue if u.event_type == "deleted"]:
+            total_removed += 1
+            if not (normed_path := get_normalised_path(str(update.src_path))):
+                continue
+            delete_batch.append(normed_path)
+
+        with self._database_lock:
+            self.database.upsert_batch(upsert_batch)
+            self.database.delete_batch(delete_batch)
+
+        LOGGER.info("Upserted %s files to database", total_upserted)
+        LOGGER.info("Command to delete %s files to database", total_removed)
+
 
     @staticmethod
     def construct_observer(
