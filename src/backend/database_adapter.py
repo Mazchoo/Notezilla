@@ -31,6 +31,7 @@ class QueryResult:
 class NoteDatabase:
     """Manages a ChromaDB collection for markdown notes"""
 
+    # Convention to indicate path parts column names, database detail
     PATH_DEPTH_PREFIX = "\npath_depth_"
 
     def __init__(self, max_path_depth: int = 0, path: str = DATABASE_FOLDER):
@@ -39,6 +40,7 @@ class NoteDatabase:
         self._embedding_function = SentenceTransformerEmbeddingFunction(
             model_name=EMBEDDING_MODEL
         )
+        self._embedding_function(["warmup"])
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
