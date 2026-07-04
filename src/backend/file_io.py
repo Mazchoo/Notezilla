@@ -194,7 +194,6 @@ def get_default_column_types() -> dict:
     """Get the default"""
     return {
         ReservedFields.FILENAME: "str",
-        ReservedFields.TEXT: "str",
     }
 
 

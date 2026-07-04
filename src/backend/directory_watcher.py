@@ -76,7 +76,9 @@ class PyFileHandler(FileSystemEventHandler):
             if update.event_type in ["created", "modified"]:
                 total_upserted += 1
                 if markdown := MarkdownData.construct_from_path(str(update.src_path)):
-                    upsert_batch.append(prepate_database_row(markdown, self.column_types))
+                    upsert_batch.append(
+                        prepate_database_row(markdown, self.column_types)
+                    )
 
             if update.event_type == "deleted":
                 total_removed += 1

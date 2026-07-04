@@ -61,11 +61,9 @@ class McpResponse:
 
     @staticmethod
     def _note_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """Return user-facing metadata, excluding internal storage keys."""
+        """Return front-matter metadata only."""
         return {
-            key: value
-            for key, value in metadata.items()
-            if key != "text" and not key.startswith("\n")
+            key: value for key, value in metadata.items() if not key.startswith("\n")
         }
 
     @staticmethod

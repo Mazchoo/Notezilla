@@ -11,6 +11,8 @@ def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> d
     """
     row = {}
     for key, target_type in column_types.items():
+        if ReservedFields.contains(key):
+            continue
         val = markdown.fields.get(key)
         row.update(NoteDatabase.cast_value(key, val, target_type))
 

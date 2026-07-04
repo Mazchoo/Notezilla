@@ -17,6 +17,14 @@ class ReservedFields(StrEnum):
         """Returns true if a member of this enum"""
         return s in [e.value for e in cls]
 
+    @classmethod
+    def excluded_from_metadata(cls) -> frozenset[str]:
+        """
+        Row keys that are not stored in Chroma metadata.
+        Path is primary key and text is document content.
+        """
+        return frozenset({cls.PATH, cls.TEXT})
+
 
 class FieldTypes(StrEnum):
     """Indicates all allowed types for front matter fields"""

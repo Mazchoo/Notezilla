@@ -31,7 +31,6 @@ class TestGetNote:
             "filename": "note.md",
             "title": "My Note",
             "tags\twork": True,
-            "text": "ignored body copy",
         }
         query_result = _make_query_result(docs=["note content"], metas=[meta])
         mock_db.query_by_id.return_value = query_result

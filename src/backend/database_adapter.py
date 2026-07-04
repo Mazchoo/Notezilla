@@ -71,7 +71,7 @@ class NoteDatabase:
         """
         Upserts a list of prepared rows into the collection.
         Each row must contain ReservedFields (path, filename, text).
-        Returns change in files (+ve)
+        Note body is stored as the Chroma document, not in metadata.
         """
         if not rows:
             return 0
@@ -81,7 +81,7 @@ class NoteDatabase:
         metadatas = []
 
         for row in rows:
-            text = row.get(ReservedFields.TEXT, "")
+            document = row.get(ReservedFields.TEXT, "")
             path_parts = row.get(ReservedFields.PATH, [])
             filename = row.get(ReservedFields.FILENAME, "")
 
@@ -89,21 +89,17 @@ class NoteDatabase:
             metadata = {
                 k: v
                 for k, v in row.items()
-                if v is not None and k != ReservedFields.PATH
+                if v is not None and k not in ReservedFields.excluded_from_metadata()
             }
 
             ids.append(doc_id)
-            documents.append(text)
+            documents.append(document)
             metadatas.append(metadata)
 
         self._collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
 
     def delete_batch(self, paths: List[str]):
-        """
-        Upserts a list of prepared rows into the collection.
-        Each row must contain ReservedFields (path, filename, text).
-        Returns change in files (-ve)
-        """
+        """Delete notes by their path ids."""
         if not paths:
             return 0
 
@@ -114,7 +110,10 @@ class NoteDatabase:
 
     def query_by_id(self, doc_id: str) -> QueryResult:
         """Return a single document and metadata by its path id"""
-        results = self._collection.get(ids=[doc_id])
+        results = self._collection.get(
+            ids=[doc_id],
+            include=["documents", "metadatas"],
+        )
         return QueryResult(
             documents=results["documents"] or [],
             metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
@@ -129,7 +128,11 @@ class NoteDatabase:
                 f"{value}: {type(value)} not in valid query types {VALID_QUERY_TYPES}"
             )
 
-        results = self._collection.get(where={field: value}, limit=n_results)
+        results = self._collection.get(
+            where={field: value},
+            limit=n_results,
+            include=["documents", "metadatas"],
+        )
         return QueryResult(
             documents=results["documents"] or [],
             metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
@@ -152,6 +155,7 @@ class NoteDatabase:
             query_texts=[text],
             n_results=n_results,
             where=where,
+            include=["documents", "metadatas", "distances"],
         )
         raw_distances = results.get("distances")
         return QueryResult(
