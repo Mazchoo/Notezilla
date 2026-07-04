@@ -41,11 +41,7 @@ class MarkdownData:
         """
         path_obj = Path(path)
 
-        if (
-            not path_obj.exists()
-            or path_obj.is_dir()
-            or not path_obj.is_relative_to(NOTE_FOLDER_PATH)
-        ):
+        if not path_obj.is_relative_to(NOTE_FOLDER_PATH):
             return None
 
         relative_parts = path_obj.relative_to(NOTE_FOLDER_PATH).parts

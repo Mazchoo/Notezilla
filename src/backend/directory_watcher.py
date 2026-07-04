@@ -92,7 +92,6 @@ class PyFileHandler(FileSystemEventHandler):
         LOGGER.info("Upserted %s files to database", total_upserted)
         LOGGER.info("Command to delete %s files to database", total_removed)
 
-
     @staticmethod
     def construct_observer(
         database: NoteDatabase, column_types: ColumnTypes, debounce_delay: int
