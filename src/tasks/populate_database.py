@@ -74,16 +74,14 @@ def create_default_front_matter(column_types: ColumnTypes) -> str:
 def put_all_markdowns_note_folder_into_database():
     """Freshly parse all markdown files and add them to chroma db index"""
     column_types = get_default_column_types()
-    max_path_depth = 0
 
     for path in iterate_all_markdowns():
         if markdown := MarkdownData.construct_from_path(path):
             column_types = discover_field_schemas(markdown, column_types)
-            max_path_depth = max(max_path_depth, len(markdown.path))
 
     print(f"Schema: {column_types}")
 
-    db = NoteDatabase(max_path_depth=max_path_depth)
+    db = NoteDatabase()
     db.reset_collection()
 
     batch = []

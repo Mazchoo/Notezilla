@@ -45,21 +45,6 @@ pub async fn search_by_text(
     notes_from_structured(&val)
 }
 
-pub async fn list_by_path(
-    session_id: &str,
-    path_parts: &[&str],
-    n_results: usize,
-) -> Result<Vec<SearchResult>, String> {
-    let val = call_tool(
-        session_id,
-        "search_notes_by_path",
-        json!({ "path_parts": path_parts, "n_results": n_results }),
-    )
-    .await?;
-
-    notes_from_structured(&val)
-}
-
 pub async fn upsert_note(
     session_id: &str,
     path: &str,

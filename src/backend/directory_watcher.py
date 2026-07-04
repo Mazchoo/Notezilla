@@ -88,8 +88,10 @@ class PyFileHandler(FileSystemEventHandler):
             self.database.upsert_batch(upsert_batch)
             self.database.delete_batch(delete_batch)
 
-        LOGGER.info("Upserted %s files to database", total_upserted)
-        LOGGER.info("Command to delete %s files to database", total_removed)
+        if total_upserted:
+            LOGGER.info("Upserted %s files to database", total_upserted)
+        if total_removed:
+            LOGGER.info("Deleted %s files to database", total_removed)
 
     @staticmethod
     def construct_observer(

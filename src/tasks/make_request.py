@@ -133,9 +133,6 @@ if __name__ == "__main__":
         call_tool(session, "search_notes_by_tag", {"field": "tags", "value": "journal"})
     )
 
-    print("\n=== search_notes_by_path ===")
-    print(call_tool(session, "search_notes_by_path", {"path_parts": ["2024", "01"]}))
-
     print("\n=== upsert_note ===")
     print(
         call_tool(

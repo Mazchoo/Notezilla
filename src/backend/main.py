@@ -1,6 +1,6 @@
 """Handle changes to note directory and forward them to database updates"""
 
-from typing import List, Annotated
+from typing import Annotated
 
 from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
@@ -182,32 +182,6 @@ def search_notes_by_tag(
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_tag")
-        return McpResponse.error(f"DB error: {e}")
-
-
-@MCP.tool()
-def search_notes_by_path(
-    path_parts: Annotated[
-        List[str],
-        Field(description='Ordered list of path segments e.g. ["2018", "01", "14"]'),
-    ],
-    n_results: Annotated[
-        int, Field(description="Maximum number of results to return")
-    ] = 100,
-) -> ToolResult:
-    """Find notes under a given folder path.
-
-    Args:
-        path_parts: Ordered list of path segments e.g. ["2018", "01", "14"]
-        n_results: Maximum number of results to return
-    """
-    try:
-        result = init_db().query_by_path(path_parts, n_results)
-        return McpResponse.notes_from_query(result)
-    except ValueError as e:
-        return McpResponse.error(f"Type error: {e}")
-    except Exception as e:  # pylint: disable=broad-except
-        LOGGER.exception("DB error in search_notes_by_path")
         return McpResponse.error(f"DB error: {e}")
 
 

@@ -6,7 +6,6 @@
 			"disabled": false,
 			"alwaysAllow": [
 				"search_notes_by_text",
-				"search_notes_by_path",
 				"search_notes_by_tag",
 				"search_notes_by_field"
 			]

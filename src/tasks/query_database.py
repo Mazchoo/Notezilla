@@ -10,7 +10,6 @@ LIST_FIELD = "tags"
 LIST_VALUE = "paragraph"
 SEARCH_FIELD = "filename"
 SEARCH_VALUE = "p0.md"
-SEARCH_PATH = ["2018", "01", "14"]
 SEARCH_TEXT = "I like crepes"
 
 
@@ -41,16 +40,6 @@ if __name__ == "__main__":
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search exact match for specific field")
-    print_query_results(result.documents, result.metadatas)
-    print(f"Time taken: {time_taken_ms:.1f}ms")
-    print("------")
-    print()
-
-    start = perf_counter()
-    result = db.query_by_path(SEARCH_PATH, 5)
-    time_taken_ms = (perf_counter() - start) * 1000.0
-
-    print("Search by file path")
     print_query_results(result.documents, result.metadatas)
     print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")

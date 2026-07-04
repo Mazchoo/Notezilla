@@ -31,7 +31,6 @@ class TestGetNote:
             "filename": "note.md",
             "title": "My Note",
             "tags\twork": True,
-            "\npath_depth_0": "2024",
             "text": "ignored body copy",
         }
         query_result = _make_query_result(docs=["note content"], metas=[meta])

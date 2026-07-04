@@ -31,12 +31,8 @@ class QueryResult:
 class NoteDatabase:
     """Manages a ChromaDB collection for markdown notes"""
 
-    # Convention to indicate path parts column names, database detail
-    PATH_DEPTH_PREFIX = "\npath_depth_"
-
-    def __init__(self, max_path_depth: int = 0, path: str = DATABASE_FOLDER):
+    def __init__(self, path: str = DATABASE_FOLDER):
         self._client = chromadb.PersistentClient(path=path)
-        self._max_path_depth = max_path_depth
         self._embedding_function = SentenceTransformerEmbeddingFunction(
             model_name=EMBEDDING_MODEL
         )
@@ -80,12 +76,6 @@ class NoteDatabase:
         if not rows:
             return 0
 
-        max_incoming_depth = max(
-            (len(row.get(ReservedFields.PATH, [])) for row in rows), default=0
-        )
-        if max_incoming_depth > self._max_path_depth:
-            self._max_path_depth = max_incoming_depth
-
         ids = []
         documents = []
         metadatas = []
@@ -96,10 +86,6 @@ class NoteDatabase:
             filename = row.get(ReservedFields.FILENAME, "")
 
             doc_id = "/".join(path_parts + [filename])
-            for i in range(self._max_path_depth):
-                key = f"{self.PATH_DEPTH_PREFIX}{i}"
-                row[key] = path_parts[i] if i < len(path_parts) else None
-            # The path field is ignored as it is already searchable in path depth parts
             metadata = {
                 k: v
                 for k, v in row.items()
@@ -157,22 +143,6 @@ class NoteDatabase:
         List values are stored as ``field.value: True`` metadata keys.
         """
         return self.query_by_field(f"{field}\t{value}", True, n_results)
-
-    def query_by_path(self, path_parts: List[str], n_results: int = 100) -> QueryResult:
-        """Return all documents and metadatas under a given folder path"""
-        if not path_parts:
-            results = self._collection.get(limit=n_results)
-        else:
-            conditions = [
-                {f"{self.PATH_DEPTH_PREFIX}{i}": part}
-                for i, part in enumerate(path_parts)
-            ]
-            where = conditions[0] if len(conditions) == 1 else {"$and": conditions}
-            results = self._collection.get(where=where, limit=n_results)  # type: ignore[arg-type]
-        return QueryResult(
-            documents=results["documents"] or [],
-            metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
-        )
 
     def query_by_text(
         self, text: str, n_results: int = 10, where: Optional[dict] = None

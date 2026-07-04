@@ -27,7 +27,6 @@ def mock_db():
         db.query_by_id = MagicMock()
         db.query_by_field = MagicMock()
         db.query_field_contains = MagicMock()
-        db.query_by_path = MagicMock()
         db.query_by_text = MagicMock()
         yield db
     init_db.cache_clear()
