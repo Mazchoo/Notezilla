@@ -80,6 +80,12 @@ class NoteDatabase:
         if not rows:
             return 0
 
+        max_incoming_depth = max(
+            (len(row.get(ReservedFields.PATH, [])) for row in rows), default=0
+        )
+        if max_incoming_depth > self._max_path_depth:
+            self._max_path_depth = max_incoming_depth
+
         ids = []
         documents = []
         metadatas = []
