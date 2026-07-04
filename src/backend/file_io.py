@@ -121,21 +121,32 @@ def delete_note_file(path: str) -> bool:
 
 def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
     """Return yaml dict in data if it can be parsed else empty data and file contents"""
-    split_file = content.split("---")
-    if len(split_file) >= 3:
-        yaml_block = split_file[1]
+    if not content.startswith("---"):
+        # No yaml header, early return
+        return content, {}
 
-        try:
-            data = yaml.safe_load(yaml_block)
-            text = "".join(split_file[2:])
-        except yaml.YAMLError as e:
-            print(f"Warning: Malformed yaml data {e}")
-            text = content
+    nl = "\r\n" if content.startswith("---\r\n") else "\n"
+    sep = f"{nl}---{nl}"
+
+    start = len(f"---{nl}")
+    close_pos = content.find(sep, start)
+
+    if close_pos == -1:
+        return content, {}
+
+    yaml_block = content[start:close_pos]
+    text = content[close_pos + len(sep) :]
+
+    try:
+        data = yaml.safe_load(yaml_block)
+        if not isinstance(data, dict):
             data = {}
-    else:
-        text = content
-        data = {}
+    except yaml.YAMLError as e:
+        # Yaml data cannot be parsed, return full content
+        print(f"Warning: Malformed yaml data {e}")
+        return content, {}
 
+    # New text and yaml dictionary
     return text, data
 
 

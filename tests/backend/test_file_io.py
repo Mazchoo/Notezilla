@@ -65,7 +65,23 @@ class TestExtractYamlFromFileContents:
         }
         assert "# Silly Database Integration" in text
         assert "Just add some random content" in text
-        assert text.startswith("\n")
+        assert text.startswith("\n#")
+
+    def test_body_immediately_after_front_matter_has_no_leading_newline(self):
+        content = (
+            "---\n"
+            "date: 2018-04-13\n"
+            "tags: [journal, paragraph]\n"
+            "---\n"
+            "There was a polar bear made out of used toilet paper."
+        )
+
+        text, fields = extract_yaml_from_file_contents(content)
+
+        assert fields["tags"] == ["journal", "paragraph"]
+        assert "date" in fields
+        assert text == "There was a polar bear made out of used toilet paper."
+        assert not text.startswith("\n")
 
     def test_malformed_yaml_returns_full_content(self):
         """Invalid YAML yields empty fields and preserves the raw file."""
