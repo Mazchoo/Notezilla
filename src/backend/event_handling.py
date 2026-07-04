@@ -10,7 +10,7 @@ FileChangeEvent = Union[FileModifiedEvent, FileCreatedEvent, FileDeletedEvent]
 
 def event_is_valid(event: FileChangeEvent):
     """Event needs translating to database update"""
-    return not event.is_directory and str(event.src_path).lower().endswith(".md")
+    return not event.is_directory and str(event.src_path).endswith((".md", ".MD"))
 
 
 def filter_event_list(events: List[FileChangeEvent]) -> List[FileChangeEvent]:
