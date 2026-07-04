@@ -34,16 +34,14 @@ pub fn entry_from_markdown(path: impl Into<String>, text: &str) -> EditorEntry {
 }
 
 /// Build an [`EditorEntry`] from a backend `get_note` document and metadata.
+///
+/// The backend returns body text with front matter already stripped and metadata
+/// in a separate map — do not re-parse `---` delimiters from the body.
 pub fn entry_from_note(
     path: impl Into<String>,
     body: &str,
     metadata: &HashMap<String, Value>,
 ) -> EditorEntry {
-    // Document may already be split (DB body only); if not, parse like a file import.
-    let (split_fm, split_body) = split_front_matter(body);
-    if split_fm.is_some() {
-        return entry_from_content(path, &split_body, split_fm);
-    }
     entry_from_content(path, body, front_matter_from_metadata(metadata))
 }
 
