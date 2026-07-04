@@ -70,20 +70,19 @@ class PyFileHandler(FileSystemEventHandler):
             self._queue.clear()
             self._timer = None
 
-        upsert_batch = []
-        total_upserted = 0
-        for update in [u for u in queue if u.event_type in ["created", "modified"]]:
-            total_upserted += 1
-            if markdown := MarkdownData.construct_from_path(str(update.src_path)):
-                upsert_batch.append(prepate_database_row(markdown, self.column_types))
+        upsert_batch, total_upserted = [], 0
+        delete_batch, total_removed = [], 0
+        for update in queue:
+            if update.event_type in ["created", "modified"]:
+                total_upserted += 1
+                if markdown := MarkdownData.construct_from_path(str(update.src_path)):
+                    upsert_batch.append(prepate_database_row(markdown, self.column_types))
 
-        delete_batch = []
-        total_removed = 0
-        for update in [u for u in queue if u.event_type == "deleted"]:
-            total_removed += 1
-            if not (normed_path := get_normalised_path(str(update.src_path))):
-                continue
-            delete_batch.append(normed_path)
+            if update.event_type == "deleted":
+                total_removed += 1
+                if not (normed_path := get_normalised_path(str(update.src_path))):
+                    continue
+                delete_batch.append(normed_path)
 
         with self._database_lock:
             self.database.upsert_batch(upsert_batch)
