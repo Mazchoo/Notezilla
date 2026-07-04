@@ -1,4 +1,5 @@
 use gloo_net::http::Request;
+use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -58,12 +59,16 @@ pub async fn initialize_session() -> Result<String, String> {
 
     // Fire-and-forget notifications/initialized
     let notify = json!({ "jsonrpc": "2.0", "method": "notifications/initialized" });
-    let _ = Request::post(MCP_URL)
+    if let Ok(req) = Request::post(MCP_URL)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json, text/event-stream")
         .header("mcp-session-id", &session_id)
         .json(&notify)
-        .map(|r| r.send());
+    {
+        spawn_local(async move {
+            let _ = req.send().await;
+        });
+    }
 
     Ok(session_id)
 }
