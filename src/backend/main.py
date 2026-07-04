@@ -16,6 +16,7 @@ from src.backend.file_io import (
 )
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import MarkdownData
+from src.backend.logger import LOGGER
 from src.backend.mcp_interface import (
     init_db,
     init_column_types,
@@ -128,6 +129,7 @@ def get_note(
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in get_note")
         return McpResponse.error(f"DB error: {e}")
 
 
@@ -154,6 +156,7 @@ def search_notes_by_field(
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in search_notes_by_field")
         return McpResponse.error(f"DB error: {e}")
 
 
@@ -178,6 +181,7 @@ def search_notes_by_tag(
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in search_notes_by_tag")
         return McpResponse.error(f"DB error: {e}")
 
 
@@ -203,6 +207,7 @@ def search_notes_by_path(
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in search_notes_by_path")
         return McpResponse.error(f"DB error: {e}")
 
 
@@ -225,6 +230,7 @@ def search_notes_by_text(
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in search_notes_by_text")
         return McpResponse.error(f"DB error: {e}")
 
 
