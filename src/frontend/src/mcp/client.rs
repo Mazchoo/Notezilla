@@ -54,7 +54,9 @@ pub async fn initialize_session() -> Result<String, String> {
 
     let session_id = response
         .headers()
-        .get("mcp-session-id")
+        .entries()
+        .find(|(name, _)| name.eq_ignore_ascii_case("mcp-session-id"))
+        .map(|(_, value)| value)
         .ok_or_else(|| "No mcp-session-id header in initialize response".to_string())?;
 
     // Fire-and-forget notifications/initialized
