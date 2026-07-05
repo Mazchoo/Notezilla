@@ -57,7 +57,7 @@ class TestMarkdownDataRoundTrip:
                 side_effect=_fake_write_factory(store),
             ),
         ):
-            from_data = MarkdownData.construct_from_data(
+            from_data, _new_file_created = MarkdownData.construct_from_data(
                 path=path, contents=contents, fields=fields
             )
 

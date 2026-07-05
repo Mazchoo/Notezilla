@@ -63,9 +63,13 @@ class MarkdownData:
     @staticmethod
     def construct_from_data(
         path: str, contents: str, fields: dict
-    ) -> Optional["MarkdownData"]:
+    ) -> Optional[tuple["MarkdownData", bool]]:
         """
-        Construct note from data and return it if it was successfully created
+        Construct note from data and return it if it was successfully created.
+
+        Returns (MarkdownData, new_file_created) where new_file_created is True
+        when the path did not exist before writing.
+
         Side Effect: will write content to file path, i.e. update or add new
         """
 
@@ -73,6 +77,7 @@ class MarkdownData:
         if path_obj.suffix != ".md":
             return None
 
+        new_file_created = not path_obj.exists()
         payload = construct_yaml_header(fields) + contents
         if not ensure_note_parent_dirs(path):
             return None
@@ -82,8 +87,11 @@ class MarkdownData:
         filename = path_obj.name
         path_parts = path_obj.parts[:-1]
 
-        return MarkdownData(
-            fields=fields, text=contents, filename=filename, path=list(path_parts)
+        return (
+            MarkdownData(
+                fields=fields, text=contents, filename=filename, path=list(path_parts)
+            ),
+            new_file_created,
         )
 
 

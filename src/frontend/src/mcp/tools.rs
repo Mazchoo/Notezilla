@@ -3,6 +3,10 @@ use crate::models::note::{DirectoryContents, NoteFile, SearchResult};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
+pub struct UpsertNoteResult {
+    pub new_file_created: bool,
+}
+
 fn notes_from_structured(val: &Value) -> Result<Vec<SearchResult>, String> {
     let notes = val
         .get("notes")
@@ -50,14 +54,20 @@ pub async fn upsert_note(
     path: &str,
     contents: &str,
     fields: serde_json::Value,
-) -> Result<(), String> {
-    call_tool(
+) -> Result<UpsertNoteResult, String> {
+    let val = call_tool(
         session_id,
         "upsert_note",
         json!({ "path": path, "contents": contents, "fields": fields }),
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    let new_file_created = val
+        .get("newFileCreated")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    Ok(UpsertNoteResult { new_file_created })
 }
 
 pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {

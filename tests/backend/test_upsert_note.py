@@ -1,5 +1,6 @@
 """Tests for the upsert_note MCP tool."""
 
+from pathlib import Path
 from unittest.mock import patch, mock_open
 
 import pytest
@@ -23,6 +24,22 @@ class TestUpsertNote:
             )
 
         assert result.content[0].text == "Success"
+        assert result.structured_content == {"newFileCreated": True}
+
+    def test_upsert_note_existing_file_reports_not_created(self):
+        """upsert_note reports newFileCreated=False when the file already exists."""
+        with (
+            patch("src.backend.file_io.open", mock_open()),
+            patch.object(Path, "exists", return_value=True),
+        ):
+            result = upsert_note(
+                path="2024/01/my-note.md",
+                contents="Updated body",
+                fields={"title": "My Note"},
+            )
+
+        assert result.content[0].text == "Success"
+        assert result.structured_content == {"newFileCreated": False}
 
     def test_upsert_note_failure_returns_error(self):
         """upsert_note returns an error message when open() raises OSError."""
