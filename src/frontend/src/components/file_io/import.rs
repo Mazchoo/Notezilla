@@ -1,4 +1,5 @@
 use super::save::{display_note_path, normalize_note_path};
+use crate::components::toast::show_toast;
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use serde_json::Value;
@@ -6,6 +7,18 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, FileReader, HtmlInputElement};
+
+const FILE_READ_ERROR_TOAST: &str = "File cannot be read";
+
+fn report_file_read_error(
+    detail: &str,
+    toast: RwSignal<Option<String>>,
+    input: &HtmlInputElement,
+) {
+    web_sys::console::error_1(&detail.into());
+    show_toast(toast, FILE_READ_ERROR_TOAST);
+    input.set_value("");
+}
 
 /// Build an [`EditorEntry`] from a note path, markdown body, and optional front matter YAML.
 pub fn entry_from_content(
@@ -65,7 +78,11 @@ fn relative_path_from_file(file: &web_sys::File) -> String {
 
 /// Handles a file-input `change` event: reads the selected file as UTF-8 text
 /// and opens it in the editor, keyed by its full relative path.
-pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
+pub fn load_markdown_file(
+    ev: Event,
+    entries: RwSignal<Vec<EditorEntry>>,
+    toast: RwSignal<Option<String>>,
+) {
     let input = ev
         .target()
         .and_then(|t| t.dyn_into::<HtmlInputElement>().ok());
@@ -78,29 +95,53 @@ pub fn load_markdown_file(ev: Event, entries: RwSignal<Vec<EditorEntry>>) {
 
     let file_path = display_note_path(&relative_path_from_file(&file));
 
-    let reader = FileReader::new().expect("FileReader not available");
+    let Some(reader) = FileReader::new().ok() else {
+        report_file_read_error("FileReader not available", toast, &input);
+        return;
+    };
     let reader_clone = reader.clone();
+    let input_onload = input.clone();
+    let input_onerror = input.clone();
 
     let onload = Closure::once(move || {
-        let result = reader_clone
-            .result()
-            .expect("FileReader result unavailable");
-        let text = result
-            .as_string()
-            .expect("FileReader result is not a string");
+        let result = match reader_clone.result() {
+            Ok(value) => value,
+            Err(_) => {
+                report_file_read_error(
+                    "FileReader result unavailable",
+                    toast,
+                    &input_onload,
+                );
+                return;
+            }
+        };
+        let Some(text) = result.as_string() else {
+            report_file_read_error(
+                "FileReader result is not a string",
+                toast,
+                &input_onload,
+            );
+            return;
+        };
 
         let entry = entry_from_markdown(file_path, &text);
         open_note_in_editor(entries, entry);
 
-        input.set_value("");
+        input_onload.set_value("");
+    });
+
+    let onerror = Closure::once(move || {
+        report_file_read_error("Failed to read file", toast, &input_onerror);
     });
 
     reader.set_onload(Some(onload.as_ref().unchecked_ref()));
     onload.forget();
+    reader.set_onerror(Some(onerror.as_ref().unchecked_ref()));
+    onerror.forget();
 
-    reader
-        .read_as_text(&file)
-        .expect("Failed to start reading file");
+    if reader.read_as_text(&file).is_err() {
+        report_file_read_error("Failed to start reading file", toast, &input);
+    }
 }
 
 fn front_matter_from_metadata(meta: &HashMap<String, Value>) -> Option<String> {

@@ -387,6 +387,23 @@
     .input:focus, .textarea:focus { border-color: var(--accent); box-shadow: none; }
     .button.is-dark { background: var(--bg-3); border-color: var(--border); color: var(--text); }
     .button.is-dark:hover { background: var(--border); }
+
+    /* ── Toast notifications ───────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>

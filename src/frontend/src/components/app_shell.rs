@@ -1,5 +1,5 @@
 use crate::components::{
-    activity_bar::ActivityBar, editor::Editor, sidebar::Sidebar, top_bar::TopBar,
+    activity_bar::ActivityBar, editor::Editor, sidebar::Sidebar, toast::Toast, top_bar::TopBar,
 };
 use leptos::prelude::*;
 
@@ -13,6 +13,7 @@ pub fn AppShell() -> impl IntoView {
                 <Sidebar/>
                 <Editor/>
             </div>
+            <Toast/>
         </div>
     }
 }

@@ -15,6 +15,7 @@ use web_sys::Event;
 pub fn TopBar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let entries = state.entries;
+    let toast = state.toast;
 
     let file_input_ref: NodeRef<leptos::html::Input> = NodeRef::new();
 
@@ -27,7 +28,7 @@ pub fn TopBar() -> impl IntoView {
 
     // Delegate file reading + entry creation to file_io.
     let on_file_change = move |ev: Event| {
-        load_markdown_file(ev, entries);
+        load_markdown_file(ev, entries, toast);
     };
 
     let session = state.session_id;

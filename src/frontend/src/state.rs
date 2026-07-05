@@ -24,6 +24,8 @@ pub struct AppState {
     pub search_results: RwSignal<Vec<SearchResult>>,
     /// When false, clicking the main markdown block does not enter edit mode.
     pub markdown_editing_enabled: RwSignal<bool>,
+    /// Transient user-facing message (e.g. import errors). Cleared automatically.
+    pub toast: RwSignal<Option<String>>,
 }
 
 impl AppState {
@@ -41,6 +43,7 @@ impl AppState {
             search_query: RwSignal::new(String::new()),
             search_results: RwSignal::new(vec![]),
             markdown_editing_enabled: RwSignal::new(true),
+            toast: RwSignal::new(None),
         }
     }
 }
