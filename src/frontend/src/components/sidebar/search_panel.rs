@@ -1,8 +1,36 @@
 use crate::mcp::tools::search_by_text;
 use crate::models::note::SearchResult;
+use crate::settings::SEARCH_LIMIT;
 use crate::state::AppState;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+
+fn run_search(
+    query: RwSignal<String>,
+    results: RwSignal<Vec<SearchResult>>,
+    session: RwSignal<Option<String>>,
+    warn_no_session: bool,
+) {
+    let q = query.get_untracked();
+    if q.trim().is_empty() {
+        return;
+    }
+    let sid = match session.get_untracked() {
+        Some(s) => s,
+        None => {
+            if warn_no_session {
+                web_sys::console::warn_1(&"MCP session not ready".into());
+            }
+            return;
+        }
+    };
+    spawn_local(async move {
+        match search_by_text(&sid, &q, SEARCH_LIMIT).await {
+            Ok(found) => results.set(found),
+            Err(e) => web_sys::console::error_1(&e.into()),
+        }
+    });
+}
 
 #[component]
 pub fn SearchPanel() -> impl IntoView {
@@ -11,45 +39,13 @@ pub fn SearchPanel() -> impl IntoView {
     let results = state.search_results;
     let session = state.session_id;
 
-    // Inline search logic in each handler — closures aren't Clone in Rust.
-    let on_click = move |_| {
-        let q = query.get_untracked();
-        if q.trim().is_empty() {
-            return;
-        }
-        let sid = match session.get_untracked() {
-            Some(s) => s,
-            None => {
-                web_sys::console::warn_1(&"MCP session not ready".into());
-                return;
-            }
-        };
-        spawn_local(async move {
-            match search_by_text(&sid, &q, 10).await {
-                Ok(found) => results.set(found),
-                Err(e) => web_sys::console::error_1(&e.into()),
-            }
-        });
-    };
+    let on_click = move |_| run_search(query, results, session, true);
 
     let on_keydown = move |ev: web_sys::KeyboardEvent| {
         if ev.key() != "Enter" {
             return;
         }
-        let q = query.get_untracked();
-        if q.trim().is_empty() {
-            return;
-        }
-        let sid = match session.get_untracked() {
-            Some(s) => s,
-            None => return,
-        };
-        spawn_local(async move {
-            match search_by_text(&sid, &q, 10).await {
-                Ok(found) => results.set(found),
-                Err(e) => web_sys::console::error_1(&e.into()),
-            }
-        });
+        run_search(query, results, session, false);
     };
 
     view! {
