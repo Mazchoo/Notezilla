@@ -7,15 +7,16 @@ Python library that can store and track markdown files for LLM usage. The notes 
 ## Core Principles
 
 This project was generated from the following observations
-* Extending LLM memory is also about extending the user memory, usage of mermaid diagrams helps alot of the user ultimately makes decisions about what to make
-* Markdown is becoming an acceptable readable format that both LLM's and people can use to break down tasks
-* Summarising LLM results in a structured way seems like a better way to act upon results of LLM conversations
+* Extending LLM memory is also about extending the user memory. Diagrams and interactive content within markdown are a realtively easy way to make content more memorable.
+* Markdown is becoming an acceptable readable format that both LLM's and people can use to break down larger tasks or topics.
+* Summarising LLM results in a structured way is better than just a long list of conversations, organising conversations in folders and adding search capability is a common addition.
 
 ## Notezilla GUI
 
-A Blazor GUI:
+A Leptos GUI:
 * A way to use search queries to find notes
-* Generate new notes from a local LLM using templates and edit them
+* Generate new notes from a local LLM (Olama API)
+* Edit skills (re-usable prompts) that can generate markdown according to a template
 * Side by side rendering and editing of markdown
 
 ## Database API
@@ -33,7 +34,7 @@ Each note has:
 |                       |      | Rust WASM markdown render       |
 | Markdown Editor       |----->| Mermaid and code highlighting   |
 | Search UI             |      +---------------------------------+
-| LLM Generation        |
+| LLM Generation API    |
 +----------+------------+
            |              \
            |               \
