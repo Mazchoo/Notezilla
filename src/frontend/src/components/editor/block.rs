@@ -1,4 +1,7 @@
 use crate::components::editor::actions::{add_front_matter, delete_entry, delete_front_matter};
+use crate::components::editor::edit_area::{
+    autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
+};
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
 use leptos::either::Either;
@@ -123,15 +126,18 @@ pub fn TitleBlockComponent(
 pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let textarea_ref = NodeRef::<Textarea>::new();
+    let enter_scroll_top = RwSignal::new(None::<i32>);
 
     Effect::new(move |_| {
         if block.focused.try_get().unwrap_or(false) {
+            let initial = block.raw.try_get().unwrap_or_default();
+            let preserve_scroll = enter_scroll_top.get_untracked();
             request_animation_frame(move || {
                 if let Some(el) = textarea_ref.get_untracked() {
-                    let _ = (*el).focus();
-                    let _ = (*el).style().set_property("height", "auto");
-                    let h = (*el).scroll_height();
-                    let _ = (*el).style().set_property("height", &format!("{}px", h));
+                    sync_textarea_value(&el, &initial);
+                    autosize_textarea(&el, preserve_scroll);
+                    focus_textarea(&el);
+                    enter_scroll_top.set(None);
                 }
             });
         }
@@ -144,14 +150,13 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
     let on_input = move |ev: web_sys::Event| {
         block.raw.set(event_target_value(&ev));
         if let Some(el) = textarea_ref.get_untracked() {
-            let _ = (*el).style().set_property("height", "auto");
-            let h = (*el).scroll_height();
-            let _ = (*el).style().set_property("height", &format!("{}px", h));
+            autosize_textarea(&el, None);
         }
     };
 
     let on_click = move |_: web_sys::MouseEvent| {
         if !block.focused.get_untracked() {
+            enter_scroll_top.set(editor_area().map(|a| a.scroll_top()));
             block.focused.set(true);
         }
     };
@@ -164,7 +169,6 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
                         <textarea
                             node_ref=textarea_ref
                             class="frontmatter-textarea"
-                            prop:value=move || block.raw.try_get().unwrap_or_default()
                             on:blur=on_blur
                             on:input=on_input
                         />
@@ -210,6 +214,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let markdown_editing_enabled = state.markdown_editing_enabled;
     let textarea_ref = NodeRef::<Textarea>::new();
+    let enter_scroll_top = RwSignal::new(None::<i32>);
 
     // Leave edit mode when main-text editing is turned off.
     Effect::new(move |_| {
@@ -229,12 +234,14 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     // textarea stuck at the HTML default of two visible rows.
     Effect::new(move |_| {
         if markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {
+            let initial = block.text.try_get().unwrap_or_default();
+            let preserve_scroll = enter_scroll_top.get_untracked();
             request_animation_frame(move || {
                 if let Some(el) = textarea_ref.get_untracked() {
-                    let _ = (*el).focus();
-                    let _ = (*el).style().set_property("height", "auto");
-                    let h = (*el).scroll_height();
-                    let _ = (*el).style().set_property("height", &format!("{}px", h));
+                    sync_textarea_value(&el, &initial);
+                    autosize_textarea(&el, preserve_scroll);
+                    focus_textarea(&el);
+                    enter_scroll_top.set(None);
                 }
             });
         }
@@ -248,17 +255,15 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
 
     let on_input = move |ev: web_sys::Event| {
         block.text.set(event_target_value(&ev));
-        // Auto-resize textarea to fit content.
         if let Some(el) = textarea_ref.get_untracked() {
-            let _ = (*el).style().set_property("height", "auto");
-            let h = (*el).scroll_height();
-            let _ = (*el).style().set_property("height", &format!("{}px", h));
+            autosize_textarea(&el, None);
         }
     };
 
     // Click anywhere on the block wrapper to enter edit mode.
     let on_block_click = move |_: web_sys::MouseEvent| {
         if markdown_editing_enabled.get_untracked() && !block.focused.get_untracked() {
+            enter_scroll_top.set(editor_area().map(|a| a.scroll_top()));
             block.focused.set(true);
         }
     };
@@ -277,7 +282,6 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
                     <textarea
                         node_ref=textarea_ref
                         class="block-textarea"
-                        prop:value=move || block.text.try_get().unwrap_or_default()
                         on:blur=on_blur
                         on:input=on_input
                     />

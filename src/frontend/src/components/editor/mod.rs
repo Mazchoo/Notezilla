@@ -1,5 +1,6 @@
 pub mod actions;
 pub mod block;
+pub mod edit_area;
 
 use crate::state::AppState;
 use block::{BlockComponent, FrontMatterBlockComponent, TitleBlockComponent};
