@@ -1,21 +1,13 @@
 """Definitions of interactions between MCP and other objects."""
 
 from functools import cache
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List
 
 from fastmcp.tools.tool import ToolResult
 
-from src.backend.database_adapter import NoteDatabase, QueryResult
+from src.backend.database_adapter import McpNoteItem, NoteDatabase, QueryResult
 from src.backend.file_io import get_db_column_types
 from src.field_enums import ColumnTypes
-
-
-class McpNoteItem(TypedDict):
-    """A single note returned by MCP query tools."""
-
-    filename: str
-    text: str
-    metadata: Dict[str, Any]
 
 
 @cache

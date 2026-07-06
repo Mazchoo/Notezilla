@@ -4,19 +4,28 @@ import os
 import json
 from dataclasses import dataclass
 from datetime import datetime, date
-from typing import Any, Dict, List, Optional, cast, Union
+from typing import Any, Dict, List, Optional, TypedDict, cast, Union
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
-from src.field_enums import ReservedFields, FieldTypes
+from src.field_enums import ColumnTypes, ReservedFields, FieldTypes
 from src.backend.file_io import delete_all_old_index_folders
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 VALID_QUERY_TYPES = (str, int, float, bool)
+
+
+# ToDo - duplicated class, needs QueryResult convertible to MarkdownData
+class McpNoteItem(TypedDict):
+    """A single note loaded from the database."""
+
+    filename: str
+    text: str
+    metadata: Dict[str, Any]
 
 
 @dataclass
@@ -118,6 +127,49 @@ class NoteDatabase:
             documents=results["documents"] or [],
             metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
         )
+
+    def get_frontmatter_from_path_key(
+        self, path_key: str, column_types: ColumnTypes
+    ) -> Optional[McpNoteItem]:
+        """Load note text and decoded front matter for a path key."""
+        result = self.query_by_id(path_key)
+        if not result.documents:
+            return None
+
+        metadata = result.metadatas[0] if result.metadatas else {}
+        return {
+            "text": result.documents[0],
+            "metadata": self._decode_frontmatter(metadata, column_types),
+            "filename": str(metadata.get(ReservedFields.FILENAME, "")),
+        }
+
+    @staticmethod
+    def _decode_frontmatter(
+        metadata: Dict[str, Any], column_types: ColumnTypes
+    ) -> Dict[str, Any]:
+        """Turn stored Chroma metadata keys back into a front matter dict."""
+        fields: Dict[str, Any] = {}
+        list_items: Dict[str, list[str]] = {}
+
+        for key, val in metadata.items():
+            if key.startswith("\n") or ReservedFields.contains(key):
+                continue
+            if "\t" in key:
+                field, item = key.split("\t", 1)
+                if val is True:
+                    list_items.setdefault(field, []).append(item)
+                continue
+
+            field_type = column_types.get(key)
+            if field_type in (FieldTypes.JSON, FieldTypes.JSON.value):
+                fields[key] = json.loads(val) if isinstance(val, str) else val
+            else:
+                fields[key] = val
+
+        for field, items in list_items.items():
+            fields[field] = sorted(items)
+
+        return fields
 
     def query_by_field(
         self, field: str, value: Union[str, bool, int, float], n_results: int = 10
