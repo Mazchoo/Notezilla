@@ -10,10 +10,12 @@ def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> d
     Transforms markdown into a row of data
     """
     row = {}
-    for key, target_type in column_types.items():
+    for key, val in markdown.fields.items():
         if ReservedFields.contains(key):
             continue
-        val = markdown.fields.get(key)
+        target_type = column_types.get(key)
+        if target_type is None:
+            continue
         row.update(NoteDatabase.cast_value(key, val, target_type))
 
     row[ReservedFields.PATH] = markdown.path

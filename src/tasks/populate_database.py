@@ -31,7 +31,7 @@ def get_field_type(value) -> FieldTypes:  # pylint: disable=too-many-return-stat
         return FieldTypes.INT
     if isinstance(value, float):
         return FieldTypes.FLOAT
-    if isinstance(value, str) or value is None:  # none is a corner case
+    if isinstance(value, str) or value is None:
         return FieldTypes.STRING
     return FieldTypes.STRING  # Catch-all
 
