@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 from src.field_enums import ReservedFields
 from src.tasks.check_path_sync import (
     get_database_paths,
@@ -39,7 +39,7 @@ def _fields_for_compare(fields: dict[str, Any]) -> dict[str, Any]:
 
 def _expected_from_disk(path: str) -> tuple[str, dict[str, Any], str] | None:
     """Read body text, front matter, and filename from an on-disk note."""
-    disk = MarkdownData.construct_from_path(note_file_path(path))
+    disk = MarkdownFile.construct_from_path(note_file_path(path))
     if disk is None:
         return None
 
@@ -73,10 +73,10 @@ def check_content_sync() -> list[ContentMismatch]:
 
         expected_text, expected_frontmatter, expected_filename = expected
 
-        text_differs = note_from_db["text"] != expected_text
+        text_differs = note_from_db.text != expected_text
         metadata_differs = (
-            note_from_db["metadata"] != expected_frontmatter
-            or note_from_db["filename"] != expected_filename
+            note_from_db.fields != expected_frontmatter
+            or note_from_db.filename != expected_filename
         )
 
         if text_differs or metadata_differs:

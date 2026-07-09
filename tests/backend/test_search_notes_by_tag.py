@@ -27,7 +27,7 @@ class TestSearchNotesByTag:
             McpResponse.note_item(
                 "tagged note",
                 {"tags\tpython": True, "filename": "note.md"},
-            )
+            ).to_dict()
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name

@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class TestMarkdownDataRoundTrip:
                 side_effect=_fake_write_factory(store),
             ),
         ):
-            from_data, _new_file_created = MarkdownData.construct_from_data(
+            from_data, _new_file_created = MarkdownFile.construct_from_data(
                 path=path, contents=contents, fields=fields
             )
 
@@ -83,7 +83,7 @@ class TestMarkdownDataRoundTrip:
                 return_value=Path(*Path(path).parts),
             ),
         ):
-            from_path = MarkdownData.construct_from_path(path=path)
+            from_path = MarkdownFile.construct_from_path(path=path)
 
         assert from_path is not None, "construct_from_path returned None unexpectedly"
 
@@ -143,7 +143,7 @@ class TestMarkdownDataRoundTrip:
                     side_effect=_fake_write_factory(store),
                 ),
             ):
-                MarkdownData.construct_from_data(
+                MarkdownFile.construct_from_data(
                     path="2024/01/safe.md",
                     contents="text",
                     fields={"title": "Safe"},
@@ -161,7 +161,7 @@ class TestMarkdownDataRoundTrip:
                 patch.object(Path, "is_relative_to", return_value=True),
                 patch.object(Path, "relative_to", return_value=Path("2024/01/safe.md")),
             ):
-                MarkdownData.construct_from_path(path="2024/01/safe.md")
+                MarkdownFile.construct_from_path(path="2024/01/safe.md")
 
             mock_open.assert_not_called()
 

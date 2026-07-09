@@ -25,7 +25,7 @@ class TestSearchNotesByField:
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            McpResponse.note_item("content of note", {"filename": "note.md"})
+            McpResponse.note_item("content of note", {"filename": "note.md"}).to_dict()
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name

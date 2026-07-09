@@ -2,7 +2,7 @@
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 from src.tasks.check_path_sync import check_path_sync, note_file_path
 
 
@@ -25,8 +25,8 @@ def restore_missing_files() -> int:
         if note is None:
             continue
 
-        if MarkdownData.construct_from_data(
-            note_file_path(path), note["text"], note["metadata"]
+        if MarkdownFile.construct_from_data(
+            note_file_path(path), note.text, note.fields
         ):
             saved += 1
 

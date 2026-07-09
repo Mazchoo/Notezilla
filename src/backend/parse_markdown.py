@@ -1,9 +1,10 @@
 """Handles converting markdown into structured objected"""
 
-from typing import List, Optional
+from typing import Optional
 from pathlib import Path
 from dataclasses import dataclass
 
+from src.backend.note import NoteData
 from src.backend.file_io import (
     read_file_content,
     extract_yaml_from_file_contents,
@@ -17,28 +18,19 @@ NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
 
 
 @dataclass
-class MarkdownData:
+class MarkdownFile(NoteData):
     """Container that holds markdown information for one file"""
 
-    fields: dict
-    text: str
-    filename: str
-    path: List[str]
-
     def __str__(self):
-        return "/".join(self.path) + f"/{self.filename} : {self.fields}"
-
-    @property
-    def normalised_path(self) -> str:
-        """Express normalised path"""
-        return "/".join(self.path + [self.filename])
+        return f"{self.filename} : {self.fields}"
 
     @staticmethod
-    def construct_from_path(path: str) -> Optional["MarkdownData"]:
+    def construct_from_path(path: str) -> Optional["MarkdownFile"]:
         """
         Converters file contents to markdown object
         If header cannot be parsed returns MarkdownData as with file contents in full
         """
+        # ToDo - use normalize here, don't reinvent wheel
         path_obj = Path(path)
 
         if not path_obj.is_relative_to(NOTE_FOLDER_PATH):
@@ -48,22 +40,17 @@ class MarkdownData:
         if not relative_parts:
             return None
 
-        filename = relative_parts[-1]
-        path_parts = relative_parts[:-1]
-
         if not (content := read_file_content(path)):
             return None
 
         text, fields = extract_yaml_from_file_contents(content)
 
-        return MarkdownData(
-            fields=fields, text=text, filename=filename, path=list(path_parts)
-        )
+        return MarkdownFile(fields=fields, text=text, filename="/".join(relative_parts))
 
     @staticmethod
     def construct_from_data(
         path: str, contents: str, fields: dict
-    ) -> Optional[tuple["MarkdownData", bool]]:
+    ) -> Optional[tuple["MarkdownFile", bool]]:
         """
         Construct note from data and return it if it was successfully created.
 
@@ -73,6 +60,7 @@ class MarkdownData:
         Side Effect: will write content to file path, i.e. update or add new
         """
 
+        # ToDo - use normalize file path here
         path_obj = Path(path)
         if path_obj.suffix != ".md":
             return None
@@ -84,16 +72,17 @@ class MarkdownData:
         if not write_file_content(path, payload):
             return None
 
-        filename = path_obj.name
-        path_parts = path_obj.parts[:-1]
-
+        try:
+            relative_parts = path_obj.relative_to(NOTE_FOLDER_PATH).parts
+        except ValueError:
+            relative_parts = path_obj.parts
         return (
-            MarkdownData(
-                fields=fields, text=contents, filename=filename, path=list(path_parts)
+            MarkdownFile(
+                fields=fields, text=contents, filename="/".join(relative_parts)
             ),
             new_file_created,
         )
 
 
 if __name__ == "__main__":
-    print(MarkdownData.construct_from_path("./notes/spam.md"))
+    print(MarkdownFile.construct_from_path("./notes/new_file.md"))

@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 
 from fastmcp.tools.tool import ToolResult
 
-from src.backend.database_adapter import McpNoteItem, NoteDatabase, QueryResult
+from src.backend.database_adapter import NoteDatabase, QueryResult
+from src.backend.note import NoteData
 from src.backend.file_io import get_db_column_types
 from src.field_enums import ColumnTypes
 
@@ -47,9 +48,9 @@ class McpResponse:
         )
 
     @staticmethod
-    def notes(items: List[McpNoteItem]) -> ToolResult:
+    def notes(items: List[NoteData]) -> ToolResult:
         """Return note file data as minimal filename/text records."""
-        return McpResponse.success({"notes": items})
+        return McpResponse.success({"notes": [item.to_dict() for item in items]})
 
     @staticmethod
     def _note_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -59,13 +60,13 @@ class McpResponse:
         }
 
     @staticmethod
-    def note_item(text: str, metadata: Dict[str, Any]) -> McpNoteItem:
+    def note_item(text: str, metadata: Dict[str, Any]) -> NoteData:
         """Build one note record from query document text and raw metadata."""
-        return {
-            "filename": str(metadata.get("filename", "")),
-            "text": text,
-            "metadata": McpResponse._note_metadata(metadata),
-        }
+        return NoteData(
+            filename=str(metadata.get("filename", "")),
+            text=text,
+            fields=McpResponse._note_metadata(metadata),
+        )
 
     @staticmethod
     def notes_from_query(result: QueryResult) -> ToolResult:

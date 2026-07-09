@@ -1,11 +1,11 @@
 """Create database updates for note database"""
 
 from src.field_enums import ReservedFields, ColumnTypes
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 from src.backend.database_adapter import NoteDatabase
 
 
-def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> dict:
+def prepate_database_row(markdown: MarkdownFile, column_types: ColumnTypes) -> dict:
     """
     Transforms markdown into a row of data
     """
@@ -18,7 +18,6 @@ def prepate_database_row(markdown: MarkdownData, column_types: ColumnTypes) -> d
             continue
         row.update(NoteDatabase.cast_value(key, val, target_type))
 
-    row[ReservedFields.PATH] = markdown.path
     row[ReservedFields.FILENAME] = markdown.filename
     row[ReservedFields.TEXT] = markdown.text
 

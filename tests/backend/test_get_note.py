@@ -21,7 +21,7 @@ class TestGetNote:
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            McpResponse.note_item("note content", {"filename": "note.md"})
+            McpResponse.note_item("note content", {"filename": "note.md"}).to_dict()
         ]
         mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
 

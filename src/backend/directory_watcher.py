@@ -13,7 +13,7 @@ from src.backend.event_handling import (
     filter_event_list,
 )
 from src.backend.database_adapter import NoteDatabase
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 from src.backend.database_update import prepate_database_row
 from src.backend.file_io import get_normalised_path
 from src.backend.logger import LOGGER
@@ -75,7 +75,7 @@ class PyFileHandler(FileSystemEventHandler):
         for update in queue:
             if update.event_type in ["created", "modified"]:
                 total_upserted += 1
-                if markdown := MarkdownData.construct_from_path(str(update.src_path)):
+                if markdown := MarkdownFile.construct_from_path(str(update.src_path)):
                     upsert_batch.append(
                         prepate_database_row(markdown, self.column_types)
                     )

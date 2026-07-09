@@ -4,7 +4,7 @@ import os
 import json
 from dataclasses import dataclass
 from datetime import datetime, date
-from typing import Any, Dict, List, Optional, TypedDict, cast, Union
+from typing import Any, Dict, List, Optional, cast, Union
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -12,20 +12,12 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.field_enums import ColumnTypes, ReservedFields, FieldTypes
 from src.backend.file_io import delete_all_old_index_folders
+from src.backend.note import NoteData
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 VALID_QUERY_TYPES = (str, int, float, bool)
-
-
-# ToDo - duplicated class, needs QueryResult convertible to MarkdownData
-class McpNoteItem(TypedDict):
-    """A single note loaded from the database."""
-
-    filename: str
-    text: str
-    metadata: Dict[str, Any]
 
 
 @dataclass
@@ -91,10 +83,7 @@ class NoteDatabase:
 
         for row in rows:
             document = row.get(ReservedFields.TEXT, "")
-            path_parts = row.get(ReservedFields.PATH, [])
-            filename = row.get(ReservedFields.FILENAME, "")
-
-            doc_id = "/".join(path_parts + [filename])
+            doc_id = row.get(ReservedFields.FILENAME, "")
             metadata = {
                 k: v
                 for k, v in row.items()
@@ -130,18 +119,18 @@ class NoteDatabase:
 
     def get_frontmatter_from_path_key(
         self, path_key: str, column_types: ColumnTypes
-    ) -> Optional[McpNoteItem]:
+    ) -> Optional[NoteData]:
         """Load note text and decoded front matter for a path key."""
         result = self.query_by_id(path_key)
         if not result.documents:
             return None
 
         metadata = result.metadatas[0] if result.metadatas else {}
-        return {
-            "text": result.documents[0],
-            "metadata": self._decode_frontmatter(metadata, column_types),
-            "filename": str(metadata.get(ReservedFields.FILENAME, "")),
-        }
+        return NoteData(
+            text=result.documents[0],
+            fields=self._decode_frontmatter(metadata, column_types),
+            filename=str(metadata.get(ReservedFields.FILENAME, "")),
+        )
 
     @staticmethod
     def _decode_frontmatter(

@@ -8,7 +8,6 @@ from enum import StrEnum
 class ReservedFields(StrEnum):
     """Indicates certain yaml fields that will be ignored"""
 
-    PATH = "path"
     FILENAME = "filename"
     TEXT = "text"
 
@@ -21,9 +20,9 @@ class ReservedFields(StrEnum):
     def excluded_from_metadata(cls) -> frozenset[str]:
         """
         Row keys that are not stored in Chroma metadata.
-        Path is primary key and text is document content.
+        Text is stored as the Chroma document, not in metadata.
         """
-        return frozenset({cls.PATH, cls.TEXT})
+        return frozenset({cls.TEXT})
 
 
 class FieldTypes(StrEnum):

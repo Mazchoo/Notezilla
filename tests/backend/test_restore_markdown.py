@@ -5,10 +5,11 @@ from unittest.mock import patch
 
 import pytest
 
-from src.backend.database_adapter import McpNoteItem, NoteDatabase
+from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.file_io import extract_yaml_from_file_contents
-from src.backend.parse_markdown import MarkdownData
+from src.backend.note import NoteData
+from src.backend.parse_markdown import MarkdownFile
 from src.field_enums import FieldTypes, ReservedFields
 from src.tasks.restore_missing_files import restore_missing_files
 
@@ -30,13 +31,13 @@ def _chroma_metadata_from_row(row: dict) -> dict:
     }
 
 
-def _note_item_from_row(row: dict) -> McpNoteItem:
+def _note_item_from_row(row: dict) -> NoteData:
     metadata = _chroma_metadata_from_row(row)
-    return {
-        "text": row[ReservedFields.TEXT],
-        "metadata": NoteDatabase._decode_frontmatter(metadata, COLUMN_TYPES),
-        "filename": row[ReservedFields.FILENAME],
-    }
+    return NoteData(
+        text=row[ReservedFields.TEXT],
+        fields=NoteDatabase._decode_frontmatter(metadata, COLUMN_TYPES),
+        filename=row[ReservedFields.FILENAME],
+    )
 
 
 def _fake_write_factory(store: dict):
@@ -48,7 +49,7 @@ def _fake_write_factory(store: dict):
 
 
 class TestFrontmatterRoundTrip:
-    """Front matter survives prepate_database_row -> Chroma metadata -> McpNoteItem."""
+    """Front matter survives prepate_database_row -> Chroma metadata -> NoteData."""
 
     @pytest.mark.parametrize(
         "fields",
@@ -61,30 +62,28 @@ class TestFrontmatterRoundTrip:
         ids=["title_only", "tags_list", "json_field", "date_field"],
     )
     def test_row_round_trips_to_frontmatter(self, fields):
-        markdown = MarkdownData(
+        markdown = MarkdownFile(
             fields=fields,
             text="Body text",
-            filename="note.md",
-            path=["example_folder"],
+            filename="example_folder/note.md",
         )
         row = prepate_database_row(markdown, COLUMN_TYPES)
         note = _note_item_from_row(row)
 
-        assert note["metadata"] == fields
-        assert note["text"] == "Body text"
-        assert note["filename"] == "note.md"
+        assert note.fields == fields
+        assert note.text == "Body text"
+        assert note.filename == "example_folder/note.md"
 
     def test_empty_tags_are_omitted_from_frontmatter(self):
-        markdown = MarkdownData(
+        markdown = MarkdownFile(
             fields={"tags": []},
             text="Body",
-            filename="note.md",
-            path=["example_folder"],
+            filename="example_folder/note.md",
         )
         row = prepate_database_row(markdown, COLUMN_TYPES)
         note = _note_item_from_row(row)
 
-        assert note["metadata"] == {}
+        assert note.fields == {}
 
 
 class TestRestoreMissingFiles:
@@ -93,7 +92,7 @@ class TestRestoreMissingFiles:
     def _run_restore(
         self,
         path_key: str,
-        markdown: MarkdownData,
+        markdown: MarkdownFile,
     ) -> tuple[dict[str, str], int]:
         row = prepate_database_row(markdown, COLUMN_TYPES)
         note = _note_item_from_row(row)
@@ -148,11 +147,10 @@ class TestRestoreMissingFiles:
     def test_restores_file_from_database_row(
         self, path_key: str, fields: dict, body: str
     ):
-        markdown = MarkdownData(
+        markdown = MarkdownFile(
             fields=fields,
             text=body,
-            filename=Path(path_key).name,
-            path=list(Path(path_key).parent.parts),
+            filename=path_key,
         )
         store, count = self._run_restore(path_key, markdown)
 
@@ -164,12 +162,11 @@ class TestRestoreMissingFiles:
         assert parsed_fields == fields
 
     def test_get_frontmatter_from_path_key_returns_same_row(self):
-        """Mocked database method returns the McpNoteItem built from the row."""
-        markdown = MarkdownData(
+        """Mocked database method returns the NoteData built from the row."""
+        markdown = MarkdownFile(
             fields={"title": "From DB", "tags": ["restore"]},
             text="Recovered body",
-            filename="note.md",
-            path=["restore"],
+            filename="restore/note.md",
         )
         row = prepate_database_row(markdown, COLUMN_TYPES)
         expected = _note_item_from_row(row)
@@ -177,7 +174,7 @@ class TestRestoreMissingFiles:
         store, count = self._run_restore("restore/note.md", markdown)
 
         assert count == 1
-        assert expected["metadata"] == {"title": "From DB", "tags": ["restore"]}
+        assert expected.fields == {"title": "From DB", "tags": ["restore"]}
         written = next(iter(store.values()))
         assert "title: From DB" in written
         assert "Recovered body" in written

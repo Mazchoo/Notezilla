@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from src.backend.parse_markdown import MarkdownData
+from src.backend.parse_markdown import MarkdownFile
 from src.backend.file_io import ensure_note_parent_dirs
 
 
@@ -92,7 +92,7 @@ class TestConstructFromDataCreatesDirs:
                 side_effect=_write,
             ),
         ):
-            result, _new_file_created = MarkdownData.construct_from_data(
+            result, _new_file_created = MarkdownFile.construct_from_data(
                 path="2024/01/new-note.md",
                 contents="body",
                 fields={"title": "New"},
@@ -113,7 +113,7 @@ class TestConstructFromDataCreatesDirs:
             ),
             patch("src.backend.parse_markdown.write_file_content") as mock_write,
         ):
-            result = MarkdownData.construct_from_data(
+            result = MarkdownFile.construct_from_data(
                 path="2024/01/new-note.md",
                 contents="body",
                 fields={},
