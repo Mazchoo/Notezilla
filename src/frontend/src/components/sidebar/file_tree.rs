@@ -1,6 +1,7 @@
 use crate::components::file_io::open_note_at_path;
 use crate::components::sidebar::context_menu::FileContextMenu;
-use crate::mcp::tools::get_dir_contents;
+use crate::components::toast::{show_error_toast, show_toast};
+use crate::mcp::tools::{delete_note, get_dir_contents};
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
 use icondata as id;
@@ -86,7 +87,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
     let path_for_fetch = path.clone();
 
-    // Fetch while open; re-fetch when file_tree_epoch bumps after a successful upsert.
+    // Fetch while open; re-fetch when file_tree_epoch bumps after a successful upsert/delete.
     Effect::new(move |_| {
         if !open.get() {
             dir_contents.set(None);
@@ -171,6 +172,9 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
     let current_path = state.current_path;
     let entries = state.entries;
     let session = state.session_id;
+    let file_tree_epoch = state.file_tree_epoch;
+    let toast = state.toast;
+    let error_toast = state.error_toast;
     let path_for_active = path.clone();
     let menu_visible = RwSignal::new(false);
     let menu_x = RwSignal::new(0.0);
@@ -181,6 +185,34 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
     let open_note = {
         let path = path.clone();
         move || open_note_at_path(path.clone(), current_path, entries, session)
+    };
+
+    let delete_file = {
+        let path = path.clone();
+        move || {
+            let sid = match session.get_untracked() {
+                Some(s) => s,
+                None => {
+                    web_sys::console::warn_1(&"MCP session not ready".into());
+                    return;
+                }
+            };
+            let path = path.clone();
+            spawn_local(async move {
+                match delete_note(&sid, &path).await {
+                    Ok(()) => {
+                        file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                        show_toast(toast, format!("Deleted {path}"));
+                    }
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("Delete failed for {path}: {e}").into(),
+                        );
+                        show_error_toast(error_toast, format!("Delete failed for {path}: {e}"));
+                    }
+                }
+            });
+        }
     };
 
     let on_click = {
@@ -210,6 +242,7 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                 x=menu_x
                 y=menu_y
                 on_open=open_note
+                on_delete=delete_file
             />
         </li>
     }

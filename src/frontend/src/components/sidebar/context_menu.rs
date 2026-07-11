@@ -2,14 +2,16 @@ use leptos::prelude::*;
 
 /// Right-click context menu for file tree items.
 #[component]
-pub fn FileContextMenu<F>(
+pub fn FileContextMenu<FOpen, FDelete>(
     visible: RwSignal<bool>,
     x: RwSignal<f64>,
     y: RwSignal<f64>,
-    on_open: F,
+    on_open: FOpen,
+    on_delete: FDelete,
 ) -> impl IntoView
 where
-    F: Fn() + 'static + Clone + Send + Sync,
+    FOpen: Fn() + 'static + Clone + Send + Sync,
+    FDelete: Fn() + 'static + Clone + Send + Sync,
 {
     let close = move |_| visible.set(false);
 
@@ -35,6 +37,21 @@ where
                             }
                         >
                             "Open"
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            class="context-menu-item"
+                            on:click={
+                                let on_delete = on_delete.clone();
+                                move |ev: web_sys::MouseEvent| {
+                                    ev.prevent_default();
+                                    on_delete();
+                                    visible.set(false);
+                                }
+                            }
+                        >
+                            "Delete"
                         </a>
                     </li>
                 </ul>
