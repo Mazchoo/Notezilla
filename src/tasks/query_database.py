@@ -18,9 +18,7 @@ SEARCH_TEXT = "I like crepes"
 def print_query_results(notes: List[NoteData]):
     """Show the query results"""
     for note in notes:
-        print(f"--- {note.filename or 'unknown'} ---")
-        print(f"  metadata: {note.fields}")
-        print(f"  text: {note.text[:200]}")
+        print(repr(note))
         print()
 
 
