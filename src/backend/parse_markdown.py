@@ -10,10 +10,8 @@ from src.backend.file_io import (
     construct_yaml_header,
     ensure_note_parent_dirs,
     write_file_content,
+    get_normalised_path,
 )
-from src.config import NOTE_FOLDER
-
-NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
 
 
 @dataclass
@@ -26,20 +24,13 @@ class MarkdownFile(NoteData):
         Converters file contents to markdown object
         If header cannot be parsed returns MarkdownData as with file contents in full
         """
-        # ToDo - use normalize here, don't reinvent wheel
-        path_obj = Path(path)
-
-        if not path_obj.is_relative_to(NOTE_FOLDER_PATH):
-            return None
-
-        relative_parts = path_obj.relative_to(NOTE_FOLDER_PATH).parts
-        if not relative_parts:
+        if not (normed_path := get_normalised_path(path)):
             return None
 
         if not (content := read_file_content(path)):
             return None
 
-        return MarkdownFile.from_payload(content, "/".join(relative_parts))
+        return MarkdownFile.from_payload(content, normed_path)
 
     @staticmethod
     def construct_from_data(
@@ -53,12 +44,13 @@ class MarkdownFile(NoteData):
 
         Side Effect: will write content to file path, i.e. update or add new
         """
-
-        # ToDo - use normalize file path here
-        path_obj = Path(path)
-        if path_obj.suffix != ".md":
+        if not (normed_path := get_normalised_path(path)):
             return None
 
+        if not normed_path.endswith(".md"):
+            return None
+
+        path_obj = Path(path)
         new_file_created = not path_obj.exists()
         payload = construct_yaml_header(fields) + body
         if not ensure_note_parent_dirs(path):
@@ -66,14 +58,8 @@ class MarkdownFile(NoteData):
         if not write_file_content(path, payload):
             return None
 
-        try:
-            relative_parts = path_obj.relative_to(NOTE_FOLDER_PATH).parts
-        except ValueError:
-            relative_parts = path_obj.parts
         return (
-            MarkdownFile(
-                fields=fields, text=body, filename="/".join(relative_parts)
-            ),
+            MarkdownFile(fields=fields, text=body, filename=normed_path),
             new_file_created,
         )
 
