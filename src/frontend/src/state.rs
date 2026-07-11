@@ -28,6 +28,8 @@ pub struct AppState {
     pub toast: RwSignal<Option<String>>,
     /// Transient error message (e.g. save failures). Cleared automatically.
     pub error_toast: RwSignal<Option<String>>,
+    /// Bumped after successful note upserts so open file-tree folders re-fetch.
+    pub file_tree_epoch: RwSignal<u64>,
 }
 
 impl AppState {
@@ -47,6 +49,7 @@ impl AppState {
             markdown_editing_enabled: RwSignal::new(true),
             toast: RwSignal::new(None),
             error_toast: RwSignal::new(None),
+            file_tree_epoch: RwSignal::new(0),
         }
     }
 }

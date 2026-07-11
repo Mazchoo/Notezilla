@@ -22,6 +22,7 @@ fn join_path(dir: &str, name: &str) -> String {
 pub fn FileTree() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let session = state.session_id;
+    let file_tree_epoch = state.file_tree_epoch;
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
 
     Effect::new(move |_| {
@@ -29,6 +30,7 @@ pub fn FileTree() -> impl IntoView {
             Some(s) => s,
             None => return,
         };
+        let _ = file_tree_epoch.get();
 
         spawn_local(async move {
             match get_dir_contents(&sid, "").await {
@@ -79,33 +81,37 @@ pub fn FileTree() -> impl IntoView {
 fn TreeFolder(name: String, path: String) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let session = state.session_id;
+    let file_tree_epoch = state.file_tree_epoch;
     let open = RwSignal::new(false);
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
     let path_for_fetch = path.clone();
 
-    let toggle = move |_| {
-        let will_open = !open.get_untracked();
-        open.set(will_open);
-
-        if will_open {
-            let sid = match session.get_untracked() {
-                Some(s) => s,
-                None => return,
-            };
-            let fetch_path = path_for_fetch.clone();
-            spawn_local(async move {
-                match get_dir_contents(&sid, &fetch_path).await {
-                    Ok(contents) => {
-                        if open.get_untracked() {
-                            dir_contents.set(Some(contents));
-                        }
-                    }
-                    Err(e) => web_sys::console::error_1(&e.into()),
-                }
-            });
-        } else {
+    // Fetch while open; re-fetch when file_tree_epoch bumps after a successful upsert.
+    Effect::new(move |_| {
+        if !open.get() {
             dir_contents.set(None);
+            return;
         }
+        let _ = file_tree_epoch.get();
+        let sid = match session.get() {
+            Some(s) => s,
+            None => return,
+        };
+        let fetch_path = path_for_fetch.clone();
+        spawn_local(async move {
+            match get_dir_contents(&sid, &fetch_path).await {
+                Ok(contents) => {
+                    if open.get_untracked() {
+                        dir_contents.set(Some(contents));
+                    }
+                }
+                Err(e) => web_sys::console::error_1(&e.into()),
+            }
+        });
+    });
+
+    let toggle = move |_| {
+        open.update(|is_open| *is_open = !*is_open);
     };
 
     view! {

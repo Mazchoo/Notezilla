@@ -55,6 +55,7 @@ pub fn TopBar() -> impl IntoView {
     };
 
     let session = state.session_id;
+    let file_tree_epoch = state.file_tree_epoch;
     let on_save = move |_| {
         let sid = match session.get_untracked() {
             Some(s) => s,
@@ -94,6 +95,7 @@ pub fn TopBar() -> impl IntoView {
             }
 
             if created > 0 || updated > 0 {
+                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
                 show_toast(toast, format_save_summary(created, updated));
             }
             if !errors.is_empty() {
