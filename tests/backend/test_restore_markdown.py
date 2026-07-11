@@ -32,11 +32,9 @@ def _load_from_path(filename: str, contents: str) -> MarkdownFile:
             "src.backend.parse_markdown.read_file_content",
             return_value=contents,
         ),
-        patch.object(Path, "is_relative_to", return_value=True),
-        patch.object(
-            Path,
-            "relative_to",
-            return_value=Path(*Path(filename).parts),
+        patch(
+            "src.backend.parse_markdown.get_normalised_path",
+            return_value="/".join(Path(filename).parts),
         ),
     ):
         markdown = MarkdownFile.construct_from_path(path=filename)

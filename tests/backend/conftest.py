@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.backend.mcp_interface import init_db
+from tests.backend.helpers import MOCK_NOTES_FOLDER
 
 
 @pytest.fixture(autouse=True)
@@ -13,6 +14,16 @@ def clear_init_db_cache():
     init_db.cache_clear()
     yield
     init_db.cache_clear()
+
+
+@pytest.fixture()
+def mock_notes_folder():
+    """Point NOTE_FOLDER at tests/mock_notes for filesystem-backed tests."""
+    with (
+        patch("src.backend.file_io.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
+        patch("src.backend.file_io.RESOLVED_NOTE_FOLDER", MOCK_NOTES_FOLDER),
+    ):
+        yield MOCK_NOTES_FOLDER
 
 
 @pytest.fixture()
