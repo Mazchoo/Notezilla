@@ -9,9 +9,7 @@ from tests.backend.helpers import clean_up_file_if_created
 class TestMarkdownDataRoundTrip:
     """Verify that construct_from_data and construct_from_path are inverses."""
 
-    def _run_round_trip(
-        self, note_path, contents: str, fields: dict
-    ) -> tuple:
+    def _run_round_trip(self, note_path, contents: str, fields: dict) -> tuple:
         """Write to file via construct_from_data, read via construct_from_path."""
         path = str(note_path)
         from_data, _new_file_created = IMarkdownFile.construct_from_data(

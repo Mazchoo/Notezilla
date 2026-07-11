@@ -151,8 +151,7 @@ class TestEnsureNoteParentDirs:
     def test_root_level_note_needs_no_mkdir(self, mock_notes_folder):
         with patch.object(Path, "mkdir") as mock_mkdir:
             assert (
-                ensure_note_parent_dirs(str(mock_notes_folder / "example.md"))
-                is True
+                ensure_note_parent_dirs(str(mock_notes_folder / "example.md")) is True
             )
 
         mock_mkdir.assert_not_called()

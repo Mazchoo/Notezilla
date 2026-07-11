@@ -38,9 +38,7 @@ def _assert_file_contents_recover(
     recovered = db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
     assert recovered is not None
     assert recovered.filename == filename
-    assert recovered.to_file_string() == (
-        contents if expected is None else expected
-    )
+    assert recovered.to_file_string() == (contents if expected is None else expected)
     return recovered
 
 
@@ -115,8 +113,8 @@ class TestDatabaseRoundTrip:
             filename="unicode/notes.md",
             contents=(
                 "---\n"
-                "author: \"\\xC5sa O'Brien\"\n"
-                "title: \"\\u65E5\\u672C\\u8A9E\\u30BF\\u30A4\\u30C8\\u30EB \\U0001F389\"\n"
+                'author: "\\xC5sa O\'Brien"\n'
+                'title: "\\u65E5\\u672C\\u8A9E\\u30BF\\u30A4\\u30C8\\u30EB \\U0001F389"\n'
                 "---\n"
                 "Body with emoji 🔥 and CJK 漢字\n"
                 "Second line."
@@ -232,12 +230,7 @@ class TestDatabaseRoundTrip:
                 "---\n"
                 "Unknown fields are not stored."
             ),
-            expected=(
-                "---\n"
-                "title: Known\n"
-                "---\n"
-                "Unknown fields are not stored."
-            ),
+            expected=("---\ntitle: Known\n---\nUnknown fields are not stored."),
         )
 
     def test_leading_and_trailing_whitespace_in_body_is_preserved(self, temp_db):
@@ -246,12 +239,7 @@ class TestDatabaseRoundTrip:
             temp_db,
             filename="body/whitespace.md",
             contents=(
-                "---\n"
-                "title: Whitespace\n"
-                "---\n"
-                "  \n"
-                "\n"
-                "  leading and trailing spaces  \n"
+                "---\ntitle: Whitespace\n---\n  \n\n  leading and trailing spaces  \n"
             ),
         )
 
@@ -282,9 +270,7 @@ class TestDatabaseRoundTrip:
         temp_db.upsert_batch(
             [
                 prepate_database_row(
-                    NoteData.from_payload(
-                        "---\ntitle: v1\n---\noriginal body", path
-                    ),
+                    NoteData.from_payload("---\ntitle: v1\n---\noriginal body", path),
                     COLUMN_TYPES,
                 )
             ]
@@ -317,7 +303,7 @@ class TestDatabaseRoundTrip:
             "---\n"
             "tags:\n"
             "- good\n"
-            "- \"bad\\tvalue\"\n"
+            '- "bad\\tvalue"\n'
             "---\n"
             "Tab inside a tag value cannot round-trip."
         )
