@@ -94,7 +94,7 @@ class TestConstructFromDataCreatesDirs:
         ):
             result, _new_file_created = MarkdownFile.construct_from_data(
                 path="2024/01/new-note.md",
-                contents="body",
+                body="body",
                 fields={"title": "New"},
             )
 
@@ -115,7 +115,7 @@ class TestConstructFromDataCreatesDirs:
         ):
             result = MarkdownFile.construct_from_data(
                 path="2024/01/new-note.md",
-                contents="body",
+                body="body",
                 fields={},
             )
 

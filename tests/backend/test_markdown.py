@@ -58,7 +58,7 @@ class TestMarkdownDataRoundTrip:
             ),
         ):
             from_data, _new_file_created = MarkdownFile.construct_from_data(
-                path=path, contents=contents, fields=fields
+                path=path, body=contents, fields=fields
             )
 
         assert from_data is not None, "construct_from_data returned None unexpectedly"
@@ -145,7 +145,7 @@ class TestMarkdownDataRoundTrip:
             ):
                 MarkdownFile.construct_from_data(
                     path="2024/01/safe.md",
-                    contents="text",
+                    body="text",
                     fields={"title": "Safe"},
                 )
 
