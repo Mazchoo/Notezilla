@@ -154,7 +154,7 @@ def construct_yaml_header(data: dict) -> str:
     """Construct a yaml frontmatter header from a dictionary"""
     if not data:
         return ""
-    yaml_block = yaml.dump(data, default_flow_style=False, sort_keys=False)
+    yaml_block = yaml.dump(data, default_flow_style=False, sort_keys=True)
     return f"---\n{yaml_block}---\n"
 
 
