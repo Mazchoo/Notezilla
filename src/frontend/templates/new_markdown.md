@@ -2,7 +2,7 @@
 Example text with list
 - list item 1
 - list item 2
-
+- $x = \pi$
 
 ```graphviz
 digraph {
@@ -31,3 +31,8 @@ pie title What Voldemort doesn't have?
 ```python
 print('Hello dude')
 ```
+
+
+$$
+x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}
+$$

@@ -326,6 +326,26 @@
     .content svg {
       max-width: 100%;
     }
+    /* LaTeX → MathML (latex2mathml): inline `$…$` vs block `$$…$$` */
+    .content math {
+      color: var(--text);
+    }
+    .content .math-block {
+      display: block;
+      text-align: center;
+      overflow: visible;
+      margin: 1em 0;
+    }
+    .content .math-error {
+      color: #f38ba8;
+      background: var(--bg-3);
+    }
+    .content .math-error-block {
+      display: block;
+      text-align: center;
+      padding: 0.35em 0.5em;
+      margin: 1em 0;
+    }
     .content blockquote {
       background: var(--bg-3);
       border-left: 3px solid var(--accent);
@@ -414,7 +434,7 @@
 </head>
 <body>
   <!-- Leptos mounts into <body> via mount_to_body — no wrapper div needed.
-       Mermaid diagrams are pre-rendered to inline SVG in WASM by the Rust
-       `rusty-mermaid` crate, so no JavaScript runtime is involved. -->
+       Mermaid (rusty-mermaid) and LaTeX math (latex2mathml → MathML) are
+       pre-rendered in WASM; no JavaScript runtime or CDN scripts. -->
 </body>
 </html>

@@ -1,9 +1,11 @@
 mod code;
 mod graphviz;
+mod math;
 mod mermaid;
 
 use code::highlight_code;
 use graphviz::render_dot;
+use math::substitute_math;
 use mermaid::render_mermaid;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use std::collections::VecDeque;
@@ -137,8 +139,13 @@ pub fn render_markdown(src: &str) -> String {
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_FOOTNOTES;
 
-    let mut out = String::with_capacity(src.len() * 2);
-    html::push_html(&mut out, InterceptedMarkdown::new(src, opts));
+    // Convert `$…$` / `$$…$$` to MathML before markdown parsing so `_` / `*`
+    // inside equations are not treated as emphasis, and so display math can
+    // become a block-level HTML element.
+    let with_math = substitute_math(src);
+
+    let mut out = String::with_capacity(with_math.len() * 2);
+    html::push_html(&mut out, InterceptedMarkdown::new(&with_math, opts));
     out
 }
 
