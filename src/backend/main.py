@@ -17,15 +17,13 @@ from src.backend.file_io import (
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.logger import LOGGER
-from src.backend.mcp_interface import (
+from src.backend.mcp_interface import init_db, init_column_types, McpResponse
+from src.backend.output_schema import (
     DIRECTORY_OUTPUT_SCHEMA,
     EMPTY_OUTPUT_SCHEMA,
     EmptyResponse,
     NOTES_OUTPUT_SCHEMA,
     UPSERT_OUTPUT_SCHEMA,
-    init_db,
-    init_column_types,
-    McpResponse,
 )
 
 MCP = FastMCP("Notezilla")
