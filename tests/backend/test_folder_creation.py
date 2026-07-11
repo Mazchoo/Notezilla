@@ -49,11 +49,42 @@ class TestConstructFromDataCreatesDirs:
             assert result is not None
             assert new_file_created is True
             assert result.filename == "2024/01/new-note.md"
+            assert result.project_path == note_path
             assert note_path.is_file()
             assert note_path.parent.is_dir()
             written = note_path.read_text(encoding="utf-8")
             assert "title: New" in written
             assert written.endswith("body")
+
+    def test_new_file_created_false_when_updating_existing_note(
+        self, mock_notes_folder
+    ):
+        """Overwrite uses project_path for exists(), not the raw caller path.
+
+        get_normalised_path strips a trailing '.', so Path(path).exists() would
+        be False while the real note under NOTE_FOLDER already exists.
+        """
+        with clean_up_file_if_created(
+            mock_notes_folder / "2024" / "01" / "existing.md"
+        ) as note_path:
+            first, created = IMarkdownFile.construct_from_data(
+                path=str(note_path),
+                body="first",
+                fields={"title": "Existing"},
+            )
+            assert first is not None
+            assert created is True
+
+            result, new_file_created = IMarkdownFile.construct_from_data(
+                path=str(note_path),
+                body="updated",
+                fields={"title": "Existing"},
+            )
+
+            assert result is not None
+            assert new_file_created is False
+            assert result.project_path == note_path
+            assert note_path.read_text(encoding="utf-8").endswith("updated")
 
     def test_returns_none_for_path_outside_note_folder(self, mock_notes_folder):
         """Paths outside the note folder abort before any write."""

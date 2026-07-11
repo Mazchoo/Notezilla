@@ -1,13 +1,11 @@
 """Handles converting markdown into structured objected"""
 
 from typing import Optional
-from pathlib import Path
 from dataclasses import dataclass
 
 from src.backend.note import NoteData
 from src.backend.file_io import (
     read_file_content,
-    construct_yaml_header,
     ensure_note_parent_dirs,
     write_file_content,
     get_normalised_path,
@@ -50,18 +48,14 @@ class IMarkdownFile(NoteData):
         if not normed_path.endswith(".md"):
             return None
 
-        path_obj = Path(path)
-        new_file_created = not path_obj.exists()
-        payload = construct_yaml_header(fields) + body
-        if not ensure_note_parent_dirs(path):
+        note = IMarkdownFile(fields=fields, text=body, filename=normed_path)
+        if not ensure_note_parent_dirs(str(note.project_path)):
             return None
-        if not write_file_content(path, payload):
+        new_file_created = not note.project_path.exists()
+        if not write_file_content(str(note.project_path), note.to_file_string()):
             return None
 
-        return (
-            IMarkdownFile(fields=fields, text=body, filename=normed_path),
-            new_file_created,
-        )
+        return (note, new_file_created)
 
 
 if __name__ == "__main__":

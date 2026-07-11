@@ -1,9 +1,14 @@
 """Common note data structures."""
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, List, Self
 
-from src.backend.file_io import construct_yaml_header, extract_yaml_from_file_contents
+from src.backend import file_io
+from src.backend.file_io import (
+    construct_yaml_header,
+    extract_yaml_from_file_contents,
+)
 
 
 @dataclass
@@ -33,6 +38,11 @@ class NoteData:
     def basename(self) -> str:
         """Just the file name, no folders."""
         return self.filename.rsplit("/", 1)[-1]
+
+    @property
+    def project_path(self) -> Path:
+        """Full path to this note under NOTE_FOLDER."""
+        return Path(file_io.NOTE_FOLDER).joinpath(*self.filename.split("/"))
 
     def to_file_string(self) -> str:
         """Serialise to markdown file contents with YAML front matter."""
