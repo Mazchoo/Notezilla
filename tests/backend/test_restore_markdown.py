@@ -269,10 +269,6 @@ class TestDatabaseRoundTrip:
             text="  \n\n  leading and trailing spaces  \n",
         )
 
-
-class TestDatabaseEdgeCases:
-    """Scenarios that are easy to get wrong when splitting body and metadata."""
-
     def test_multiple_notes_remain_independent_in_one_database(self, temp_db):
         """Assert storing several notes does not mix up their bodies or fields."""
         notes = [
