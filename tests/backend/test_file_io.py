@@ -12,27 +12,11 @@ from src.backend.file_io import (
     read_file_content,
     write_file_content,
 )
+from tests.backend.helpers import MOCK_NOTES_FOLDER
 
 
-MOCK_NOTES_FOLDER = Path(__file__).resolve().parent.parent / "mock_notes"
 EXAMPLE_MD = MOCK_NOTES_FOLDER / "example.md"
 ANOTHER_EXAMPLE_MD = MOCK_NOTES_FOLDER / "folder" / "another_example.md"
-
-
-@pytest.fixture()
-def mock_notes_folder():
-    """Point NOTE_FOLDER at tests/mock_notes for path-normalisation tests."""
-    resolved = MOCK_NOTES_FOLDER.resolve()
-    with (
-        patch("src.backend.file_io.NOTE_FOLDER", str(resolved)),
-        patch("src.backend.file_io.RESOLVED_NOTE_FOLDER", resolved),
-    ):
-        yield resolved
-
-
-def _note_path(folder: Path, relative: str) -> str:
-    """Build an absolute path the way production callers pass into file_io."""
-    return str(folder / relative)
 
 
 # ---------------------------------------------------------------------------
@@ -102,23 +86,23 @@ class TestGetNormalisedPath:
     """Normalise vault-relative paths using tests/mock_notes."""
 
     def test_root_level_note(self, mock_notes_folder):
-        assert get_normalised_path(_note_path(mock_notes_folder, "example.md")) == (
+        assert get_normalised_path(str(mock_notes_folder / "example.md")) == (
             "example.md"
         )
 
     def test_nested_note(self, mock_notes_folder):
         assert (
             get_normalised_path(
-                _note_path(mock_notes_folder, "folder/another_example.md")
+                str(mock_notes_folder / "folder" / "another_example.md")
             )
             == "folder/another_example.md"
         )
 
     def test_strips_trailing_dot(self, mock_notes_folder):
-        assert get_normalised_path(_note_path(mock_notes_folder, "folder.")) == "folder"
+        assert get_normalised_path(str(mock_notes_folder / "folder.")) == "folder"
 
     def test_strips_trailing_star(self, mock_notes_folder):
-        assert get_normalised_path(_note_path(mock_notes_folder, "folder*")) == "folder"
+        assert get_normalised_path(str(mock_notes_folder / "folder*")) == "folder"
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
         assert get_normalised_path("/etc/passwd") is None
@@ -167,7 +151,7 @@ class TestEnsureNoteParentDirs:
     def test_root_level_note_needs_no_mkdir(self, mock_notes_folder):
         with patch.object(Path, "mkdir") as mock_mkdir:
             assert (
-                ensure_note_parent_dirs(_note_path(mock_notes_folder, "example.md"))
+                ensure_note_parent_dirs(str(mock_notes_folder / "example.md"))
                 is True
             )
 
@@ -177,7 +161,7 @@ class TestEnsureNoteParentDirs:
         with patch.object(Path, "mkdir") as mock_mkdir:
             assert (
                 ensure_note_parent_dirs(
-                    _note_path(mock_notes_folder, "folder/new/note.md")
+                    str(mock_notes_folder / "folder" / "new" / "note.md")
                 )
                 is True
             )
@@ -194,7 +178,7 @@ class TestEnsureNoteParentDirs:
         with patch.object(Path, "mkdir", side_effect=OSError("permission denied")):
             assert (
                 ensure_note_parent_dirs(
-                    _note_path(mock_notes_folder, "folder/new/note.md")
+                    str(mock_notes_folder / "folder" / "new" / "note.md")
                 )
                 is False
             )
@@ -213,7 +197,7 @@ class TestWriteFileContent:
         with patch("src.backend.file_io.open", m):
             assert (
                 write_file_content(
-                    _note_path(mock_notes_folder, "folder/new-note.md"),
+                    str(mock_notes_folder / "folder" / "new-note.md"),
                     "Hello world",
                 )
                 is True
@@ -233,7 +217,7 @@ class TestWriteFileContent:
     def test_returns_false_when_open_raises(self, mock_notes_folder):
         with patch("src.backend.file_io.open", side_effect=OSError("disk full")):
             assert (
-                write_file_content(_note_path(mock_notes_folder, "new-note.md"), "body")
+                write_file_content(str(mock_notes_folder / "new-note.md"), "body")
                 is False
             )
 

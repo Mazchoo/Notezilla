@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.backend.database_adapter import NoteDatabase
 from src.backend.mcp_interface import init_db
 from tests.backend.helpers import MOCK_NOTES_FOLDER
 
@@ -20,10 +21,17 @@ def clear_init_db_cache():
 def mock_notes_folder():
     """Point NOTE_FOLDER at tests/mock_notes for filesystem-backed tests."""
     with (
+        patch("src.backend.main.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
         patch("src.backend.file_io.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
         patch("src.backend.file_io.RESOLVED_NOTE_FOLDER", MOCK_NOTES_FOLDER),
     ):
         yield MOCK_NOTES_FOLDER
+
+
+@pytest.fixture()
+def temp_db(tmp_path):
+    """Isolated Chroma database for one test."""
+    return NoteDatabase(path=str(tmp_path / "chroma_db"))
 
 
 @pytest.fixture()

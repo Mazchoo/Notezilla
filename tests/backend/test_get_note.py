@@ -4,7 +4,7 @@ import pytest
 
 from src.backend.main import get_note
 from src.backend.mcp_interface import McpResponse
-from tests.backend.helpers import _make_query_result
+from tests.backend.helpers import make_query_result
 
 
 class TestGetNote:
@@ -12,7 +12,7 @@ class TestGetNote:
 
     def test_returns_matching_document(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note returns a single document from the database."""
-        query_result = _make_query_result(
+        query_result = make_query_result(
             docs=["note content"], metas=[{"filename": "note.md"}]
         )
         mock_db.query_by_id.return_value = query_result
@@ -32,7 +32,7 @@ class TestGetNote:
             "title": "My Note",
             "tags\twork": True,
         }
-        query_result = _make_query_result(docs=["note content"], metas=[meta])
+        query_result = make_query_result(docs=["note content"], metas=[meta])
         mock_db.query_by_id.return_value = query_result
 
         result = get_note(path="2024/01/note.md")
@@ -77,7 +77,7 @@ class TestGetNote:
 
     def test_not_found_returns_error(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note returns an error when the note is not in the database."""
-        mock_db.query_by_id.return_value = _make_query_result(docs=[], metas=[])
+        mock_db.query_by_id.return_value = make_query_result(docs=[], metas=[])
 
         result = get_note(path="missing/note.md")
 

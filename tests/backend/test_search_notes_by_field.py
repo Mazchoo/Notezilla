@@ -2,7 +2,7 @@
 
 import pytest
 
-from tests.backend.helpers import _make_query_result
+from tests.backend.helpers import make_query_result
 from src.backend.main import search_notes_by_field
 from src.backend.mcp_interface import McpResponse
 
@@ -16,7 +16,7 @@ class TestSearchNotesByField:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field returns documents from the database."""
-        query_result = _make_query_result(
+        query_result = make_query_result(
             docs=["content of note"], metas=[{"filename": "note.md"}]
         )
         mock_db.query_by_field.return_value = query_result
@@ -30,7 +30,7 @@ class TestSearchNotesByField:
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field passes field, value, and n_results to the DB."""
-        mock_db.query_by_field.return_value = _make_query_result()
+        mock_db.query_by_field.return_value = make_query_result()
 
         search_notes_by_field(field="title", value="hello", n_results=5)
 
@@ -38,7 +38,7 @@ class TestSearchNotesByField:
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field uses n_results=10 by default."""
-        mock_db.query_by_field.return_value = _make_query_result()
+        mock_db.query_by_field.return_value = make_query_result()
 
         search_notes_by_field(field="title", value="hello")
 
@@ -62,7 +62,7 @@ class TestSearchNotesByField:
 
     def test_empty_result_from_db(self, mock_db):
         """search_notes_by_field handles an empty result set gracefully."""
-        mock_db.query_by_field.return_value = _make_query_result(docs=[], metas=[])
+        mock_db.query_by_field.return_value = make_query_result(docs=[], metas=[])
 
         result = search_notes_by_field(field="title", value="nonexistent")
 

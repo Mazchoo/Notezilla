@@ -44,12 +44,6 @@ def _assert_file_contents_recover(
     return recovered
 
 
-@pytest.fixture()
-def temp_db(tmp_path):
-    """Isolated Chroma database for one test."""
-    return NoteDatabase(path=str(tmp_path / "chroma_db"))
-
-
 class TestDatabaseRoundTrip:
     """Stored file contents round-trip through NoteData.to_file_string()."""
 

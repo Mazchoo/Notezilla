@@ -2,7 +2,7 @@
 
 import pytest
 
-from tests.backend.helpers import _make_query_result
+from tests.backend.helpers import make_query_result
 from src.backend.main import search_notes_by_text
 from src.backend.mcp_interface import McpResponse
 
@@ -15,7 +15,7 @@ class TestSearchNotesByText:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text returns documents from the database."""
-        query_result = _make_query_result(
+        query_result = make_query_result(
             docs=["semantic match"], metas=[{"filename": "result.md"}]
         )
         mock_db.query_by_text.return_value = query_result
@@ -29,7 +29,7 @@ class TestSearchNotesByText:
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text passes text and n_results to the DB."""
-        mock_db.query_by_text.return_value = _make_query_result()
+        mock_db.query_by_text.return_value = make_query_result()
 
         search_notes_by_text(text="hello world", n_results=7)
 
@@ -37,7 +37,7 @@ class TestSearchNotesByText:
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text uses n_results=10 by default."""
-        mock_db.query_by_text.return_value = _make_query_result()
+        mock_db.query_by_text.return_value = make_query_result()
 
         search_notes_by_text(text="query")
 
@@ -61,7 +61,7 @@ class TestSearchNotesByText:
 
     def test_empty_result_from_db(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text handles an empty result set gracefully."""
-        mock_db.query_by_text.return_value = _make_query_result(docs=[], metas=[])
+        mock_db.query_by_text.return_value = make_query_result(docs=[], metas=[])
 
         result = search_notes_by_text(text="nothing matches")
 
@@ -70,7 +70,7 @@ class TestSearchNotesByText:
 
     def test_multiple_results_returned(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text returns all documents from the DB result."""
-        multi_result = _make_query_result(
+        multi_result = make_query_result(
             docs=["doc A", "doc B", "doc C"],
             metas=[{"filename": "a.md"}, {"filename": "b.md"}, {"filename": "c.md"}],
         )

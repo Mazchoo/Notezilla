@@ -2,7 +2,7 @@
 
 import pytest
 
-from tests.backend.helpers import _make_query_result
+from tests.backend.helpers import make_query_result
 from src.backend.main import search_notes_by_tag
 from src.backend.mcp_interface import McpResponse
 
@@ -15,7 +15,7 @@ class TestSearchNotesByTag:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag returns documents from the database."""
-        query_result = _make_query_result(
+        query_result = make_query_result(
             docs=["tagged note"], metas=[{"tags\tpython": True, "filename": "note.md"}]
         )
         mock_db.query_field_contains.return_value = query_result
@@ -32,7 +32,7 @@ class TestSearchNotesByTag:
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag passes field, value, and n_results to the DB."""
-        mock_db.query_field_contains.return_value = _make_query_result()
+        mock_db.query_field_contains.return_value = make_query_result()
 
         search_notes_by_tag(field="tags", value="python", n_results=3)
 
@@ -40,7 +40,7 @@ class TestSearchNotesByTag:
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_tag uses n_results=10 by default."""
-        mock_db.query_field_contains.return_value = _make_query_result()
+        mock_db.query_field_contains.return_value = make_query_result()
 
         search_notes_by_tag(field="tags", value="python")
 
