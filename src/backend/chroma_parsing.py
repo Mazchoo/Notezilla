@@ -2,9 +2,10 @@
 
 import json
 from datetime import datetime, date
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from src.field_enums import ColumnTypes, ReservedFields, FieldTypes
+from src.backend.note import NoteData
 
 
 def cast_value(key: str, val, target_type: FieldTypes) -> dict:  # pylint: disable=too-many-return-statements
@@ -59,3 +60,21 @@ def decode_frontmatter(
         fields[field] = sorted(items)
 
     return fields
+
+
+def notes_from_chroma(
+    documents: List[str],
+    metadatas: List[Dict[str, Any]],
+    column_types: ColumnTypes,
+) -> List[NoteData]:
+    """Convert Chroma documents and metadata into NoteData records."""
+    notes: List[NoteData] = []
+    for text, metadata in zip(documents, metadatas):
+        notes.append(
+            NoteData(
+                text=text,
+                fields=decode_frontmatter(metadata, column_types),
+                filename=str(metadata.get(ReservedFields.FILENAME, "")),
+            )
+        )
+    return notes

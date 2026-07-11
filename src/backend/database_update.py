@@ -2,7 +2,7 @@
 
 from src.field_enums import ReservedFields, ColumnTypes
 from src.backend.note import NoteData
-from src.backend.chroma_frontmatter_parsing import cast_value
+from src.backend.chroma_parsing import cast_value
 
 
 def prepate_database_row(markdown: NoteData, column_types: ColumnTypes) -> dict:

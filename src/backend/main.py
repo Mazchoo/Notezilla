@@ -124,10 +124,10 @@ def get_note(
     if normed_path is None:
         return McpResponse.error(f"Path not recognised in note folder {path}")
     try:
-        result = init_db().query_by_id(normed_path)
-        if not result.documents:
+        notes = init_db().query_by_id(normed_path, init_column_types())
+        if not notes:
             return McpResponse.error(f"Note not found at '{normed_path}'")
-        return McpResponse.notes_from_query(result)
+        return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
@@ -153,8 +153,10 @@ def search_notes_by_field(
         n_results: Maximum number of results to return
     """
     try:
-        result = init_db().query_by_field(field, value, n_results)
-        return McpResponse.notes_from_query(result)
+        notes = init_db().query_by_field(
+            field, value, init_column_types(), n_results
+        )
+        return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
@@ -178,8 +180,10 @@ def search_notes_by_tag(
         n_results: Maximum number of results to return
     """
     try:
-        result = init_db().query_field_contains(field, value, n_results)
-        return McpResponse.notes_from_query(result)
+        notes = init_db().query_field_contains(
+            field, value, init_column_types(), n_results
+        )
+        return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
@@ -201,8 +205,8 @@ def search_notes_by_text(
         n_results: Maximum number of results to return
     """
     try:
-        result = init_db().query_by_text(text, n_results)
-        return McpResponse.notes_from_query(result)
+        notes = init_db().query_by_text(text, init_column_types(), n_results)
+        return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except

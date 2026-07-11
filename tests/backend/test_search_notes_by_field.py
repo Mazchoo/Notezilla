@@ -1,10 +1,12 @@
 """Tests for the search_notes_by_field MCP tool."""
 
+from unittest.mock import ANY
+
 import pytest
 
-from tests.backend.helpers import make_query_result
+from tests.backend.helpers import make_notes
 from src.backend.main import search_notes_by_field
-from src.backend.mcp_interface import McpResponse
+from src.backend.note import NoteData
 
 
 class TestSearchNotesByField:
@@ -16,33 +18,32 @@ class TestSearchNotesByField:
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field returns documents from the database."""
-        query_result = make_query_result(
+        mock_db.query_by_field.return_value = make_notes(
             docs=["content of note"], metas=[{"filename": "note.md"}]
         )
-        mock_db.query_by_field.return_value = query_result
 
         result = search_notes_by_field(field="filename", value="note.md")
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            McpResponse.note_item("content of note", {"filename": "note.md"}).to_dict()
+            NoteData(filename="note.md", text="content of note", fields={}).to_dict()
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field passes field, value, and n_results to the DB."""
-        mock_db.query_by_field.return_value = make_query_result()
+        mock_db.query_by_field.return_value = make_notes()
 
         search_notes_by_field(field="title", value="hello", n_results=5)
 
-        mock_db.query_by_field.assert_called_once_with("title", "hello", 5)
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 5)
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field uses n_results=10 by default."""
-        mock_db.query_by_field.return_value = make_query_result()
+        mock_db.query_by_field.return_value = make_notes()
 
         search_notes_by_field(field="title", value="hello")
 
-        mock_db.query_by_field.assert_called_once_with("title", "hello", 10)
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field wraps ValueError in an error response."""
@@ -62,7 +63,7 @@ class TestSearchNotesByField:
 
     def test_empty_result_from_db(self, mock_db):
         """search_notes_by_field handles an empty result set gracefully."""
-        mock_db.query_by_field.return_value = make_query_result(docs=[], metas=[])
+        mock_db.query_by_field.return_value = []
 
         result = search_notes_by_field(field="title", value="nonexistent")
 

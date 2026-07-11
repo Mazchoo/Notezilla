@@ -2,18 +2,23 @@
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, List
 
-from src.backend.database_adapter import QueryResult
+from src.backend.note import NoteData
 
 MOCK_NOTES_FOLDER = (Path(__file__).resolve().parent.parent / "mock_notes").resolve()
 
 
-def make_query_result(docs=None, metas=None) -> QueryResult:
-    return QueryResult(
-        documents=docs if docs is not None else ["doc1"],
-        metadatas=metas if metas is not None else [{"filename": "note.md"}],
-    )
+def make_notes(docs=None, metas=None) -> List[NoteData]:
+    """Build NoteData list for mocked query returns."""
+    documents = docs if docs is not None else ["doc1"]
+    metadatas = metas if metas is not None else [{"filename": "note.md"}]
+    notes: List[NoteData] = []
+    for text, meta in zip(documents, metadatas):
+        fields = dict(meta)
+        filename = str(fields.pop("filename", ""))
+        notes.append(NoteData(text=text, filename=filename, fields=fields))
+    return notes
 
 
 @contextmanager

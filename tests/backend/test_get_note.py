@@ -1,10 +1,12 @@
 """Tests for the get_note MCP tool."""
 
+from unittest.mock import ANY
+
 import pytest
 
 from src.backend.main import get_note
-from src.backend.mcp_interface import McpResponse
-from tests.backend.helpers import make_query_result
+from src.backend.note import NoteData
+from tests.backend.helpers import make_notes
 
 
 class TestGetNote:
@@ -12,28 +14,27 @@ class TestGetNote:
 
     def test_returns_matching_document(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note returns a single document from the database."""
-        query_result = make_query_result(
+        mock_db.query_by_id.return_value = make_notes(
             docs=["note content"], metas=[{"filename": "note.md"}]
         )
-        mock_db.query_by_id.return_value = query_result
 
         result = get_note(path="2024/01/note.md")
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
-            McpResponse.note_item("note content", {"filename": "note.md"}).to_dict()
+            NoteData(filename="note.md", text="note content", fields={}).to_dict()
         ]
-        mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
+        mock_db.query_by_id.assert_called_once_with("2024/01/note.md", ANY)
 
     def test_returns_metadata_for_front_matter(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note includes metadata fields needed to reconstruct front matter."""
-        meta = {
-            "filename": "note.md",
-            "title": "My Note",
-            "tags\twork": True,
-        }
-        query_result = make_query_result(docs=["note content"], metas=[meta])
-        mock_db.query_by_id.return_value = query_result
+        mock_db.query_by_id.return_value = [
+            NoteData(
+                filename="note.md",
+                text="note content",
+                fields={"title": "My Note", "tags": ["work"]},
+            )
+        ]
 
         result = get_note(path="2024/01/note.md")
 
@@ -42,9 +43,8 @@ class TestGetNote:
                 "filename": "note.md",
                 "text": "note content",
                 "metadata": {
-                    "filename": "note.md",
                     "title": "My Note",
-                    "tags\twork": True,
+                    "tags": ["work"],
                 },
             }
         ]
@@ -53,19 +53,19 @@ class TestGetNote:
         """Expect key to be universal to get the same result each time"""
         get_note(path=r"2024\01\note.md")
 
-        mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
+        mock_db.query_by_id.assert_called_once_with("2024/01/note.md", ANY)
 
     def test_relative_path_calls_normalised_path(self, mock_db):  # pylint: disable=redefined-outer-name
         """Expect key to be universal to get the same result each time"""
         get_note(path="./2024/01/note.md")
 
-        mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
+        mock_db.query_by_id.assert_called_once_with("2024/01/note.md", ANY)
 
     def test_backtrack_path_calls_normalised_path(self, mock_db):  # pylint: disable=redefined-outer-name
         """Expect key to be universal to get the same result each time"""
         get_note(path="./2024/01/../01/note.md")
 
-        mock_db.query_by_id.assert_called_once_with("2024/01/note.md")
+        mock_db.query_by_id.assert_called_once_with("2024/01/note.md", ANY)
 
     def test_invalid_path_returns_error(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note returns an error when the path is outside the note folder."""
@@ -77,7 +77,7 @@ class TestGetNote:
 
     def test_not_found_returns_error(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note returns an error when the note is not in the database."""
-        mock_db.query_by_id.return_value = make_query_result(docs=[], metas=[])
+        mock_db.query_by_id.return_value = []
 
         result = get_note(path="missing/note.md")
 

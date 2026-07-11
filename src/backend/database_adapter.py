@@ -1,7 +1,6 @@
 """Handles all database interactions for note storage and retrieval"""
 
 import os
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast, Union
 
 import chromadb
@@ -9,7 +8,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.field_enums import ColumnTypes, ReservedFields
-from src.backend.chroma_frontmatter_parsing import decode_frontmatter
+from src.backend.chroma_parsing import notes_from_chroma
 from src.backend.file_io import delete_all_old_index_folders
 from src.backend.note import NoteData
 
@@ -17,15 +16,6 @@ from src.backend.note import NoteData
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 VALID_QUERY_TYPES = (str, int, float, bool)
-
-
-@dataclass
-class QueryResult:
-    """Documents and metadata returned from a database query."""
-
-    documents: List[str]
-    metadatas: List[Dict[str, Any]]
-    distances: Optional[List[float]] = None
 
 
 class NoteDatabase:
@@ -81,36 +71,33 @@ class NoteDatabase:
     def __len__(self) -> int:
         return self._collection.count()
 
-    def query_by_id(self, doc_id: str) -> QueryResult:
-        """Return a single document and metadata by its path id"""
+    def query_by_id(self, doc_id: str, column_types: ColumnTypes) -> List[NoteData]:
+        """Return a single note by its path id"""
         results = self._collection.get(
             ids=[doc_id],
             include=["documents", "metadatas"],
         )
-        return QueryResult(
-            documents=results["documents"] or [],
-            metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
+        return notes_from_chroma(
+            results["documents"] or [],
+            cast(List[Dict[str, Any]], results["metadatas"] or []),
+            column_types,
         )
 
     def get_frontmatter_from_path_key(
         self, path_key: str, column_types: ColumnTypes
     ) -> Optional[NoteData]:
         """Load note text and decoded front matter for a path key."""
-        result = self.query_by_id(path_key)
-        if not result.documents:
-            return None
-
-        metadata = result.metadatas[0] if result.metadatas else {}
-        return NoteData(
-            text=result.documents[0],
-            fields=decode_frontmatter(metadata, column_types),
-            filename=str(metadata.get(ReservedFields.FILENAME, "")),
-        )
+        notes = self.query_by_id(path_key, column_types)
+        return notes[0] if notes else None
 
     def query_by_field(
-        self, field: str, value: Union[str, bool, int, float], n_results: int = 10
-    ) -> QueryResult:
-        """Return documents and metadatas where a metadata field equals the given value"""
+        self,
+        field: str,
+        value: Union[str, bool, int, float],
+        column_types: ColumnTypes,
+        n_results: int = 10,
+    ) -> List[NoteData]:
+        """Return notes where a metadata field equals the given value"""
         if not isinstance(value, VALID_QUERY_TYPES):
             raise ValueError(
                 f"{value}: {type(value)} not in valid query types {VALID_QUERY_TYPES}"
@@ -121,38 +108,46 @@ class NoteDatabase:
             limit=n_results,
             include=["documents", "metadatas"],
         )
-        return QueryResult(
-            documents=results["documents"] or [],
-            metadatas=cast(List[Dict[str, Any]], results["metadatas"] or []),
+        return notes_from_chroma(
+            results["documents"] or [],
+            cast(List[Dict[str, Any]], results["metadatas"] or []),
+            column_types,
         )
 
     def query_field_contains(
-        self, field: str, value: str, n_results: int = 10
-    ) -> QueryResult:
-        """Return documents where a list field contains a value.
+        self,
+        field: str,
+        value: str,
+        column_types: ColumnTypes,
+        n_results: int = 10,
+    ) -> List[NoteData]:
+        """Return notes where a list field contains a value.
 
         List values are stored as ``field.value: True`` metadata keys.
         """
-        return self.query_by_field(f"{field}\t{value}", True, n_results)
+        return self.query_by_field(f"{field}\t{value}", True, column_types, n_results)
 
     def query_by_text(
-        self, text: str, n_results: int = 10, where: Optional[dict] = None
-    ) -> QueryResult:
-        """Semantic search — returns documents, metadatas, and distances"""
+        self,
+        text: str,
+        column_types: ColumnTypes,
+        n_results: int = 10,
+        where: Optional[dict] = None,
+    ) -> List[NoteData]:
+        """Semantic search — returns matching notes"""
         results = self._collection.query(
             query_texts=[text],
             n_results=n_results,
             where=where,
-            include=["documents", "metadatas", "distances"],
+            include=["documents", "metadatas"],
         )
-        raw_distances = results.get("distances")
-        return QueryResult(
-            documents=results["documents"][0] if results["documents"] else [],
-            metadatas=cast(
+        return notes_from_chroma(
+            results["documents"][0] if results["documents"] else [],
+            cast(
                 List[Dict[str, Any]],
                 results["metadatas"][0] if results["metadatas"] else [],
             ),
-            distances=raw_distances[0] if raw_distances else [],
+            column_types,
         )
 
     def reset_collection(self):

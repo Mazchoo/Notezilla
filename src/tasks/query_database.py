@@ -4,6 +4,8 @@ from typing import List
 from time import perf_counter
 
 from src.backend.database_adapter import NoteDatabase
+from src.backend.file_io import get_db_column_types
+from src.backend.note import NoteData
 
 
 LIST_FIELD = "tags"
@@ -13,43 +15,44 @@ SEARCH_VALUE = "p0.md"
 SEARCH_TEXT = "I like crepes"
 
 
-def print_query_results(documents: List, metadatas: List):
+def print_query_results(notes: List[NoteData]):
     """Show the query results"""
-    for doc, meta in zip(documents, metadatas):
-        print(f"--- {meta.get('filename', 'unknown')} ---")
-        print(f"  metadata: {meta}")
-        print(f"  text: {doc[:200]}")
+    for note in notes:
+        print(f"--- {note.filename or 'unknown'} ---")
+        print(f"  metadata: {note.fields}")
+        print(f"  text: {note.text[:200]}")
         print()
 
 
 if __name__ == "__main__":
     db = NoteDatabase()
+    column_types = get_db_column_types()
 
     start = perf_counter()
-    result = db.query_field_contains(LIST_FIELD, LIST_VALUE, 5)
+    result = db.query_field_contains(LIST_FIELD, LIST_VALUE, column_types, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search by using 'in list' query method for tags")
-    print_query_results(result.documents, result.metadatas)
+    print_query_results(result)
     print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
     print()
 
     start = perf_counter()
-    result = db.query_by_field(SEARCH_FIELD, SEARCH_VALUE, 5)
+    result = db.query_by_field(SEARCH_FIELD, SEARCH_VALUE, column_types, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Search exact match for specific field")
-    print_query_results(result.documents, result.metadatas)
+    print_query_results(result)
     print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
     print()
 
     start = perf_counter()
-    result = db.query_by_text(SEARCH_TEXT, 5)
+    result = db.query_by_text(SEARCH_TEXT, column_types, 5)
     time_taken_ms = (perf_counter() - start) * 1000.0
 
     print("Semantic search by text")
-    print_query_results(result.documents, result.metadatas)
+    print_query_results(result)
     print(f"Time taken: {time_taken_ms:.1f}ms")
     print("------")
