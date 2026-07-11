@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types
-from src.backend.parse_markdown import MarkdownFile
+from src.backend.parse_markdown import IMarkdownFile
 from src.field_enums import ReservedFields
 from src.tasks.check_path_sync import (
     get_database_paths,
@@ -39,7 +39,7 @@ def _fields_for_compare(fields: dict[str, Any]) -> dict[str, Any]:
 
 def _expected_from_disk(path: str) -> tuple[str, dict[str, Any], str] | None:
     """Read body text, front matter, and filename from an on-disk note."""
-    disk = MarkdownFile.construct_from_path(note_file_path(path))
+    disk = IMarkdownFile.construct_from_path(note_file_path(path))
     if disk is None:
         return None
 

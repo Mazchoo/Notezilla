@@ -12,7 +12,7 @@ import pytest
 from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.note import NoteData
-from src.backend.parse_markdown import MarkdownFile
+from src.backend.parse_markdown import IMarkdownFile
 from src.field_enums import FieldTypes, ReservedFields
 
 
@@ -25,7 +25,7 @@ COLUMN_TYPES = {
 }
 
 
-def _load_from_path(filename: str, contents: str) -> MarkdownFile:
+def _load_from_path(filename: str, contents: str) -> IMarkdownFile:
     """Build a MarkdownFile via construct_from_path with file read mocked."""
     with (
         patch(
@@ -37,7 +37,7 @@ def _load_from_path(filename: str, contents: str) -> MarkdownFile:
             return_value="/".join(Path(filename).parts),
         ),
     ):
-        markdown = MarkdownFile.construct_from_path(path=filename)
+        markdown = IMarkdownFile.construct_from_path(path=filename)
     assert markdown is not None
     return markdown
 

@@ -15,7 +15,7 @@ from src.backend.file_io import (
     get_normalised_path,
 )
 from src.backend.directory_watcher import PyFileHandler
-from src.backend.parse_markdown import MarkdownFile
+from src.backend.parse_markdown import IMarkdownFile
 from src.backend.logger import LOGGER
 from src.backend.mcp_interface import (
     init_db,
@@ -59,7 +59,7 @@ def upsert_note(
         fields: Dictionary of metadata fields to convert into a YAML header
     """
     note_path = f"{NOTE_FOLDER}/{path}"
-    result = MarkdownFile.construct_from_data(note_path, contents, fields)
+    result = IMarkdownFile.construct_from_data(note_path, contents, fields)
     if result:
         _, new_file_created = result
         return McpResponse.success({"newFileCreated": new_file_created})

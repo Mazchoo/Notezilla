@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.backend.parse_markdown import MarkdownFile
+from src.backend.parse_markdown import IMarkdownFile
 from tests.backend.helpers import clean_up_file_if_created
 
 
@@ -14,12 +14,12 @@ class TestMarkdownDataRoundTrip:
     ) -> tuple:
         """Write to file via construct_from_data, read via construct_from_path."""
         path = str(note_path)
-        from_data, _new_file_created = MarkdownFile.construct_from_data(
+        from_data, _new_file_created = IMarkdownFile.construct_from_data(
             path=path, body=contents, fields=fields
         )
         assert from_data is not None, "construct_from_data returned None unexpectedly"
 
-        from_path = MarkdownFile.construct_from_path(path=path)
+        from_path = IMarkdownFile.construct_from_path(path=path)
         assert from_path is not None, "construct_from_path returned None unexpectedly"
 
         return from_data, from_path
@@ -73,7 +73,7 @@ class TestConstructFromPathExistingNotes:
     """construct_from_path against committed files in tests/mock_notes."""
 
     def test_reads_root_level_note(self, mock_notes_folder):
-        result = MarkdownFile.construct_from_path(
+        result = IMarkdownFile.construct_from_path(
             str(mock_notes_folder / "example.md")
         )
 
@@ -83,7 +83,7 @@ class TestConstructFromPathExistingNotes:
         assert "Hello there" in result.text
 
     def test_reads_nested_note_with_front_matter(self, mock_notes_folder):
-        result = MarkdownFile.construct_from_path(
+        result = IMarkdownFile.construct_from_path(
             str(mock_notes_folder / "folder" / "another_example.md")
         )
 
@@ -97,11 +97,11 @@ class TestConstructFromPathExistingNotes:
         assert "# Silly Database Integration" in result.text
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
-        assert MarkdownFile.construct_from_path("/etc/passwd") is None
+        assert IMarkdownFile.construct_from_path("/etc/passwd") is None
 
     def test_missing_file_returns_none(self, mock_notes_folder):
         assert (
-            MarkdownFile.construct_from_path(
+            IMarkdownFile.construct_from_path(
                 str(mock_notes_folder / "does-not-exist.md")
             )
             is None

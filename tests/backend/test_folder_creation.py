@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.backend.parse_markdown import MarkdownFile
+from src.backend.parse_markdown import IMarkdownFile
 from src.backend.file_io import ensure_note_parent_dirs
 from tests.backend.helpers import clean_up_file_if_created
 
@@ -40,7 +40,7 @@ class TestConstructFromDataCreatesDirs:
         with clean_up_file_if_created(
             mock_notes_folder / "2024" / "01" / "new-note.md"
         ) as note_path:
-            result, new_file_created = MarkdownFile.construct_from_data(
+            result, new_file_created = IMarkdownFile.construct_from_data(
                 path=str(note_path),
                 body="body",
                 fields={"title": "New"},
@@ -57,7 +57,7 @@ class TestConstructFromDataCreatesDirs:
 
     def test_returns_none_for_path_outside_note_folder(self, mock_notes_folder):
         """Paths outside the note folder abort before any write."""
-        result = MarkdownFile.construct_from_data(
+        result = IMarkdownFile.construct_from_data(
             path="/etc/passwd.md",
             body="body",
             fields={},
@@ -71,7 +71,7 @@ class TestConstructFromDataCreatesDirs:
             mock_notes_folder / "blocked" / "nested" / "note.md"
         ) as note_path:
             with patch.object(Path, "mkdir", side_effect=OSError("permission denied")):
-                result = MarkdownFile.construct_from_data(
+                result = IMarkdownFile.construct_from_data(
                     path=str(note_path),
                     body="body",
                     fields={},

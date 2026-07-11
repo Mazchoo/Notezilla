@@ -15,11 +15,11 @@ from src.backend.file_io import (
 
 
 @dataclass
-class MarkdownFile(NoteData):
+class IMarkdownFile(NoteData):
     """Container that holds markdown information for one file"""
 
     @staticmethod
-    def construct_from_path(path: str) -> Optional["MarkdownFile"]:
+    def construct_from_path(path: str) -> Optional["IMarkdownFile"]:
         """
         Converters file contents to markdown object
         If header cannot be parsed returns MarkdownData as with file contents in full
@@ -30,12 +30,12 @@ class MarkdownFile(NoteData):
         if not (content := read_file_content(path)):
             return None
 
-        return MarkdownFile.from_payload(content, normed_path)
+        return IMarkdownFile.from_payload(content, normed_path)
 
     @staticmethod
     def construct_from_data(
         path: str, body: str, fields: dict
-    ) -> Optional[tuple["MarkdownFile", bool]]:
+    ) -> Optional[tuple["IMarkdownFile", bool]]:
         """
         Construct note from data and return it if it was successfully created.
 
@@ -59,10 +59,10 @@ class MarkdownFile(NoteData):
             return None
 
         return (
-            MarkdownFile(fields=fields, text=body, filename=normed_path),
+            IMarkdownFile(fields=fields, text=body, filename=normed_path),
             new_file_created,
         )
 
 
 if __name__ == "__main__":
-    print(MarkdownFile.construct_from_path("./notes/new_file.md"))
+    print(IMarkdownFile.construct_from_path("./notes/new_file.md"))
