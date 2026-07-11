@@ -85,17 +85,43 @@
 
     /* ── Sidebar panel ─────────────────────────────────────────────── */
     .sidebar-panel {
+      position: relative;
       width: 250px;
       min-width: 250px;
+      flex-shrink: 0;
       background-color: var(--bg-2);
       border-right: 1px solid var(--border);
       overflow-y: auto;
       transition: width 0.15s ease, min-width 0.15s ease;
     }
+    .sidebar-panel.resizing {
+      transition: none;
+      overflow: hidden;
+    }
     .sidebar-panel.collapsed {
       width: 0;
       min-width: 0;
       overflow: hidden;
+    }
+    .sidebar-resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 5;
+    }
+    .sidebar-resize-handle:hover,
+    .sidebar-panel.resizing .sidebar-resize-handle {
+      background-color: var(--accent);
+      opacity: 0.5;
+    }
+    .sidebar-resize-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      cursor: col-resize;
     }
     /* Bulma menu dark overrides */
     .sidebar-panel .menu-label { color: var(--text-muted); }

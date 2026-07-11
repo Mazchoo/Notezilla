@@ -30,6 +30,8 @@ pub struct AppState {
     pub error_toast: RwSignal<Option<String>>,
     /// Bumped after successful note upserts so open file-tree folders re-fetch.
     pub file_tree_epoch: RwSignal<u64>,
+    /// Sidebar panel width in CSS pixels (preserved while collapsed).
+    pub sidebar_width: RwSignal<f64>,
 }
 
 impl AppState {
@@ -50,6 +52,7 @@ impl AppState {
             toast: RwSignal::new(None),
             error_toast: RwSignal::new(None),
             file_tree_epoch: RwSignal::new(0),
+            sidebar_width: RwSignal::new(250.0),
         }
     }
 }
