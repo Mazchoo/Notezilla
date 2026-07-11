@@ -86,6 +86,27 @@ class TestConstructFromDataCreatesDirs:
             assert result.project_path == note_path
             assert note_path.read_text(encoding="utf-8").endswith("updated")
 
+    def test_coerces_non_md_extension_to_md(self, mock_notes_folder):
+        """Paths with another extension are rewritten to .md before writing."""
+        with clean_up_file_if_created(
+            mock_notes_folder / "2024" / "01" / "from-txt.md"
+        ) as note_path:
+            result, new_file_created = IMarkdownFile.construct_from_data(
+                path=str(mock_notes_folder / "2024" / "01" / "from-txt.txt"),
+                body="converted body",
+                fields={"title": "From Txt"},
+            )
+
+            assert result is not None
+            assert new_file_created is True
+            assert result.filename == "2024/01/from-txt.md"
+            assert result.project_path == note_path
+            assert note_path.is_file()
+            assert not (mock_notes_folder / "2024" / "01" / "from-txt.txt").exists()
+            written = note_path.read_text(encoding="utf-8")
+            assert "title: From Txt" in written
+            assert written.endswith("converted body")
+
     def test_returns_none_for_path_outside_note_folder(self, mock_notes_folder):
         """Paths outside the note folder abort before any write."""
         result = IMarkdownFile.construct_from_data(

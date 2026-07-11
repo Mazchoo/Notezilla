@@ -38,6 +38,25 @@ def get_normalised_path(path: str) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
+def ensure_md_extension(path: str) -> str:
+    """
+    Ensure the path basename ends with lowercase .md.
+
+    Replaces another basename extension, or appends .md when none is present.
+    Dots in parent folders are left alone.
+    """
+    if path.endswith(".md"):
+        return path
+
+    slash = max(path.rfind("/"), path.rfind("\\"))
+    basename = path[slash + 1 :]
+    prefix = path[: slash + 1]
+    dot = basename.rfind(".")
+    if dot > 0:
+        return f"{prefix}{basename[:dot]}.md"
+    return f"{path}.md"
+
+
 def get_dirs_and_md_files(
     target_dir: str,
 ) -> Tuple[list[str], list[str], Optional[str]]:

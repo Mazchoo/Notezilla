@@ -61,15 +61,21 @@ class TestUpsertNote:
             assert result.content[0].text.startswith("Error")
             assert not note_path.is_file()
 
-    def test_upsert_note_non_md_path_returns_error(self, mock_notes_folder):
-        """upsert_note returns an error for paths that don't end with .md."""
-        result = upsert_note(
-            path="folder/note.txt",
-            contents="Body text",
-            fields={},
-        )
+    def test_upsert_note_non_md_path_writes_md(self, mock_notes_folder):
+        """upsert_note coerces non-.md paths to .md and writes the note."""
+        with clean_up_file_if_created(
+            mock_notes_folder / "folder" / "note.md"
+        ) as note_path:
+            result = upsert_note(
+                path="folder/note.txt",
+                contents="Body text",
+                fields={},
+            )
 
-        assert result.content[0].text.startswith("Error")
+            assert result.content[0].text == "Success"
+            assert result.structured_content == {"newFileCreated": True}
+            assert note_path.is_file()
+            assert not (mock_notes_folder / "folder" / "note.txt").exists()
 
     def test_upsert_note_writes_correct_content(self, mock_notes_folder):
         """upsert_note writes the YAML header + body to disk."""

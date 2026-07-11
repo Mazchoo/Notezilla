@@ -6,6 +6,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from src.backend.file_io import (
+    ensure_md_extension,
     ensure_note_parent_dirs,
     extract_yaml_from_file_contents,
     get_normalised_path,
@@ -106,6 +107,38 @@ class TestGetNormalisedPath:
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
         assert get_normalised_path("/etc/passwd") is None
+
+
+# ---------------------------------------------------------------------------
+# ensure_md_extension
+# ---------------------------------------------------------------------------
+
+
+class TestEnsureMdExtension:
+    """Coerce path strings to end with lowercase .md without touching folder dots."""
+
+    def test_leaves_md_unchanged(self):
+        assert ensure_md_extension("folder/note.md") == "folder/note.md"
+
+    def test_replaces_other_extension(self):
+        assert ensure_md_extension("folder/note.txt") == "folder/note.md"
+
+    def test_normalises_uppercase_md(self):
+        assert ensure_md_extension("folder/note.MD") == "folder/note.md"
+
+    def test_appends_when_no_extension(self):
+        assert ensure_md_extension("folder/note") == "folder/note.md"
+
+    def test_ignores_dots_in_parent_folders(self):
+        assert ensure_md_extension("folder.v2/archive.2024/note") == (
+            "folder.v2/archive.2024/note.md"
+        )
+
+    def test_replaces_extension_with_dotted_parents(self):
+        assert ensure_md_extension("folder.v2/note.txt") == "folder.v2/note.md"
+
+    def test_handles_backslash_separators(self):
+        assert ensure_md_extension(r"folder.v2\note") == r"folder.v2\note.md"
 
 
 # ---------------------------------------------------------------------------

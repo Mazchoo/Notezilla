@@ -9,19 +9,19 @@ from src.backend.file_io import (
     ensure_note_parent_dirs,
     write_file_content,
     get_normalised_path,
+    ensure_md_extension,
 )
 
 
 @dataclass
 class IMarkdownFile(NoteData):
-    """Container that holds markdown information for one file"""
+    """
+    Interface to create NoteData but gives certain guarantees on file existence.
+    """
 
     @staticmethod
     def construct_from_path(path: str) -> Optional["IMarkdownFile"]:
-        """
-        Converters file contents to markdown object
-        If header cannot be parsed returns MarkdownData as with file contents in full
-        """
+        """Construct note data from existing file."""
         if not (normed_path := get_normalised_path(path)):
             return None
 
@@ -42,10 +42,9 @@ class IMarkdownFile(NoteData):
 
         Side Effect: will write content to file path, i.e. update or add new
         """
-        if not (normed_path := get_normalised_path(path)):
-            return None
+        path = ensure_md_extension(path)
 
-        if not normed_path.endswith(".md"):
+        if not (normed_path := get_normalised_path(path)):
             return None
 
         note = IMarkdownFile(fields=fields, text=body, filename=normed_path)
