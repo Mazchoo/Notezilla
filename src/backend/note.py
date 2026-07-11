@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import Any, List
 
+from src.backend.file_io import construct_yaml_header
+
 
 @dataclass
 class NoteData:
@@ -25,6 +27,10 @@ class NoteData:
     def basename(self) -> str:
         """Just the file name, no folders."""
         return self.filename.rsplit("/", 1)[-1]
+
+    def to_file_string(self) -> str:
+        """Serialise to markdown file contents with YAML front matter."""
+        return construct_yaml_header(self.fields) + self.text
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise for MCP structured content (uses 'metadata' key)."""
