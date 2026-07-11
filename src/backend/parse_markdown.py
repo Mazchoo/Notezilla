@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from src.backend.note import NoteData
 from src.backend.file_io import (
     read_file_content,
-    extract_yaml_from_file_contents,
     construct_yaml_header,
     ensure_note_parent_dirs,
     write_file_content,
@@ -40,13 +39,11 @@ class MarkdownFile(NoteData):
         if not (content := read_file_content(path)):
             return None
 
-        text, fields = extract_yaml_from_file_contents(content)
-
-        return MarkdownFile(fields=fields, text=text, filename="/".join(relative_parts))
+        return MarkdownFile.from_payload(content, "/".join(relative_parts))
 
     @staticmethod
     def construct_from_data(
-        path: str, contents: str, fields: dict
+        path: str, body: str, fields: dict
     ) -> Optional[tuple["MarkdownFile", bool]]:
         """
         Construct note from data and return it if it was successfully created.
@@ -63,7 +60,7 @@ class MarkdownFile(NoteData):
             return None
 
         new_file_created = not path_obj.exists()
-        payload = construct_yaml_header(fields) + contents
+        payload = construct_yaml_header(fields) + body
         if not ensure_note_parent_dirs(path):
             return None
         if not write_file_content(path, payload):
@@ -75,7 +72,7 @@ class MarkdownFile(NoteData):
             relative_parts = path_obj.parts
         return (
             MarkdownFile(
-                fields=fields, text=contents, filename="/".join(relative_parts)
+                fields=fields, text=body, filename="/".join(relative_parts)
             ),
             new_file_created,
         )

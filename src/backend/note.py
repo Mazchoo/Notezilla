@@ -1,9 +1,9 @@
 """Common note data structures."""
 
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any, List, Self
 
-from src.backend.file_io import construct_yaml_header
+from src.backend.file_io import construct_yaml_header, extract_yaml_from_file_contents
 
 
 @dataclass
@@ -17,6 +17,12 @@ class NoteData:
     fields: dict
     text: str
     filename: str
+
+    @classmethod
+    def from_payload(cls, content: str, filename: str) -> Self:
+        """Build from raw markdown file contents and a relative filename."""
+        text, fields = extract_yaml_from_file_contents(content)
+        return cls(fields=fields, text=text, filename=filename)
 
     @property
     def path_parts(self) -> List[str]:
