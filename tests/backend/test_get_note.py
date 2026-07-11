@@ -72,7 +72,7 @@ class TestGetNote:
         result = get_note(path="../../../etc/passwd")
 
         assert result.content[0].text.startswith("Error")
-        assert result.structured_content == {}
+        assert result.structured_content == {"notes": []}
         mock_db.query_by_id.assert_not_called()
 
     def test_not_found_returns_error(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -82,7 +82,7 @@ class TestGetNote:
         result = get_note(path="missing/note.md")
 
         assert result.content[0].text.startswith("Error")
-        assert result.structured_content == {}
+        assert result.structured_content == {"notes": []}
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """get_note wraps ValueError in an error response."""

@@ -18,6 +18,11 @@ from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.logger import LOGGER
 from src.backend.mcp_interface import (
+    DIRECTORY_OUTPUT_SCHEMA,
+    EMPTY_OUTPUT_SCHEMA,
+    EmptyResponse,
+    NOTES_OUTPUT_SCHEMA,
+    UPSERT_OUTPUT_SCHEMA,
     init_db,
     init_column_types,
     McpResponse,
@@ -32,13 +37,18 @@ async def list_tools_endpoint(_request: Request) -> JSONResponse:
     tools = await MCP.list_tools()
     return JSONResponse(
         [
-            {"name": t.name, "description": t.description, "inputSchema": t.parameters}
+            {
+                "name": t.name,
+                "description": t.description,
+                "inputSchema": t.parameters,
+                "outputSchema": t.output_schema,
+            }
             for t in tools
         ]
     )
 
 
-@MCP.tool()
+@MCP.tool(output_schema=UPSERT_OUTPUT_SCHEMA)
 def upsert_note(
     path: Annotated[
         str, Field(description='Relative path for the note e.g. "folder/filename.md"')
@@ -62,11 +72,11 @@ def upsert_note(
     result = IMarkdownFile.construct_from_data(note_path, contents, fields)
     if result:
         _, new_file_created = result
-        return McpResponse.success({"newFileCreated": new_file_created})
-    return McpResponse.error(f"Failed to upsert note at '{note_path}'.")
+        return McpResponse.upsert(new_file_created)
+    return McpResponse.upsert_error(f"Failed to upsert note at '{note_path}'.")
 
 
-@MCP.tool()
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
 def delete_note(
     path: Annotated[
         str,
@@ -82,13 +92,14 @@ def delete_note(
     """
     note_path = f"{NOTE_FOLDER}/{path}"
     if delete_note_file(note_path):
-        return McpResponse.success()
+        return McpResponse.success(EmptyResponse())
     return McpResponse.error(
-        f"Failed to delete note at '{note_path}'. Ensure the path is valid."
+        f"Failed to delete note at '{note_path}'. Ensure the path is valid.",
+        EmptyResponse(),
     )
 
 
-@MCP.tool()
+@MCP.tool(output_schema=DIRECTORY_OUTPUT_SCHEMA)
 def get_dir_contents(
     path: Annotated[
         str,
@@ -103,11 +114,11 @@ def get_dir_contents(
     dir_path = f"{NOTE_FOLDER}/{path}"
     folders, files, error = get_dirs_and_md_files(dir_path)
     if error:
-        return McpResponse.error(error, {"folders": folders, "files": files})
+        return McpResponse.directory_error(error, folders, files)
     return McpResponse.directory(folders, files)
 
 
-@MCP.tool()
+@MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def get_note(
     path: Annotated[
         str,
@@ -122,20 +133,20 @@ def get_note(
     note_path = f"{NOTE_FOLDER}/{path}"
     normed_path = get_normalised_path(note_path)
     if normed_path is None:
-        return McpResponse.error(f"Path not recognised in note folder {path}")
+        return McpResponse.notes_error(f"Path not recognised in note folder {path}")
     try:
         notes = init_db().query_by_id(normed_path, init_column_types())
         if not notes:
-            return McpResponse.error(f"Note not found at '{normed_path}'")
+            return McpResponse.notes_error(f"Note not found at '{normed_path}'")
         return McpResponse.notes(notes)
     except ValueError as e:
-        return McpResponse.error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in get_note")
-        return McpResponse.error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}")
 
 
-@MCP.tool()
+@MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes_by_field(
     field: Annotated[
         str, Field(description='Metadata field name to filter on e.g. "filename"')
@@ -153,18 +164,16 @@ def search_notes_by_field(
         n_results: Maximum number of results to return
     """
     try:
-        notes = init_db().query_by_field(
-            field, value, init_column_types(), n_results
-        )
+        notes = init_db().query_by_field(field, value, init_column_types(), n_results)
         return McpResponse.notes(notes)
     except ValueError as e:
-        return McpResponse.error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_field")
-        return McpResponse.error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}")
 
 
-@MCP.tool()
+@MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes_by_tag(
     field: Annotated[str, Field(description='List metadata field name e.g. "tags"')],
     value: Annotated[str, Field(description="Value that the list must contain")],
@@ -185,13 +194,13 @@ def search_notes_by_tag(
         )
         return McpResponse.notes(notes)
     except ValueError as e:
-        return McpResponse.error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_tag")
-        return McpResponse.error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}")
 
 
-@MCP.tool()
+@MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes_by_text(
     text: Annotated[str, Field(description="Natural language query to search for")],
     n_results: Annotated[
@@ -208,10 +217,10 @@ def search_notes_by_text(
         notes = init_db().query_by_text(text, init_column_types(), n_results)
         return McpResponse.notes(notes)
     except ValueError as e:
-        return McpResponse.error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}")
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_text")
-        return McpResponse.error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}")
 
 
 if __name__ == "__main__":

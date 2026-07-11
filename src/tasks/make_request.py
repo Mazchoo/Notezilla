@@ -54,7 +54,7 @@ def open_session() -> str:
             "id": 0,
             "method": "initialize",
             "params": {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": "2025-06-18",
                 "capabilities": {},
                 "clientInfo": {"name": "make_request", "version": "1.0"},
             },
