@@ -1,6 +1,5 @@
 """Tests for the upsert_note MCP tool."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
