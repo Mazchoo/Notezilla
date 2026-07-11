@@ -197,13 +197,12 @@ class TestDatabaseRoundTrip:
             contents="---\ntitle: Deep path\n---\nNested folder body",
         )
 
-    def test_empty_tag_list_is_omitted_from_recovered_fields(self, temp_db):
-        """Assert an empty tags list is not stored and does not reappear on read."""
+    def test_empty_tag_list_survives_database_storage(self, temp_db):
+        """Assert an empty tags list is stored and recovered after Chroma storage."""
         _assert_file_contents_recover(
             temp_db,
             filename="tags/empty-list.md",
-            contents="---\ntags: []\n---\nEmpty tag list should not reappear as a field.",
-            expected="Empty tag list should not reappear as a field.",
+            contents="---\ntags: []\n---\nEmpty tag list should round-trip.",
         )
 
     def test_reserved_field_names_are_stripped_before_storage(self, temp_db):

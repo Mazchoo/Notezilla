@@ -53,6 +53,8 @@ class NoteDatabase:
             return {key: json.dumps(val, default=str)}
         if target_type == FieldTypes.LIST:
             parsed_list = val if isinstance(val, list) else [val]
+            if not parsed_list:
+                return {f"{key}\t": False}
             return {f"{key}\t{item}": True for item in parsed_list}
         if target_type == FieldTypes.DATE:
             return {
@@ -147,6 +149,8 @@ class NoteDatabase:
                 field, item = key.split("\t", 1)
                 if val is True:
                     list_items.setdefault(field, []).append(item)
+                elif val is False:
+                    list_items.setdefault(field, [])
                 continue
 
             field_type = column_types.get(key)
