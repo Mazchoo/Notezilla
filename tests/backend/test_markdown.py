@@ -12,7 +12,7 @@ class TestMarkdownDataRoundTrip:
     def _run_round_trip(
         self, note_path, contents: str, fields: dict
     ) -> tuple:
-        """Write via construct_from_data, read via construct_from_path."""
+        """Write to file via construct_from_data, read via construct_from_path."""
         path = str(note_path)
         from_data, _new_file_created = MarkdownFile.construct_from_data(
             path=path, body=contents, fields=fields
