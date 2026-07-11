@@ -39,3 +39,21 @@ class NoteData:
             "text": self.text,
             "metadata": self.fields,
         }
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, NoteData):
+            return NotImplemented
+        return (
+            self.fields == other.fields
+            and self.text == other.text
+            and self.filename == other.filename
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"NoteData(fields={self.fields!r}, text={self.text!r}, "
+            f"filename={self.filename!r})"
+        )
+
+    def __str__(self):
+        return f"{self.filename} : {self.fields}"

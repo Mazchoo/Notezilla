@@ -21,9 +21,6 @@ NOTE_FOLDER_PATH = Path(NOTE_FOLDER)
 class MarkdownFile(NoteData):
     """Container that holds markdown information for one file"""
 
-    def __str__(self):
-        return f"{self.filename} : {self.fields}"
-
     @staticmethod
     def construct_from_path(path: str) -> Optional["MarkdownFile"]:
         """
