@@ -1,18 +1,14 @@
 """Tests that markdown notes survive Chroma storage and can be fully recovered.
 
-Load file contents via MarkdownFile.construct_from_path (with read mocked),
-store in the database, recover NoteData, and assert to_file_string() matches.
+Build NoteData via from_payload, store in the database, recover, and assert
+to_file_string() matches.
 """
-
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.note import NoteData
-from src.backend.parse_markdown import IMarkdownFile
 from src.field_enums import FieldTypes, ReservedFields
 
 
@@ -25,23 +21,6 @@ COLUMN_TYPES = {
 }
 
 
-def _load_from_path(filename: str, contents: str) -> IMarkdownFile:
-    """Build a MarkdownFile via construct_from_path with file read mocked."""
-    with (
-        patch(
-            "src.backend.parse_markdown.read_file_content",
-            return_value=contents,
-        ),
-        patch(
-            "src.backend.parse_markdown.get_normalised_path",
-            return_value="/".join(Path(filename).parts),
-        ),
-    ):
-        markdown = IMarkdownFile.construct_from_path(path=filename)
-    assert markdown is not None
-    return markdown
-
-
 def _assert_file_contents_recover(
     db: NoteDatabase,
     filename: str,
@@ -49,12 +28,12 @@ def _assert_file_contents_recover(
     *,
     expected: str | None = None,
 ) -> NoteData:
-    """Load via construct_from_path, store, recover, assert to_file_string().
+    """Build via from_payload, store, recover, assert to_file_string().
 
     By default ``contents`` is the expected recovered markdown. Pass ``expected``
     only when storage transforms fields (dropped keys, etc.).
     """
-    original = _load_from_path(filename, contents)
+    original = NoteData.from_payload(contents, filename)
     db.upsert_batch([prepate_database_row(original, COLUMN_TYPES)])
     recovered = db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
     assert recovered is not None
@@ -292,7 +271,11 @@ class TestDatabaseRoundTrip:
         ]
         for filename, contents in notes:
             temp_db.upsert_batch(
-                [prepate_database_row(_load_from_path(filename, contents), COLUMN_TYPES)]
+                [
+                    prepate_database_row(
+                        NoteData.from_payload(contents, filename), COLUMN_TYPES
+                    )
+                ]
             )
 
         for filename, contents in notes:
@@ -306,7 +289,9 @@ class TestDatabaseRoundTrip:
         temp_db.upsert_batch(
             [
                 prepate_database_row(
-                    _load_from_path(path, "---\ntitle: v1\n---\noriginal body"),
+                    NoteData.from_payload(
+                        "---\ntitle: v1\n---\noriginal body", path
+                    ),
                     COLUMN_TYPES,
                 )
             ]
@@ -315,7 +300,8 @@ class TestDatabaseRoundTrip:
         temp_db.upsert_batch(
             [
                 prepate_database_row(
-                    _load_from_path(path, replacement_contents), COLUMN_TYPES
+                    NoteData.from_payload(replacement_contents, path),
+                    COLUMN_TYPES,
                 )
             ]
         )
@@ -343,7 +329,11 @@ class TestDatabaseRoundTrip:
             "Tab inside a tag value cannot round-trip."
         )
         temp_db.upsert_batch(
-            [prepate_database_row(_load_from_path(filename, contents), COLUMN_TYPES)]
+            [
+                prepate_database_row(
+                    NoteData.from_payload(contents, filename), COLUMN_TYPES
+                )
+            ]
         )
 
         recovered = temp_db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
