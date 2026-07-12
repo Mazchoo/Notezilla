@@ -150,6 +150,9 @@ def get_note(
 ) -> ToolResult:
     """Get a single note by its file path.
 
+    Reads the markdown file on disk (source of truth after save), not the
+    search index, so a save followed by open always shows the latest content.
+
     Args:
         path: Relative path of the note e.g. "folder/filename.md"
     """
@@ -157,16 +160,11 @@ def get_note(
     normed_path = get_normalised_path(note_path)
     if normed_path is None:
         return McpResponse.notes_error(f"Path not recognised in note folder {path}")
-    try:
-        notes = init_db().query_by_id(normed_path, init_column_types())
-        if not notes:
-            return McpResponse.notes_error(f"Note not found at '{normed_path}'")
-        return McpResponse.notes(notes)
-    except ValueError as e:
-        return McpResponse.notes_error(f"Type error: {e}")
-    except Exception as e:  # pylint: disable=broad-except
-        LOGGER.exception("DB error in get_note")
-        return McpResponse.notes_error(f"DB error: {e}")
+
+    note = IMarkdownFile.construct_from_path(note_path)
+    if note is None:
+        return McpResponse.notes_error(f"Note not found at '{normed_path}'")
+    return McpResponse.notes([note])
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
