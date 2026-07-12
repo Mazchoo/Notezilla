@@ -1,5 +1,5 @@
 use crate::models::block::EditorEntry;
-use crate::rendering::render_markdown;
+use crate::rendering::{escape_html, render_markdown};
 use leptos::prelude::GetUntracked;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -128,11 +128,4 @@ fn download_text_file(filename: &str, content: &str, mime_type: &str) -> Result<
 
     web_sys::Url::revoke_object_url(&url)?;
     Ok(())
-}
-
-fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
 }

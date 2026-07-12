@@ -1,3 +1,4 @@
+use super::escape_html;
 use latex2mathml::{latex_to_mathml, DisplayStyle};
 
 /// Convert a single LaTeX math expression to MathML.
@@ -160,13 +161,6 @@ fn skip_inline_code(src: &str, start: usize) -> usize {
         i += 1;
     }
     bytes.len()
-}
-
-fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
 }
 
 #[cfg(test)]

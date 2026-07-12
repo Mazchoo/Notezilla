@@ -1,3 +1,4 @@
+use super::escape_html;
 use std::sync::LazyLock;
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
@@ -41,10 +42,4 @@ pub fn highlight_code(lang: &str, src: &str) -> String {
 
     html.push_str("</code></pre>");
     html
-}
-
-fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
 }

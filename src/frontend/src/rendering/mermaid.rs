@@ -1,5 +1,6 @@
-use rusty_mermaid::{render, Color, Primitive, Scene, Theme};
+use super::escape_html;
 use rusty_mermaid::svg::SvgRenderer;
+use rusty_mermaid::{render, Color, Primitive, Scene, Theme};
 
 /// Render a Mermaid diagram source string to an inline SVG string.
 ///
@@ -93,11 +94,4 @@ fn content_mins(scene: &Scene) -> (f64, f64) {
     }
 
     (min_x, min_y)
-}
-
-fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
 }
