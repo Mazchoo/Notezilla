@@ -6,6 +6,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from src.backend.file_io import (
+    delete_notes_folder,
     ensure_md_extension,
     ensure_note_parent_dirs,
     extract_yaml_from_file_contents,
@@ -13,7 +14,7 @@ from src.backend.file_io import (
     read_file_content,
     write_file_content,
 )
-from tests.backend.helpers import MOCK_NOTES_FOLDER
+from tests.backend.helpers import MOCK_NOTES_FOLDER, temporary_notes
 
 
 EXAMPLE_MD = MOCK_NOTES_FOLDER / "example.md"
@@ -252,6 +253,74 @@ class TestWriteFileContent:
                 write_file_content(str(mock_notes_folder / "new-note.md"), "body")
                 is False
             )
+
+
+# ---------------------------------------------------------------------------
+# delete_notes_folder
+# ---------------------------------------------------------------------------
+
+
+class TestDeleteNotesFolder:
+    """Delete a folder tree within mock_notes."""
+
+    def test_deletes_folder_recursively(self, mock_notes_folder):
+        with temporary_notes(
+            {
+                "tmp_del/a/one.md": "one",
+                "tmp_del/a/b/two.md": "two",
+                "tmp_del/a/keep.txt": "txt",
+            }
+        ) as paths:
+            target = mock_notes_folder / "tmp_del" / "a"
+            assert delete_notes_folder(str(target)) is True
+
+            assert not target.exists()
+            assert not paths["tmp_del/a/one.md"].exists()
+            assert not paths["tmp_del/a/b/two.md"].exists()
+            assert not paths["tmp_del/a/keep.txt"].exists()
+
+    def test_does_not_delete_outside_target_folder(self, mock_notes_folder):
+        with temporary_notes(
+            {
+                "tmp_del/keep.md": "keep",
+                "tmp_del/target/gone.md": "gone",
+            }
+        ) as paths:
+            target = mock_notes_folder / "tmp_del" / "target"
+            assert delete_notes_folder(str(target)) is True
+
+            assert paths["tmp_del/keep.md"].is_file()
+            assert not target.exists()
+
+    def test_empty_folder_succeeds(self, mock_notes_folder):
+        with temporary_notes(dirs=["tmp_del/empty"]) as paths:
+            target = paths["tmp_del/empty"]
+            assert delete_notes_folder(str(target)) is True
+            assert not target.exists()
+
+    def test_rejects_path_outside_note_folder(self, mock_notes_folder):
+        assert delete_notes_folder("/etc/passwd") is False
+
+    def test_returns_false_when_path_is_file(self, mock_notes_folder):
+        with temporary_notes({"tmp_del/solo.md": "x"}) as paths:
+            assert delete_notes_folder(str(paths["tmp_del/solo.md"])) is False
+            assert paths["tmp_del/solo.md"].is_file()
+
+    def test_returns_false_for_missing_folder(self, mock_notes_folder):
+        assert (
+            delete_notes_folder(str(mock_notes_folder / "tmp_del" / "missing")) is False
+        )
+
+    def test_returns_false_when_rmtree_raises(self, mock_notes_folder):
+        with temporary_notes({"tmp_del/folder/note.md": "x"}):
+            with patch(
+                "src.backend.file_io.shutil.rmtree",
+                side_effect=OSError("permission denied"),
+            ):
+                assert (
+                    delete_notes_folder(str(mock_notes_folder / "tmp_del" / "folder"))
+                    is False
+                )
 
 
 if __name__ == "__main__":

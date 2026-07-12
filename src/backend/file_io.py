@@ -125,14 +125,41 @@ def write_file_content(path: str, contents: str) -> bool:
 
 def delete_note_file(path: str) -> bool:
     """
-    Write file contents to relative path and return True on success
-    NB: writing .md files to NOTE_FOLDER has side effect of updating database
+    Delete relative path and return True on success
+    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
     """
     if not (normed_path := get_normalised_path(path)):
         return False
 
     try:
         Path(f"{NOTE_FOLDER}/{normed_path}").unlink()
+    except OSError:
+        return False
+    return True
+
+
+def delete_notes_folder(path: str) -> bool:
+    """
+    Recursively delete a folder (and its contents) within the note folder.
+    Returns True on success
+
+    False if:
+    - path is outside note folder
+    - not a directory
+    - the note folder itself
+    - OS returns an error
+    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    """
+    normed_path = get_normalised_path(path)
+    if not normed_path:
+        return False
+
+    target = RESOLVED_NOTE_FOLDER / Path(normed_path)
+    if not target.is_dir():
+        return False
+
+    try:
+        shutil.rmtree(target)
     except OSError:
         return False
     return True
