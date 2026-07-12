@@ -10,10 +10,11 @@ Responses arrive as Server-Sent Events (SSE):
 """
 
 import json
+import os
 
 import httpx
 
-from src.config import MCP_PORT
+from src.config import MCP_PORT, NOTE_FOLDER
 
 MCP_URL = f"http://localhost:{MCP_PORT}/mcp"
 HEADERS = {
@@ -148,3 +149,8 @@ if __name__ == "__main__":
 
     print("\n=== delete_note ===")
     print(call_tool(session, "delete_note", {"path": "my-note.md"}))
+
+    os.makedirs(f"{NOTE_FOLDER}/some-random-folder", exist_ok=True)
+
+    print("\n=== delete_folder ===")
+    print(call_tool(session, "delete_folder", {"path": "some-random-folder"}))

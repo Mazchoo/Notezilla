@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse
 from src.config import MCP_PORT, NOTE_FOLDER
 from src.backend.file_io import (
     delete_note_file,
+    delete_notes_folder,
     get_dirs_and_md_files,
     get_normalised_path,
 )
@@ -93,6 +94,30 @@ def delete_note(
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
         f"Failed to delete note at '{note_path}'. Ensure the path is valid.",
+        EmptyResponse(),
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_folder(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the folder to delete e.g. "folder" or "folder/subfolder"'
+        ),
+    ],
+) -> ToolResult:
+    """Recursively delete a folder and its contents within the note folder.
+
+    Args:
+        path: Relative path of the folder to delete e.g. "folder" or "folder/subfolder"
+    """
+    folder_path = f"{NOTE_FOLDER}/{path}"
+    if delete_notes_folder(folder_path):
+        return McpResponse.success(EmptyResponse())
+    return McpResponse.error(
+        f"Failed to delete folder at '{folder_path}'. "
+        "Ensure the path is a valid directory inside the note folder.",
         EmptyResponse(),
     )
 
