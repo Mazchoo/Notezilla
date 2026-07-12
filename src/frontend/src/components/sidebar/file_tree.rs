@@ -254,9 +254,7 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                         show_toast(toast, format!("Deleted {path}"));
                     }
                     Err(e) => {
-                        web_sys::console::error_1(
-                            &format!("Delete failed for {path}: {e}").into(),
-                        );
+                        web_sys::console::error_1(&format!("Delete failed for {path}: {e}").into());
                         show_error_toast(error_toast, format!("Delete failed for {path}: {e}"));
                     }
                 }

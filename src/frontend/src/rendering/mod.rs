@@ -1,14 +1,18 @@
 mod code;
 mod graphviz;
+mod image;
 mod math;
 mod mermaid;
+mod utils;
 
 use code::highlight_code;
 use graphviz::render_dot;
+use image::missing_image_html;
 use math::substitute_math;
 use mermaid::render_mermaid;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use std::collections::VecDeque;
+pub(crate) use utils::escape_html;
 
 enum BlockKind {
     Graphviz,
@@ -16,13 +20,14 @@ enum BlockKind {
     Code(String), // language token
 }
 
-/// Streams parser events through code-block interception without buffering the
-/// full document in a `Vec<Event>`.
+/// Streams parser events through code-block / image interception without
+/// buffering the full document in a `Vec<Event>`.
 struct InterceptedMarkdown<'a> {
     parser: pulldown_cmark::OffsetIter<'a>,
     src: &'a str,
     pending: VecDeque<Event<'a>>,
     block: Option<BlockKind>,
+    in_image: bool,
     buf: String,
     depth: i32,
     last_top_end: usize,
@@ -35,6 +40,7 @@ impl<'a> InterceptedMarkdown<'a> {
             src,
             pending: VecDeque::new(),
             block: None,
+            in_image: false,
             buf: String::new(),
             depth: 0,
             last_top_end: 0,
@@ -44,6 +50,7 @@ impl<'a> InterceptedMarkdown<'a> {
     fn inject_blank_line_breaks(&mut self, range_start: usize) {
         if self.depth == 0
             && self.block.is_none()
+            && !self.in_image
             && self.last_top_end > 0
             && range_start > self.last_top_end
         {
@@ -86,20 +93,34 @@ impl<'a> InterceptedMarkdown<'a> {
         self.buf.clear();
     }
 
-    /// Returns `None` if `event` opened an intercepted code block (and has
+    fn finish_image(&mut self) {
+        self.in_image = false;
+        let alt = std::mem::take(&mut self.buf);
+        self.pending
+            .push_back(Event::Html(missing_image_html(&alt).into()));
+    }
+
+    /// Returns `None` if `event` opened an intercepted construct (and has
     /// been consumed); otherwise hands the event back unchanged.
-    fn try_start_intercepted_block(&mut self, event: Event<'a>) -> Option<Event<'a>> {
-        if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) = event {
-            let lang_str = lang.as_ref();
-            self.block = Some(match lang_str {
-                "graphviz" => BlockKind::Graphviz,
-                "mermaid" => BlockKind::Mermaid,
-                other => BlockKind::Code(other.to_string()),
-            });
-            self.buf.clear();
-            return None;
+    fn try_start_intercepted(&mut self, event: Event<'a>) -> Option<Event<'a>> {
+        match event {
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) => {
+                let lang_str = lang.as_ref();
+                self.block = Some(match lang_str {
+                    "graphviz" => BlockKind::Graphviz,
+                    "mermaid" => BlockKind::Mermaid,
+                    other => BlockKind::Code(other.to_string()),
+                });
+                self.buf.clear();
+                None
+            }
+            Event::Start(Tag::Image { .. }) => {
+                self.in_image = true;
+                self.buf.clear();
+                None
+            }
+            other => Some(other),
         }
-        Some(event)
     }
 }
 
@@ -125,7 +146,17 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
                 continue;
             }
 
-            match self.try_start_intercepted_block(event) {
+            if self.in_image {
+                match event {
+                    Event::End(TagEnd::Image) => self.finish_image(),
+                    Event::Text(text) | Event::Code(text) => self.buf.push_str(&text),
+                    Event::SoftBreak | Event::HardBreak => self.buf.push(' '),
+                    _ => {}
+                }
+                continue;
+            }
+
+            match self.try_start_intercepted(event) {
                 None => continue,
                 Some(event) => return Some(event),
             }
@@ -147,12 +178,4 @@ pub fn render_markdown(src: &str) -> String {
     let mut out = String::with_capacity(with_math.len() * 2);
     html::push_html(&mut out, InterceptedMarkdown::new(&with_math, opts));
     out
-}
-
-/// Escape `&`, `<`, `>`, and `"` for safe insertion into HTML text or attributes.
-pub(crate) fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
 }

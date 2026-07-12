@@ -10,11 +10,7 @@ use web_sys::{Event, FileReader, HtmlInputElement};
 
 const FILE_READ_ERROR_TOAST: &str = "File cannot be read";
 
-fn report_file_read_error(
-    detail: &str,
-    toast: RwSignal<Option<String>>,
-    input: &HtmlInputElement,
-) {
+fn report_file_read_error(detail: &str, toast: RwSignal<Option<String>>, input: &HtmlInputElement) {
     web_sys::console::error_1(&detail.into());
     show_toast(toast, FILE_READ_ERROR_TOAST);
     input.set_value("");
@@ -107,20 +103,12 @@ pub fn load_markdown_file(
         let result = match reader_clone.result() {
             Ok(value) => value,
             Err(_) => {
-                report_file_read_error(
-                    "FileReader result unavailable",
-                    toast,
-                    &input_onload,
-                );
+                report_file_read_error("FileReader result unavailable", toast, &input_onload);
                 return;
             }
         };
         let Some(text) = result.as_string() else {
-            report_file_read_error(
-                "FileReader result is not a string",
-                toast,
-                &input_onload,
-            );
+            report_file_read_error("FileReader result is not a string", toast, &input_onload);
             return;
         };
 

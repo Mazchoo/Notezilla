@@ -17,9 +17,7 @@ pub fn render_latex(latex: &str, display: DisplayStyle) -> String {
                 DisplayStyle::Inline => "math-error math-error-inline",
                 DisplayStyle::Block => "math-error math-error-block",
             };
-            format!(
-                "<code class=\"{class}\">{escaped}</code><!-- math error: {e} -->"
-            )
+            format!("<code class=\"{class}\">{escaped}</code><!-- math error: {e} -->")
         }
     }
 }
@@ -169,16 +167,21 @@ mod tests {
 
     #[test]
     fn inline_vs_block() {
-        let out = substitute_math(r#"inline $\gets$ and block
+        let out = substitute_math(
+            r#"inline $\gets$ and block
 
 $$
 E = mc^2
 $$
-"#);
+"#,
+        );
         assert!(out.contains(r#"display="inline""#), "{out}");
         assert!(out.contains(r#"display="block""#), "{out}");
         assert!(out.contains(r#"class="math-block""#), "{out}");
-        assert!(out.contains('←') || out.contains("gets") || out.contains("<mo"), "{out}");
+        assert!(
+            out.contains('←') || out.contains("gets") || out.contains("<mo"),
+            "{out}"
+        );
     }
 
     #[test]
