@@ -76,6 +76,12 @@ pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
         .map(|_| ())
 }
 
+pub async fn delete_folder(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "delete_folder", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
 pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
     let val = call_tool(session_id, "get_dir_contents", json!({ "path": path })).await?;
 

@@ -1,7 +1,7 @@
 use crate::components::file_io::open_note_at_path;
-use crate::components::sidebar::context_menu::FileContextMenu;
+use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::mcp::tools::{delete_note, get_dir_contents};
+use crate::mcp::tools::{delete_folder, delete_note, get_dir_contents};
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
 use icondata as id;
@@ -83,8 +83,13 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let session = state.session_id;
     let file_tree_epoch = state.file_tree_epoch;
+    let toast = state.toast;
+    let error_toast = state.error_toast;
     let open = RwSignal::new(false);
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
+    let menu_visible = RwSignal::new(false);
+    let menu_x = RwSignal::new(0.0);
+    let menu_y = RwSignal::new(0.0);
     let path_for_fetch = path.clone();
 
     // Fetch while open; re-fetch when file_tree_epoch bumps after a successful upsert/delete.
@@ -115,9 +120,47 @@ fn TreeFolder(name: String, path: String) -> AnyView {
         open.update(|is_open| *is_open = !*is_open);
     };
 
+    let delete_dir = {
+        let path = path.clone();
+        move || {
+            let sid = match session.get_untracked() {
+                Some(s) => s,
+                None => {
+                    web_sys::console::warn_1(&"MCP session not ready".into());
+                    return;
+                }
+            };
+            let path = path.clone();
+            spawn_local(async move {
+                match delete_folder(&sid, &path).await {
+                    Ok(()) => {
+                        file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                        show_toast(toast, format!("Deleted folder {path}"));
+                    }
+                    Err(e) => {
+                        web_sys::console::error_1(
+                            &format!("Delete folder failed for {path}: {e}").into(),
+                        );
+                        show_error_toast(
+                            error_toast,
+                            format!("Delete folder failed for {path}: {e}"),
+                        );
+                    }
+                }
+            });
+        }
+    };
+
+    let on_contextmenu = move |ev: web_sys::MouseEvent| {
+        ev.prevent_default();
+        menu_x.set(ev.client_x() as f64);
+        menu_y.set(ev.client_y() as f64);
+        menu_visible.set(true);
+    };
+
     view! {
         <li>
-            <a on:click=toggle>
+            <a on:click=toggle on:contextmenu=on_contextmenu>
                 {move || if open.get() {
                     Either::Left(view! { <Icon icon=id::LuFolderOpen/> })
                 } else {
@@ -125,6 +168,12 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                 }}
                 {name.clone()}
             </a>
+            <FolderContextMenu
+                visible=menu_visible
+                x=menu_x
+                y=menu_y
+                on_delete=delete_dir
+            />
             <ul class=move || if open.get() { "" } else { "is-hidden" }>
                 <Show when=move || dir_contents.get().is_some()>
                     <For
