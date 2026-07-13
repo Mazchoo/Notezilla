@@ -4,9 +4,11 @@ use crate::components::editor::edit_area::{
 };
 use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
+use icondata as id;
 use leptos::either::Either;
 use leptos::html::{Input, Textarea};
 use leptos::prelude::*;
+use leptos_icons::Icon;
 
 /// Renders the file-path title for an editor entry.
 /// Displays the path as a styled label; click to edit inline, blur to confirm.
@@ -106,13 +108,7 @@ pub fn TitleBlockComponent(
                     on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
                     on:click=move |_| delete_entry(&state_del, entry_id)
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/>
-                        <path d="M14 11v6"/>
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
+                    <Icon icon=id::LuTrash2/>
                 </button>
             </div>
         </div>
@@ -196,13 +192,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
                         delete_front_matter(&state, entry_id);
                     }
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/>
-                        <path d="M14 11v6"/>
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
+                    <Icon icon=id::LuTrash2/>
                 </button>
             </div>
         </div>
