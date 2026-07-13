@@ -1,7 +1,7 @@
-use crate::components::file_io::open_note_at_path;
+use crate::components::file_io::{fetch_dir_contents, open_note_at_path};
 use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::mcp::tools::{delete_folder, delete_note, get_dir_contents};
+use crate::mcp::tools::{delete_folder, delete_note};
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
 use icondata as id;
@@ -27,18 +27,8 @@ pub fn FileTree() -> impl IntoView {
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
 
     Effect::new(move |_| {
-        let sid = match session.get() {
-            Some(s) => s,
-            None => return,
-        };
         let _ = file_tree_epoch.get();
-
-        spawn_local(async move {
-            match get_dir_contents(&sid, "").await {
-                Ok(contents) => dir_contents.set(Some(contents)),
-                Err(e) => web_sys::console::error_1(&e.into()),
-            }
-        });
+        fetch_dir_contents(session, "", dir_contents, || true);
     });
 
     view! {
@@ -99,20 +89,8 @@ fn TreeFolder(name: String, path: String) -> AnyView {
             return;
         }
         let _ = file_tree_epoch.get();
-        let sid = match session.get() {
-            Some(s) => s,
-            None => return,
-        };
-        let fetch_path = path_for_fetch.clone();
-        spawn_local(async move {
-            match get_dir_contents(&sid, &fetch_path).await {
-                Ok(contents) => {
-                    if open.get_untracked() {
-                        dir_contents.set(Some(contents));
-                    }
-                }
-                Err(e) => web_sys::console::error_1(&e.into()),
-            }
+        fetch_dir_contents(session, path_for_fetch.clone(), dir_contents, move || {
+            open.get_untracked()
         });
     });
 
