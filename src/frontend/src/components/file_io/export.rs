@@ -1,3 +1,4 @@
+use super::path::{html_page_title, path_to_html_filename, path_to_markdown_filename};
 use crate::models::block::EditorEntry;
 use crate::rendering::{escape_html, render_markdown};
 use leptos::prelude::GetUntracked;
@@ -33,39 +34,6 @@ pub fn export_entries_as_markdown(entries: &[EditorEntry]) {
             web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
         }
     }
-}
-
-fn path_to_markdown_filename(path: &str) -> String {
-    let name = path
-        .rsplit(['/', '\\'])
-        .next()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(path);
-    if name.ends_with(".md") || name.ends_with(".markdown") {
-        name.to_string()
-    } else {
-        format!("{name}.md")
-    }
-}
-
-fn path_to_html_filename(path: &str) -> String {
-    let name = path
-        .rsplit(['/', '\\'])
-        .next()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(path);
-    let stem = name
-        .strip_suffix(".markdown")
-        .or_else(|| name.strip_suffix(".md"))
-        .unwrap_or(name);
-    format!("{stem}.html")
-}
-
-fn html_page_title(path: &str) -> String {
-    path_to_html_filename(path)
-        .strip_suffix(".html")
-        .unwrap_or("export")
-        .to_string()
 }
 
 fn entry_to_markdown(entry: EditorEntry) -> String {
