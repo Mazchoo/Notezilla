@@ -55,4 +55,13 @@ impl AppState {
             sidebar_width: RwSignal::new(250.0),
         }
     }
+
+    /// Class for activity/top-bar icon buttons; appends `active` when selected.
+    pub fn activity_btn_class(active: bool) -> &'static str {
+        if active {
+            "activity-btn active"
+        } else {
+            "activity-btn"
+        }
+    }
 }

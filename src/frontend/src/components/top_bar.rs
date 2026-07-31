@@ -157,11 +157,7 @@ pub fn TopBar() -> impl IntoView {
             </button>
             // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
             <button
-                class=move || if markdown_editing_enabled.get() {
-                    "activity-btn active"
-                } else {
-                    "activity-btn"
-                }
+                class=move || AppState::activity_btn_class(markdown_editing_enabled.get())
                 title=move || if markdown_editing_enabled.get() {
                     "Edit main text (on)"
                 } else {

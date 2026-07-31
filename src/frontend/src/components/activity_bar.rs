@@ -22,22 +22,14 @@ pub fn ActivityBar() -> impl IntoView {
     view! {
         <div class="activity-bar">
             <button
-                class=move || if is_active(ActivePanel::Files) {
-                    "activity-btn active"
-                } else {
-                    "activity-btn"
-                }
+                class=move || AppState::activity_btn_class(is_active(ActivePanel::Files))
                 title="Files"
                 on:click=move |_| toggle(ActivePanel::Files)
             >
                 <Icon icon=id::LuFiles/>
             </button>
             <button
-                class=move || if is_active(ActivePanel::Search) {
-                    "activity-btn active"
-                } else {
-                    "activity-btn"
-                }
+                class=move || AppState::activity_btn_class(is_active(ActivePanel::Search))
                 title="Search"
                 on:click=move |_| toggle(ActivePanel::Search)
             >
