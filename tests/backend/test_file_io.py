@@ -516,6 +516,19 @@ class TestRenamePath:
             assert dst.read_text(encoding="utf-8") == "hello"
             dst.unlink()
 
+    def test_preserves_file_extension_when_new_name_omits_it(self, mock_notes_folder):
+        """Renaming my-note.md to 'some-note' must yield some-note.md."""
+        with temporary_notes({"tmp_rename/my-note.md": "hello"}) as paths:
+            assert rename_path("tmp_rename/my-note.md", "some-note") is True
+
+            src = paths["tmp_rename/my-note.md"]
+            dst = mock_notes_folder / "tmp_rename" / "some-note.md"
+            assert not src.exists()
+            assert not (mock_notes_folder / "tmp_rename" / "some-note").exists()
+            assert dst.is_file()
+            assert dst.read_text(encoding="utf-8") == "hello"
+            dst.unlink()
+
     def test_renames_directory(self, mock_notes_folder):
         with temporary_notes(
             {

@@ -232,6 +232,10 @@ def rename_path(path: str, new_name: str) -> bool:
     Rename a file or directory within the note folder.
     Returns True on success.
 
+    When renaming a file, if new_name has no extension the source file
+    extension is preserved (e.g. note.md + "renamed" → renamed.md).
+    Directory renames leave new_name unchanged.
+
     False if:
     - path or resulting destination is outside note folder
     - path is the note folder itself
@@ -245,13 +249,19 @@ def rename_path(path: str, new_name: str) -> bool:
         return False
 
     src_path = absolute_note_path(normed_path)
+    if not src_path.exists():
+        return False
+
+    if src_path.is_file() and src_path.suffix and not Path(new_name).suffix:
+        new_name = f"{new_name}{src_path.suffix}"
+
     dst_normed = get_normalised_path(str(src_path.parent / new_name))
     if not dst_normed:
         return False
 
     dst_path = absolute_note_path(dst_normed)
 
-    if not src_path.exists() or dst_path.exists():
+    if dst_path.exists():
         return False
 
     try:

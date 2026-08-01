@@ -14,6 +14,7 @@ from src.backend.file_io import (
     delete_notes_folder,
     get_dirs_and_md_files,
     move_dir as move_dir_on_disk,
+    rename_path as rename_path_on_disk,
     resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
@@ -148,6 +149,43 @@ def move_dir(
         f"Failed to move '{src}' into '{dst}'. "
         "Ensure src exists, dst is a directory inside the note folder, "
         "and dst is not inside src.",
+        EmptyResponse(),
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def rename_dir(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"'
+        ),
+    ],
+    new_name: Annotated[
+        str,
+        Field(
+            description=(
+                'New basename for the file or folder e.g. "renamed" or "renamed.md". '
+                "For files, omitting the extension keeps the source extension."
+            )
+        ),
+    ],
+) -> ToolResult:
+    """Rename a file or directory within the note folder.
+
+    When renaming a file, if new_name has no extension the source extension
+    is preserved (e.g. note.md renamed to "renamed" becomes renamed.md).
+
+    Args:
+        path: Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"
+        new_name: New basename for the file or folder e.g. "renamed" or "renamed.md"
+    """
+    if rename_path_on_disk(path, new_name):
+        return McpResponse.success(EmptyResponse())
+    return McpResponse.error(
+        f"Failed to rename '{path}' to '{new_name}'. "
+        "Ensure the path exists, the destination does not already exist, "
+        "and both stay inside the note folder.",
         EmptyResponse(),
     )
 
