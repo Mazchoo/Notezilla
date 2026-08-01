@@ -23,10 +23,10 @@ Integrate a side-by-side Markdown editor with live preview and Mermaid diagram s
 
 ## Acceptance Criteria
 
-- [ ] The editor displays Markdown source with syntax highlighting.
-- [ ] A side-by-side preview renders the Markdown in real time as the user types.
-- [ ] Mermaid diagram blocks render as diagrams in the preview (via the WASM renderer from Phase 4 or a fallback).
-- [ ] Code blocks display with syntax highlighting in the preview.
-- [ ] Frontmatter fields (tags, path) are editable via a structured form or inline YAML.
-- [ ] Saving a note calls the API and shows a success/error notification.
+- [x] The editor displays Markdown source with syntax highlighting.
+- [x] A side-by-side preview renders the Markdown in real time as the user types.
+- [x] Mermaid diagram blocks render as diagrams in the preview (via the WASM renderer from Phase 4 or a fallback).
+- [x] Code blocks display with syntax highlighting in the preview.
+- [x] Frontmatter fields (tags, path) are editable via a structured form or inline YAML.
+- [x] Saving a note calls the API and shows a success/error notification.
 - [ ] Standard keyboard shortcuts work for formatting and saving.
