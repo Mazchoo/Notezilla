@@ -14,6 +14,7 @@ from src.backend.file_io import (
     delete_notes_folder,
     get_dirs_and_md_files,
     get_normalised_path,
+    move_dir as move_dir_on_disk,
 )
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import IMarkdownFile
@@ -118,6 +119,39 @@ def delete_folder(
     return McpResponse.error(
         f"Failed to delete folder at '{folder_path}'. "
         "Ensure the path is a valid directory inside the note folder.",
+        EmptyResponse(),
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def move_dir(
+    src: Annotated[
+        str,
+        Field(
+            description='Relative path of the file or folder to move e.g. "folder" or "folder/note.md"'
+        ),
+    ],
+    dst: Annotated[
+        str,
+        Field(
+            description='Relative path of the destination directory e.g. "archive" or ""'
+        ),
+    ],
+) -> ToolResult:
+    """Move a file or directory into a destination folder within the note folder.
+
+    Args:
+        src: Relative path of the file or folder to move e.g. "folder" or "folder/note.md"
+        dst: Relative path of the destination directory e.g. "archive" or ""
+    """
+    src_path = f"{NOTE_FOLDER}/{src}"
+    dst_path = f"{NOTE_FOLDER}/{dst}"
+    if move_dir_on_disk(src_path, dst_path):
+        return McpResponse.success(EmptyResponse())
+    return McpResponse.error(
+        f"Failed to move '{src_path}' into '{dst_path}'. "
+        "Ensure src exists, dst is a directory inside the note folder, "
+        "and dst is not inside src.",
         EmptyResponse(),
     )
 
