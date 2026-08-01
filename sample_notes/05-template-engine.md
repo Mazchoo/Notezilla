@@ -22,9 +22,9 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 
 ## Acceptance Criteria
 
-- [ ] Templates are stored as `.md` files in a dedicated templates directory.
-- [ ] Each template has frontmatter with `name`, `description`, and `placeholders` fields.
-- [ ] The renderer substitutes all placeholders and returns valid Markdown output.
-- [ ] Missing required placeholders raise a clear validation error.
-- [ ] At least 4 built-in starter templates are provided.
-- [ ] Templates can reference context retrieved from the vector database via a `{{context}}` placeholder.
+- [x] Templates are stored as `.md` files in a dedicated templates directory.
+- [x] Each template has frontmatter with `name`, `description`, and `placeholders` fields.
+- [x] The renderer substitutes all placeholders and returns valid Markdown output.
+- [x] Missing required placeholders raise a clear validation error.
+- [x] At least 4 built-in starter templates are provided.
+- [x] Templates can reference context retrieved from the vector database via a `{{context}}` placeholder.
