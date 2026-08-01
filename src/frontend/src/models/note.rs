@@ -16,12 +16,33 @@ impl SearchResult {
             .to_string()
     }
 
+    /// Basename of the note path (file name only, no folders).
+    pub fn file_name(&self) -> String {
+        let path = self.path();
+        path.rsplit(['/', '\\'])
+            .next()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("unknown.md")
+            .to_string()
+    }
+
     pub fn title(&self) -> String {
         self.metadata
             .get("title")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .unwrap_or_else(|| self.path())
+    }
+
+    /// First `n` characters of note body text for list previews.
+    pub fn snippet_text(text: &str, n: usize) -> String {
+        let mut iter = text.chars();
+        let preview: String = iter.by_ref().take(n).collect();
+        if iter.next().is_some() {
+            format!("{preview}\u{2026}")
+        } else {
+            preview
+        }
     }
 }
 

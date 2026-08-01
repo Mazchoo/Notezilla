@@ -21,10 +21,10 @@ fn notes_from_structured(val: &Value) -> Result<Vec<SearchResult>, String> {
                 .get("metadata")
                 .and_then(|v| serde_json::from_value(v.clone()).ok())
                 .unwrap_or_default();
-            if metadata.is_empty() {
-                if let Some(filename) = item.get("filename").and_then(|v| v.as_str()) {
-                    metadata.insert("filename".to_string(), json!(filename));
-                }
+            // Top-level filename is the relative note path; front-matter metadata
+            // does not include it, so always copy it in for SearchResult::path().
+            if let Some(filename) = item.get("filename").and_then(|v| v.as_str()) {
+                metadata.insert("filename".to_string(), json!(filename));
             }
             Ok(SearchResult {
                 document: text.to_string(),
@@ -38,11 +38,12 @@ pub async fn search_by_text(
     session_id: &str,
     text: &str,
     n_results: usize,
+    offset: usize,
 ) -> Result<Vec<SearchResult>, String> {
     let val = call_tool(
         session_id,
         "search_notes_by_text",
-        json!({ "text": text, "n_results": n_results }),
+        json!({ "text": text, "n_results": n_results, "offset": offset }),
     )
     .await?;
 

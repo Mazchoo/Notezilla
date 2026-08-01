@@ -1,2 +1,3 @@
 pub const TOAST_DISMISS_MS: i32 = 2000;
 pub const DEFAULT_NUMBER_RESULTS_PER_PAGE: usize = 20;
+pub const DEFAULT_SEARCH_PREVIEW_CHARS: usize = 50;
