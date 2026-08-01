@@ -150,10 +150,16 @@ if __name__ == "__main__":
     os.makedirs(f"{NOTE_FOLDER}/some-random-folder", exist_ok=True)
 
     print("\n=== move_dir ===")
-    print(call_tool(session, "move_dir", {"src": "my-note.md", "dst": "some-random-folder"}))
+    print(
+        call_tool(
+            session, "move_dir", {"src": "my-note.md", "dst": "some-random-folder"}
+        )
+    )
 
     print("\n=== delete_note ===")
-    print(call_tool(session, "delete_note", {"path": "./some-random-folder/my-note.md"}))
+    print(
+        call_tool(session, "delete_note", {"path": "./some-random-folder/my-note.md"})
+    )
 
     print("\n=== delete_folder ===")
     print(call_tool(session, "delete_folder", {"path": "some-random-folder"}))

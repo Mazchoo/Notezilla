@@ -21,7 +21,6 @@ def clear_init_db_cache():
 def mock_notes_folder():
     """Point NOTE_FOLDER at tests/mock_notes for filesystem-backed tests."""
     with (
-        patch("src.backend.main.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
         patch("src.backend.file_io.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
         patch("src.backend.file_io.RESOLVED_NOTE_FOLDER", MOCK_NOTES_FOLDER),
     ):

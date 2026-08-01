@@ -4,7 +4,8 @@ from functools import cache
 from typing import Any, List
 
 from fastmcp.tools.tool import ToolResult
-from pydantic import BaseModel
+from mcp.types import CallToolResult
+from pydantic import BaseModel, PrivateAttr
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types
@@ -29,6 +30,28 @@ def init_column_types() -> ColumnTypes:
     return get_db_column_types()
 
 
+class _McpToolResult(ToolResult):
+    """ToolResult that preserves MCP ``isError`` on the wire."""
+
+    _is_error: bool = PrivateAttr(default=False)
+
+    def __init__(self, *args: Any, is_error: bool = False, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self._is_error = is_error
+
+    def to_mcp_result(
+        self,
+    ) -> list | tuple[list, dict[str, Any]] | CallToolResult:
+        if self._is_error:
+            return CallToolResult(
+                content=self.content,
+                structuredContent=self.structured_content,
+                isError=True,
+                _meta=self.meta,
+            )
+        return super().to_mcp_result()
+
+
 class McpResponse:
     """Build consistent MCP tool results with a text message and structured payload."""
 
@@ -39,7 +62,7 @@ class McpResponse:
     @staticmethod
     def success(payload: BaseModel | None = None) -> ToolResult:
         """Return a successful tool result."""
-        return ToolResult(
+        return _McpToolResult(
             content="Success",
             structured_content=McpResponse._dump(payload) if payload else {},
         )
@@ -47,9 +70,10 @@ class McpResponse:
     @staticmethod
     def error(message: str, payload: BaseModel | None = None) -> ToolResult:
         """Return a failed tool result."""
-        return ToolResult(
+        return _McpToolResult(
             content=f"Error: {message}",
             structured_content=McpResponse._dump(payload) if payload else {},
+            is_error=True,
         )
 
     @staticmethod

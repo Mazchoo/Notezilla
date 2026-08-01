@@ -41,8 +41,8 @@ class NoteData:
 
     @property
     def project_path(self) -> Path:
-        """Full path to this note under NOTE_FOLDER."""
-        return Path(file_io.NOTE_FOLDER).joinpath(*self.filename.split("/"))
+        """Absolute path to this note under the note folder."""
+        return file_io.absolute_note_path(self.filename)
 
     def to_file_string(self) -> str:
         """Serialise to markdown file contents with YAML front matter."""

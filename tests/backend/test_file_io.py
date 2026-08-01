@@ -111,6 +111,17 @@ class TestGetNormalisedPath:
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
         assert get_normalised_path("/etc/passwd") is None
 
+    def test_relative_path_resolved_against_note_folder(self, mock_notes_folder):
+        assert get_normalised_path("folder/another_example.md") == (
+            "folder/another_example.md"
+        )
+
+    def test_relative_escape_rejected(self, mock_notes_folder):
+        assert get_normalised_path("../../../etc/passwd") is None
+
+    def test_empty_path_is_note_folder_root(self, mock_notes_folder):
+        assert get_normalised_path("") == ""
+
 
 # ---------------------------------------------------------------------------
 # ensure_md_extension
@@ -239,7 +250,9 @@ class TestWriteFileContent:
             )
 
         m.assert_called_once_with(
-            f"{mock_notes_folder}/folder/new-note.md", "w", encoding="utf-8"
+            str(mock_notes_folder / "folder" / "new-note.md"),
+            "w",
+            encoding="utf-8",
         )
         m().write.assert_called_once_with("Hello world")
 
@@ -348,6 +361,21 @@ class TestMoveDir:
             assert moved.read_text(encoding="utf-8") == "hello"
             moved.unlink()
 
+    def test_moves_file_with_relative_paths(self, mock_notes_folder):
+        """MCP tools pass vault-relative paths, not absolute filesystem paths."""
+        with temporary_notes(
+            {"tmp_move/src/rel-note.md": "hello"},
+            dirs=["tmp_move/dst"],
+        ) as paths:
+            assert move_dir("tmp_move/src/rel-note.md", "tmp_move/dst") is True
+
+            src = paths["tmp_move/src/rel-note.md"]
+            moved = paths["tmp_move/dst"] / "rel-note.md"
+            assert not src.exists()
+            assert moved.is_file()
+            assert moved.read_text(encoding="utf-8") == "hello"
+            moved.unlink()
+
     def test_moves_directory_into_dst_folder(self, mock_notes_folder):
         with temporary_notes(
             {
@@ -448,7 +476,9 @@ class TestMoveDir:
                 side_effect=OSError("permission denied"),
             ):
                 assert (
-                    move_dir(str(paths["tmp_move/src/note.md"]), str(paths["tmp_move/dst"]))
+                    move_dir(
+                        str(paths["tmp_move/src/note.md"]), str(paths["tmp_move/dst"])
+                    )
                     is False
                 )
             assert paths["tmp_move/src/note.md"].is_file()

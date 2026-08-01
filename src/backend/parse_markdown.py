@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from src.backend.note import NoteData
 from src.backend.file_io import (
+    absolute_note_path,
     read_file_content,
     ensure_note_parent_dirs,
     write_file_content,
@@ -25,7 +26,7 @@ class IMarkdownFile(NoteData):
         if not (normed_path := get_normalised_path(path)):
             return None
 
-        if not (content := read_file_content(path)):
+        if not (content := read_file_content(str(absolute_note_path(normed_path)))):
             return None
 
         return IMarkdownFile.from_payload(content, normed_path)

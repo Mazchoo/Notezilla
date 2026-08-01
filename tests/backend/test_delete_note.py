@@ -1,5 +1,6 @@
 """Tests for the delete_note MCP tool."""
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -30,13 +31,15 @@ class TestDeleteNote:
         assert result.content[0].text.startswith("Error")
 
     def test_delete_note_calls_delete_with_correct_path(self):
-        """delete_note passes the path argument through to delete_note_file."""
+        """delete_note passes the resolved absolute path to delete_note_file."""
         with patch(
             "src.backend.main.delete_note_file", return_value=True
         ) as mock_delete:
             delete_note(path="some/path/note.md")
 
-        mock_delete.assert_called_once_with(f"{NOTE_FOLDER}/some/path/note.md")
+        mock_delete.assert_called_once_with(
+            str(Path(NOTE_FOLDER).resolve() / "some" / "path" / "note.md")
+        )
 
     def test_delete_note_does_not_touch_real_filesystem(self):
         """delete_note never calls Path.unlink() when delete_note_file is mocked."""

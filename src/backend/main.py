@@ -8,13 +8,13 @@ from pydantic import Field
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from src.config import MCP_PORT, NOTE_FOLDER
+from src.config import MCP_PORT
 from src.backend.file_io import (
     delete_note_file,
     delete_notes_folder,
     get_dirs_and_md_files,
-    get_normalised_path,
     move_dir as move_dir_on_disk,
+    resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import IMarkdownFile
@@ -68,12 +68,11 @@ def upsert_note(
         contents: The markdown body of the note
         fields: Dictionary of metadata fields to convert into a YAML header
     """
-    note_path = f"{NOTE_FOLDER}/{path}"
-    result = IMarkdownFile.construct_from_data(note_path, contents, fields)
+    result = IMarkdownFile.construct_from_data(path, contents, fields)
     if result:
         _, new_file_created = result
         return McpResponse.upsert(new_file_created)
-    return McpResponse.upsert_error(f"Failed to upsert note at '{note_path}'.")
+    return McpResponse.upsert_error(f"Failed to upsert note at '{path}'.")
 
 
 @MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
@@ -90,11 +89,11 @@ def delete_note(
     Args:
         path: Relative path of the note to delete e.g. "folder/filename.md"
     """
-    note_path = f"{NOTE_FOLDER}/{path}"
-    if delete_note_file(note_path):
+    resolved = resolve_note_path(path)
+    if resolved and delete_note_file(resolved):
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
-        f"Failed to delete note at '{note_path}'. Ensure the path is valid.",
+        f"Failed to delete note at '{path}'. Ensure the path is valid.",
         EmptyResponse(),
     )
 
@@ -113,11 +112,10 @@ def delete_folder(
     Args:
         path: Relative path of the folder to delete e.g. "folder" or "folder/subfolder"
     """
-    folder_path = f"{NOTE_FOLDER}/{path}"
-    if delete_notes_folder(folder_path):
+    if delete_notes_folder(path):
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
-        f"Failed to delete folder at '{folder_path}'. "
+        f"Failed to delete folder at '{path}'. "
         "Ensure the path is a valid directory inside the note folder.",
         EmptyResponse(),
     )
@@ -144,12 +142,10 @@ def move_dir(
         src: Relative path of the file or folder to move e.g. "folder" or "folder/note.md"
         dst: Relative path of the destination directory e.g. "archive" or ""
     """
-    src_path = f"{NOTE_FOLDER}/{src}"
-    dst_path = f"{NOTE_FOLDER}/{dst}"
-    if move_dir_on_disk(src_path, dst_path):
+    if move_dir_on_disk(src, dst):
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
-        f"Failed to move '{src_path}' into '{dst_path}'. "
+        f"Failed to move '{src}' into '{dst}'. "
         "Ensure src exists, dst is a directory inside the note folder, "
         "and dst is not inside src.",
         EmptyResponse(),
@@ -168,8 +164,7 @@ def get_dir_contents(
     Args:
         path: Relative path of the directory to list e.g. "folder".
     """
-    dir_path = f"{NOTE_FOLDER}/{path}"
-    folders, files, error = get_dirs_and_md_files(dir_path)
+    folders, files, error = get_dirs_and_md_files(path)
     if error:
         return McpResponse.directory_error(error, folders, files)
     return McpResponse.directory(folders, files)
@@ -190,14 +185,9 @@ def get_note(
     Args:
         path: Relative path of the note e.g. "folder/filename.md"
     """
-    note_path = f"{NOTE_FOLDER}/{path}"
-    normed_path = get_normalised_path(note_path)
-    if normed_path is None:
-        return McpResponse.notes_error(f"Path not recognised in note folder {path}")
-
-    note = IMarkdownFile.construct_from_path(note_path)
+    note = IMarkdownFile.construct_from_path(path)
     if note is None:
-        return McpResponse.notes_error(f"Note not found at '{normed_path}'")
+        return McpResponse.notes_error(f"Note not found at '{path}'")
     return McpResponse.notes([note])
 
 

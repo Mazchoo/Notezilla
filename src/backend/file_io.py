@@ -26,16 +26,43 @@ def read_file_content(path: str) -> Optional[str]:
 
 def get_normalised_path(path: str) -> Optional[str]:
     """
-    Get standardized path with forward slashes to make path a unique identifier
-    Trailing . and * will be removed
+    Get standardized path with forward slashes to make path a unique identifier.
+    Trailing . and * will be removed.
+
+    Relative paths are resolved against the note folder. Absolute paths must
+    already lie inside the note folder.
     """
     if len(path) > 0 and path[-1] in [".", "*"]:
         path = path[:-1]
 
-    resolved_path = Path(path).resolve()
+    candidate = Path(path)
+    if candidate.is_absolute():
+        resolved_path = candidate.resolve()
+    else:
+        resolved_path = (RESOLVED_NOTE_FOLDER / candidate).resolve()
+
     if not resolved_path.is_relative_to(RESOLVED_NOTE_FOLDER):
         return None
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
+
+
+def absolute_note_path(normed_path: str) -> Path:
+    """Absolute Path for a normalised (note-folder-relative) path."""
+    if not normed_path:
+        return RESOLVED_NOTE_FOLDER
+    return RESOLVED_NOTE_FOLDER.joinpath(*Path(normed_path).parts)
+
+
+def resolve_note_path(path: str) -> Optional[str]:
+    """
+    Resolve a note path to an absolute filesystem path string.
+
+    Accepts note-folder-relative or absolute paths. Returns None when the path
+    is outside the note folder.
+    """
+    if (normed_path := get_normalised_path(path)) is None:
+        return None
+    return str(absolute_note_path(normed_path))
 
 
 def ensure_md_extension(path: str) -> str:
@@ -70,10 +97,10 @@ def get_dirs_and_md_files(
 
     folders: list[str] = []
     files: list[str] = []
-    path = f"{NOTE_FOLDER}/{normed_path}" if normed_path else NOTE_FOLDER
+    path = absolute_note_path(normed_path)
 
     try:
-        with os.scandir(Path(path)) as entries:
+        with os.scandir(path) as entries:
             for entry in entries:
                 if entry.is_dir(follow_symlinks=False):
                     folders.append(entry.name)
@@ -95,12 +122,12 @@ def ensure_note_parent_dirs(path: str) -> bool:
     if not (normed_path := get_normalised_path(path)):
         return False
 
-    parent_parts = Path(normed_path).parent
-    if parent_parts == Path("."):
+    parent = absolute_note_path(normed_path).parent
+    if parent == RESOLVED_NOTE_FOLDER:
         return True
 
     try:
-        (RESOLVED_NOTE_FOLDER / parent_parts).mkdir(parents=True, exist_ok=True)
+        parent.mkdir(parents=True, exist_ok=True)
     except OSError:
         return False
     return True
@@ -116,7 +143,7 @@ def write_file_content(path: str, contents: str) -> bool:
         return False
 
     try:
-        with open(f"{NOTE_FOLDER}/{normed_path}", "w", encoding="utf-8") as f:
+        with open(str(absolute_note_path(normed_path)), "w", encoding="utf-8") as f:
             f.write(contents)
     except OSError:
         return False
@@ -132,7 +159,7 @@ def delete_note_file(path: str) -> bool:
         return False
 
     try:
-        Path(f"{NOTE_FOLDER}/{normed_path}").unlink()
+        absolute_note_path(normed_path).unlink()
     except OSError:
         return False
     return True
@@ -154,7 +181,7 @@ def delete_notes_folder(path: str) -> bool:
     if not normed_path:
         return False
 
-    target = RESOLVED_NOTE_FOLDER / Path(normed_path)
+    target = absolute_note_path(normed_path)
     if not target.is_dir():
         return False
 
@@ -184,8 +211,8 @@ def move_dir(src: str, dst: str) -> bool:
     if not src_normed or dst_normed is None:
         return False
 
-    src_path = RESOLVED_NOTE_FOLDER / Path(src_normed)
-    dst_path = RESOLVED_NOTE_FOLDER / Path(dst_normed)
+    src_path = absolute_note_path(src_normed)
+    dst_path = absolute_note_path(dst_normed)
 
     if not src_path.exists() or not dst_path.is_dir():
         return False
