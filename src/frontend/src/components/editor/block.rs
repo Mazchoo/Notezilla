@@ -206,6 +206,21 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
     let enter_scroll_top = RwSignal::new(None::<i32>);
 
+    // Defer the initial markdown→HTML render past first paint. WASM has no
+    // worker offload for this path, so we only yield: the editor shell can
+    // appear before mermaid/graphviz layout blocks the main thread.
+    Effect::new(move |_| {
+        let raw = block.text.try_get_untracked().unwrap_or_default();
+        if raw.is_empty() || !block.html.try_get_untracked().unwrap_or_default().is_empty() {
+            return;
+        }
+        request_animation_frame(move || {
+            if block.html.try_get_untracked().unwrap_or_default().is_empty() {
+                block.rerender();
+            }
+        });
+    });
+
     // Leave edit mode when main-text editing is turned off.
     Effect::new(move |_| {
         if !markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {

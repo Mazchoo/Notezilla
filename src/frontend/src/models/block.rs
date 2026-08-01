@@ -94,12 +94,12 @@ pub struct MarkdownBlock {
 }
 
 impl MarkdownBlock {
+    /// Creates a block with raw markdown. HTML starts empty; the editor fills
+    /// it after mount so the shell can paint before heavy render work runs.
     pub fn new(raw: impl Into<String>) -> Self {
-        let raw_str = raw.into();
-        let rendered = render_markdown(&raw_str);
         Self {
-            text: RwSignal::new(raw_str),
-            html: RwSignal::new(rendered),
+            text: RwSignal::new(raw.into()),
+            html: RwSignal::new(String::new()),
             focused: RwSignal::new(false),
         }
     }
