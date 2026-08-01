@@ -33,6 +33,8 @@ web-sys             = { version = "0.3", features = [
     "FocusEvent",
     "FocusOptions",
     "MouseEvent",
+    "DragEvent",
+    "DataTransfer",
     "Headers",
     "Response",
     "console",
