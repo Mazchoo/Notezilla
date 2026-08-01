@@ -165,6 +165,41 @@ def delete_notes_folder(path: str) -> bool:
     return True
 
 
+def move_dir(src: str, dst: str) -> bool:
+    """
+    Move a file or directory into a destination folder within the note folder.
+    Returns True on success.
+
+    False if:
+    - src or dst is outside note folder
+    - src is the note folder itself
+    - src does not exist
+    - dst is not an existing directory
+    - dst is inside src (when src is a directory)
+    - OS returns an error
+    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    """
+    src_normed = get_normalised_path(src)
+    dst_normed = get_normalised_path(dst)
+    if not src_normed or dst_normed is None:
+        return False
+
+    src_path = RESOLVED_NOTE_FOLDER / Path(src_normed)
+    dst_path = RESOLVED_NOTE_FOLDER / Path(dst_normed)
+
+    if not src_path.exists() or not dst_path.is_dir():
+        return False
+
+    if src_path.is_dir() and dst_path.is_relative_to(src_path):
+        return False
+
+    try:
+        shutil.move(str(src_path), str(dst_path))
+    except OSError:
+        return False
+    return True
+
+
 def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
     """Return yaml dict in data if it can be parsed else empty data and file contents"""
     if not content.startswith("---"):
