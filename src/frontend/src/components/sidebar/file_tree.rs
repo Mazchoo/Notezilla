@@ -1,10 +1,14 @@
 use crate::components::file_io::{
     display_note_path, fetch_dir_contents, normalize_note_path, open_note_at_path,
-    path::{basename, is_invalid_move, join_path, rewrite_path_after_move},
+    path::{
+        basename, is_invalid_move, join_path, resolved_rename_basename, rewrite_path_after_move,
+        rewrite_path_after_rename,
+    },
 };
 use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
+use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::mcp::tools::{delete_folder, delete_note, move_dir};
+use crate::mcp::tools::{delete_folder, delete_note, move_dir, rename_dir};
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -127,6 +131,69 @@ fn on_drop_at(ev: web_sys::DragEvent, state: &AppState, dnd: FileTreeDnD, dst: &
     perform_move(state, dnd, src, dst.to_string());
 }
 
+fn perform_rename(state: &AppState, path: String, new_name: String, is_file: bool) {
+    let new_name = new_name.trim().to_string();
+    if new_name.is_empty() {
+        return;
+    }
+    if new_name.contains('/') || new_name.contains('\\') {
+        show_error_toast(
+            state.error_toast,
+            "Rename failed: name cannot contain path separators",
+        );
+        return;
+    }
+
+    let current_name = basename(&path).to_string();
+    let resolved = resolved_rename_basename(&path, &new_name, is_file);
+    if resolved == current_name {
+        return;
+    }
+
+    let sid = match state.session_id.get_untracked() {
+        Some(s) => s,
+        None => {
+            web_sys::console::warn_1(&"MCP session not ready".into());
+            return;
+        }
+    };
+
+    let file_tree_epoch = state.file_tree_epoch;
+    let current_path = state.current_path;
+    let entries = state.entries;
+    let toast = state.toast;
+    let error_toast = state.error_toast;
+
+    spawn_local(async move {
+        match rename_dir(&sid, &path, &new_name).await {
+            Ok(()) => {
+                if let Some(cur) = current_path.get_untracked() {
+                    if let Some(new_path) = rewrite_path_after_rename(&cur, &path, &resolved) {
+                        current_path.set(Some(new_path));
+                    }
+                }
+                entries.with_untracked(|list: &Vec<EditorEntry>| {
+                    for entry in list {
+                        let norm = normalize_note_path(&entry.title.path.get_untracked());
+                        if let Some(new_path) = rewrite_path_after_rename(&norm, &path, &resolved)
+                        {
+                            entry.title.path.set(display_note_path(&new_path));
+                        }
+                    }
+                });
+                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                show_toast(toast, format!("Renamed to {resolved}"));
+            }
+            Err(e) => {
+                web_sys::console::error_1(
+                    &format!("Rename failed for {path} → {new_name}: {e}").into(),
+                );
+                show_error_toast(error_toast, format!("Rename failed for {path}: {e}"));
+            }
+        }
+    });
+}
+
 /// File tree listing top-level note-folder entries from the MCP backend.
 #[component]
 pub fn FileTree() -> impl IntoView {
@@ -138,7 +205,9 @@ pub fn FileTree() -> impl IntoView {
         drag_src: RwSignal::new(None::<String>),
         drop_target: RwSignal::new(None::<String>),
     };
+    let rename_ctrl = RenameModalCtrl::new();
     provide_context(dnd);
+    provide_context(rename_ctrl);
 
     Effect::new(move |_| {
         let _ = file_tree_epoch.get();
@@ -159,6 +228,13 @@ pub fn FileTree() -> impl IntoView {
             "p-2 file-tree-root drag-over"
         } else {
             "p-2 file-tree-root"
+        }
+    };
+
+    let on_rename_confirm = {
+        let state = state.clone();
+        move |path: String, new_name: String, is_file: bool| {
+            perform_rename(&state, path, new_name, is_file);
         }
     };
 
@@ -199,6 +275,7 @@ pub fn FileTree() -> impl IntoView {
                     </Show>
                 </ul>
             </aside>
+            <RenameModal ctrl=rename_ctrl on_confirm=on_rename_confirm />
         </div>
     }
 }
@@ -207,6 +284,7 @@ pub fn FileTree() -> impl IntoView {
 fn TreeFolder(name: String, path: String) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let dnd = use_context::<FileTreeDnD>().expect("FileTreeDnD not provided");
+    let rename_ctrl = use_context::<RenameModalCtrl>().expect("RenameModalCtrl not provided");
     let session = state.session_id;
     let file_tree_epoch = state.file_tree_epoch;
     let toast = state.toast;
@@ -264,6 +342,11 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                 }
             });
         }
+    };
+
+    let rename_folder = {
+        let path = path.clone();
+        move || rename_ctrl.open(path.clone(), false)
     };
 
     let on_contextmenu = move |ev: web_sys::MouseEvent| {
@@ -335,6 +418,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                 visible=menu_visible
                 x=menu_x
                 y=menu_y
+                on_rename=rename_folder
                 on_delete=delete_dir
             />
             <ul
@@ -386,6 +470,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
 fn TreeFile(name: String, path: String) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let dnd = use_context::<FileTreeDnD>().expect("FileTreeDnD not provided");
+    let rename_ctrl = use_context::<RenameModalCtrl>().expect("RenameModalCtrl not provided");
     let current_path = state.current_path;
     let entries = state.entries;
     let session = state.session_id;
@@ -429,6 +514,11 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                 }
             });
         }
+    };
+
+    let rename_file = {
+        let path = path.clone();
+        move || rename_ctrl.open(path.clone(), true)
     };
 
     let on_click = {
@@ -483,6 +573,7 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                 x=menu_x
                 y=menu_y
                 on_open=open_note
+                on_rename=rename_file
                 on_delete=delete_file
             />
         </li>

@@ -2,15 +2,17 @@ use leptos::prelude::*;
 
 /// Right-click context menu for file tree items.
 #[component]
-pub fn FileContextMenu<FOpen, FDelete>(
+pub fn FileContextMenu<FOpen, FRename, FDelete>(
     visible: RwSignal<bool>,
     x: RwSignal<f64>,
     y: RwSignal<f64>,
     on_open: FOpen,
+    on_rename: FRename,
     on_delete: FDelete,
 ) -> impl IntoView
 where
     FOpen: Fn() + 'static + Clone + Send + Sync,
+    FRename: Fn() + 'static + Clone + Send + Sync,
     FDelete: Fn() + 'static + Clone + Send + Sync,
 {
     let close = move |_| visible.set(false);
@@ -43,6 +45,21 @@ where
                         <a
                             class="context-menu-item"
                             on:click={
+                                let on_rename = on_rename.clone();
+                                move |ev: web_sys::MouseEvent| {
+                                    ev.prevent_default();
+                                    on_rename();
+                                    visible.set(false);
+                                }
+                            }
+                        >
+                            "Rename"
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            class="context-menu-item"
+                            on:click={
                                 let on_delete = on_delete.clone();
                                 move |ev: web_sys::MouseEvent| {
                                     ev.prevent_default();
@@ -62,13 +79,15 @@ where
 
 /// Right-click context menu for folder tree items.
 #[component]
-pub fn FolderContextMenu<FDelete>(
+pub fn FolderContextMenu<FRename, FDelete>(
     visible: RwSignal<bool>,
     x: RwSignal<f64>,
     y: RwSignal<f64>,
+    on_rename: FRename,
     on_delete: FDelete,
 ) -> impl IntoView
 where
+    FRename: Fn() + 'static + Clone + Send + Sync,
     FDelete: Fn() + 'static + Clone + Send + Sync,
 {
     let close = move |_| visible.set(false);
@@ -82,6 +101,21 @@ where
                 on:click=|ev: web_sys::MouseEvent| ev.stop_propagation()
             >
                 <ul class="menu-list">
+                    <li>
+                        <a
+                            class="context-menu-item"
+                            on:click={
+                                let on_rename = on_rename.clone();
+                                move |ev: web_sys::MouseEvent| {
+                                    ev.prevent_default();
+                                    on_rename();
+                                    visible.set(false);
+                                }
+                            }
+                        >
+                            "Rename"
+                        </a>
+                    </li>
                     <li>
                         <a
                             class="context-menu-item"

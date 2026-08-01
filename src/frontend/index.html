@@ -148,6 +148,43 @@
       outline-offset: -2px;
     }
 
+    /* ── Rename modal ──────────────────────────────────────────────── */
+    .rename-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .rename-modal {
+      width: min(360px, calc(100vw - 2rem));
+      padding: 1rem;
+      background-color: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .rename-modal-title {
+      margin: 0 0 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .rename-modal-input {
+      width: 100%;
+      margin-bottom: 0.75rem;
+    }
+    .rename-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .rename-modal-confirm {
+      color: var(--accent) !important;
+    }
+
     /* ── File context menu ─────────────────────────────────────────── */
     .context-menu-backdrop {
       position: fixed;

@@ -67,3 +67,39 @@ pub(crate) fn rewrite_path_after_move(path: &str, src: &str, dst: &str) -> Optio
     path.strip_prefix(&prefix)
         .map(|rest| format!("{new_root}/{rest}"))
 }
+
+/// Basename after rename, matching backend `rename_path` rules.
+/// For files, if `new_name` has no extension and `src_path`'s basename has one,
+/// the source extension is appended (e.g. `note.md` + `"renamed"` → `"renamed.md"`).
+/// Folder names are returned unchanged.
+pub(crate) fn resolved_rename_basename(src_path: &str, new_name: &str, is_file: bool) -> String {
+    if !is_file {
+        return new_name.to_string();
+    }
+    let src_base = basename(src_path);
+    let src_suffix = match src_base.rfind('.') {
+        Some(i) if i > 0 => &src_base[i..],
+        _ => "",
+    };
+    let new_has_suffix = matches!(new_name.rfind('.'), Some(i) if i > 0);
+    if !src_suffix.is_empty() && !new_has_suffix {
+        format!("{new_name}{src_suffix}")
+    } else {
+        new_name.to_string()
+    }
+}
+
+/// New path of `path` after renaming `src` to basename `new_basename`, if affected.
+pub(crate) fn rewrite_path_after_rename(
+    path: &str,
+    src: &str,
+    new_basename: &str,
+) -> Option<String> {
+    let new_root = join_path(parent_path(src), new_basename);
+    if path == src {
+        return Some(new_root);
+    }
+    let prefix = format!("{src}/");
+    path.strip_prefix(&prefix)
+        .map(|rest| format!("{new_root}/{rest}"))
+}

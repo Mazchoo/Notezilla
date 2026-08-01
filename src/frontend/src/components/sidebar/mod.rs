@@ -1,5 +1,6 @@
 pub mod context_menu;
 pub mod file_tree;
+pub mod rename_modal;
 pub mod search_panel;
 
 use crate::state::{ActivePanel, AppState};

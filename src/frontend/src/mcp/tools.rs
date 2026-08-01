@@ -88,6 +88,16 @@ pub async fn move_dir(session_id: &str, src: &str, dst: &str) -> Result<(), Stri
         .map(|_| ())
 }
 
+pub async fn rename_dir(session_id: &str, path: &str, new_name: &str) -> Result<(), String> {
+    call_tool(
+        session_id,
+        "rename_dir",
+        json!({ "path": path, "new_name": new_name }),
+    )
+    .await
+    .map(|_| ())
+}
+
 pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
     let val = call_tool(session_id, "get_dir_contents", json!({ "path": path })).await?;
 
