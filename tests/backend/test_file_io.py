@@ -583,7 +583,10 @@ class TestRenamePath:
                 "rename",
                 side_effect=OSError("permission denied"),
             ):
-                assert rename_path(str(paths["tmp_rename/src/note.md"]), "renamed.md") is False
+                assert (
+                    rename_path(str(paths["tmp_rename/src/note.md"]), "renamed.md")
+                    is False
+                )
             assert paths["tmp_rename/src/note.md"].is_file()
 
 

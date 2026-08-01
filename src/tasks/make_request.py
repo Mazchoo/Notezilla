@@ -87,7 +87,7 @@ def call_tool(session_id: str, name: str, arguments: dict, req_id: int = 1) -> d
     )
     parsed_response = _parse_sse(resp.text)
     assert parsed_response["result"]["isError"] is False
-    
+
     return parsed_response["result"]
 
 
@@ -162,7 +162,9 @@ if __name__ == "__main__":
     print("\n=== rename_dir ===")
     print(
         call_tool(
-            session, "rename_dir", {"path": "./some-random-folder/my-note.md", "new_name": "some-note"}
+            session,
+            "rename_dir",
+            {"path": "./some-random-folder/my-note.md", "new_name": "some-note"},
         )
     )
 
