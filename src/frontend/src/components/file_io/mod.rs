@@ -2,7 +2,7 @@ mod export;
 mod fetch_directories;
 mod import;
 mod open;
-mod path;
+pub(crate) mod path;
 mod save;
 
 pub use export::{export_entries_as_html, export_entries_as_markdown};

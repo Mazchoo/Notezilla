@@ -1,5 +1,6 @@
 use crate::components::file_io::{
     display_note_path, fetch_dir_contents, normalize_note_path, open_note_at_path,
+    path::{basename, is_invalid_move, join_path, rewrite_path_after_move},
 };
 use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
 use crate::components::toast::{show_error_toast, show_toast};
@@ -20,47 +21,6 @@ const DRAG_MIME: &str = "text/plain";
 struct FileTreeDnD {
     drag_src: RwSignal<Option<String>>,
     drop_target: RwSignal<Option<String>>,
-}
-
-fn join_path(dir: &str, name: &str) -> String {
-    if dir.is_empty() {
-        name.to_string()
-    } else {
-        format!("{dir}/{name}")
-    }
-}
-
-fn entry_name(path: &str) -> &str {
-    path.rsplit_once('/').map(|(_, n)| n).unwrap_or(path)
-}
-
-fn parent_path(path: &str) -> &str {
-    path.rsplit_once('/').map(|(p, _)| p).unwrap_or("")
-}
-
-/// Whether dropping `src` into directory `dst` is a no-op or invalid.
-fn is_invalid_move(src: &str, dst: &str) -> bool {
-    if src.is_empty() {
-        return true;
-    }
-    if parent_path(src) == dst {
-        return true;
-    }
-    if src == dst {
-        return true;
-    }
-    dst.starts_with(src) && dst.as_bytes().get(src.len()) == Some(&b'/')
-}
-
-/// New path of `path` after moving `src` into directory `dst`, if affected.
-fn rewrite_path_after_move(path: &str, src: &str, dst: &str) -> Option<String> {
-    let new_root = join_path(dst, entry_name(src));
-    if path == src {
-        return Some(new_root);
-    }
-    let prefix = format!("{src}/");
-    path.strip_prefix(&prefix)
-        .map(|rest| format!("{new_root}/{rest}"))
 }
 
 fn clear_dnd(dnd: FileTreeDnD) {
@@ -121,7 +81,7 @@ fn perform_move(state: &AppState, dnd: FileTreeDnD, src: String, dst: String) {
                     }
                 });
                 file_tree_epoch.update(|n| *n = n.wrapping_add(1));
-                let name = entry_name(&src);
+                let name = basename(&src);
                 let dest_label = if dst.is_empty() {
                     "note folder root"
                 } else {
