@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-// Proxied by Trunk to http://127.0.0.1:8000 in development.
+// Proxied by Trunk to http://127.0.0.1:8020 in development.
 const MCP_URL: &str = "/mcp";
 static CALL_ID: AtomicU64 = AtomicU64::new(1);
 

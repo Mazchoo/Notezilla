@@ -2,22 +2,22 @@
 
 ## MCP Server
 
-The server runs at `http://127.0.0.1:8000`. Use `GET /tools` to list available tools and their schemas without a session handshake.
+The server runs at `http://127.0.0.1:8020`. Use `GET /tools` to list available tools and their schemas without a session handshake.
 
 ```bash
-curl http://127.0.0.1:8000/tools
+curl http://127.0.0.1:8020/tools
 ```
 
 To call a tool, initialize first (capturing the session ID), then call in one chained command:
 
 ```bash
-SESSION=$(curl -s -X POST http://127.0.0.1:8000/mcp \
+SESSION=$(curl -s -X POST http://127.0.0.1:8020/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -D - \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' \
   | grep -i "mcp-session-id" | tr -d '\r' | awk '{print $2}') && \
-curl -s -X POST http://127.0.0.1:8000/mcp \
+curl -s -X POST http://127.0.0.1:8020/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION" \

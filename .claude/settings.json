@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "notezilla": {
-      "url": "http://127.0.0.1:8000/mcp"
+      "url": "http://127.0.0.1:8020/mcp"
     }
   },
   "permissions": {
     "allow": [
-      "Bash(curl http://127.0.0.1:8000/*)"
+      "Bash(curl http://127.0.0.1:8020/*)"
     ]
   }
 }

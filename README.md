@@ -70,7 +70,7 @@ After the server is running add a configuration for the MCP server.
   "mcpServers": {
     "notezilla": {
       "type": "streamable-http",
-      "url": "http://localhost:8000/mcp",
+      "url": "http://localhost:8020/mcp",
       "disabled": false
     }
   }
