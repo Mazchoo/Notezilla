@@ -192,7 +192,7 @@ def delete_notes_folder(path: str) -> bool:
     return True
 
 
-def move_dir(src: str, dst: str) -> bool:
+def move_file_or_folder(src: str, dst: str) -> bool:
     """
     Move a file or directory into a destination folder within the note folder.
     Returns True on success.
@@ -227,7 +227,7 @@ def move_dir(src: str, dst: str) -> bool:
     return True
 
 
-def rename_path(path: str, new_name: str) -> bool:
+def rename_basename(path: str, new_name: str) -> bool:
     """
     Rename a file or directory within the note folder.
     Returns True on success.

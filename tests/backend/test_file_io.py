@@ -12,9 +12,9 @@ from src.backend.file_io import (
     ensure_note_parent_dirs,
     extract_yaml_from_file_contents,
     get_normalised_path,
-    move_dir,
+    move_file_or_folder,
     read_file_content,
-    rename_path,
+    rename_basename,
     write_file_content,
 )
 from tests.backend.helpers import MOCK_NOTES_FOLDER, temporary_notes
@@ -340,11 +340,11 @@ class TestDeleteNotesFolder:
 
 
 # ---------------------------------------------------------------------------
-# move_dir
+# move_file_or_folder
 # ---------------------------------------------------------------------------
 
 
-class TestMoveDir:
+class TestMoveFileOrFolder:
     """Move a file or directory into a destination folder within mock_notes."""
 
     def test_moves_file_into_dst_folder(self, mock_notes_folder):
@@ -354,7 +354,7 @@ class TestMoveDir:
         ) as paths:
             src = paths["tmp_move/src/note.md"]
             dst = paths["tmp_move/dst"]
-            assert move_dir(str(src), str(dst)) is True
+            assert move_file_or_folder(str(src), str(dst)) is True
 
             moved = dst / "note.md"
             assert not src.exists()
@@ -368,7 +368,7 @@ class TestMoveDir:
             {"tmp_move/src/rel-note.md": "hello"},
             dirs=["tmp_move/dst"],
         ) as paths:
-            assert move_dir("tmp_move/src/rel-note.md", "tmp_move/dst") is True
+            assert move_file_or_folder("tmp_move/src/rel-note.md", "tmp_move/dst") is True
 
             src = paths["tmp_move/src/rel-note.md"]
             moved = paths["tmp_move/dst"] / "rel-note.md"
@@ -387,7 +387,7 @@ class TestMoveDir:
         ) as paths:
             src = mock_notes_folder / "tmp_move" / "src" / "nested"
             dst = paths["tmp_move/dst"]
-            assert move_dir(str(src), str(dst)) is True
+            assert move_file_or_folder(str(src), str(dst)) is True
 
             moved = dst / "nested"
             assert not src.exists()
@@ -398,7 +398,7 @@ class TestMoveDir:
     def test_moves_into_note_folder_root(self, mock_notes_folder):
         with temporary_notes({"tmp_move/src/root-move.md": "root"}) as paths:
             src = paths["tmp_move/src/root-move.md"]
-            assert move_dir(str(src), str(mock_notes_folder)) is True
+            assert move_file_or_folder(str(src), str(mock_notes_folder)) is True
 
             moved = mock_notes_folder / "root-move.md"
             assert not src.exists()
@@ -408,16 +408,16 @@ class TestMoveDir:
 
     def test_rejects_src_outside_note_folder(self, mock_notes_folder):
         with temporary_notes(dirs=["tmp_move/dst"]) as paths:
-            assert move_dir("/etc/passwd", str(paths["tmp_move/dst"])) is False
+            assert move_file_or_folder("/etc/passwd", str(paths["tmp_move/dst"])) is False
 
     def test_rejects_dst_outside_note_folder(self, mock_notes_folder):
         with temporary_notes({"tmp_move/src/note.md": "x"}) as paths:
-            assert move_dir(str(paths["tmp_move/src/note.md"]), "/tmp") is False
+            assert move_file_or_folder(str(paths["tmp_move/src/note.md"]), "/tmp") is False
             assert paths["tmp_move/src/note.md"].is_file()
 
     def test_rejects_src_note_folder_root(self, mock_notes_folder):
         with temporary_notes(dirs=["tmp_move/dst"]) as paths:
-            assert move_dir(str(mock_notes_folder), str(paths["tmp_move/dst"])) is False
+            assert move_file_or_folder(str(mock_notes_folder), str(paths["tmp_move/dst"])) is False
 
     def test_rejects_dst_when_not_a_directory(self, mock_notes_folder):
         with temporary_notes(
@@ -427,7 +427,7 @@ class TestMoveDir:
             }
         ) as paths:
             assert (
-                move_dir(
+                move_file_or_folder(
                     str(paths["tmp_move/src/note.md"]),
                     str(paths["tmp_move/not-a-dir.md"]),
                 )
@@ -438,7 +438,7 @@ class TestMoveDir:
     def test_rejects_missing_src(self, mock_notes_folder):
         with temporary_notes(dirs=["tmp_move/dst"]) as paths:
             assert (
-                move_dir(
+                move_file_or_folder(
                     str(mock_notes_folder / "tmp_move" / "missing.md"),
                     str(paths["tmp_move/dst"]),
                 )
@@ -448,7 +448,7 @@ class TestMoveDir:
     def test_rejects_missing_dst_folder(self, mock_notes_folder):
         with temporary_notes({"tmp_move/src/note.md": "x"}) as paths:
             assert (
-                move_dir(
+                move_file_or_folder(
                     str(paths["tmp_move/src/note.md"]),
                     str(mock_notes_folder / "tmp_move" / "missing_dst"),
                 )
@@ -463,7 +463,7 @@ class TestMoveDir:
         ) as paths:
             src = mock_notes_folder / "tmp_move" / "src" / "nested"
             dst = paths["tmp_move/src/nested/child"]
-            assert move_dir(str(src), str(dst)) is False
+            assert move_file_or_folder(str(src), str(dst)) is False
             assert src.is_dir()
             assert (src / "note.md").is_file()
 
@@ -477,7 +477,7 @@ class TestMoveDir:
                 side_effect=OSError("permission denied"),
             ):
                 assert (
-                    move_dir(
+                    move_file_or_folder(
                         str(paths["tmp_move/src/note.md"]), str(paths["tmp_move/dst"])
                     )
                     is False
@@ -486,17 +486,17 @@ class TestMoveDir:
 
 
 # ---------------------------------------------------------------------------
-# rename_path
+# rename_basename
 # ---------------------------------------------------------------------------
 
 
-class TestRenamePath:
+class TestRenameBasename:
     """Rename a file or directory within mock_notes."""
 
     def test_renames_file(self, mock_notes_folder):
         with temporary_notes({"tmp_rename/old-name.md": "hello"}) as paths:
             src = paths["tmp_rename/old-name.md"]
-            assert rename_path(str(src), "new-name.md") is True
+            assert rename_basename(str(src), "new-name.md") is True
 
             dst = mock_notes_folder / "tmp_rename" / "new-name.md"
             assert not src.exists()
@@ -507,7 +507,7 @@ class TestRenamePath:
     def test_renames_file_with_relative_path(self, mock_notes_folder):
         """MCP tools pass note-folder-relative paths, not absolute filesystem paths."""
         with temporary_notes({"tmp_rename/rel-old.md": "hello"}) as paths:
-            assert rename_path("tmp_rename/rel-old.md", "rel-new.md") is True
+            assert rename_basename("tmp_rename/rel-old.md", "rel-new.md") is True
 
             src = paths["tmp_rename/rel-old.md"]
             dst = mock_notes_folder / "tmp_rename" / "rel-new.md"
@@ -519,7 +519,7 @@ class TestRenamePath:
     def test_preserves_file_extension_when_new_name_omits_it(self, mock_notes_folder):
         """Renaming my-note.md to 'some-note' must yield some-note.md."""
         with temporary_notes({"tmp_rename/my-note.md": "hello"}) as paths:
-            assert rename_path("tmp_rename/my-note.md", "some-note") is True
+            assert rename_basename("tmp_rename/my-note.md", "some-note") is True
 
             src = paths["tmp_rename/my-note.md"]
             dst = mock_notes_folder / "tmp_rename" / "some-note.md"
@@ -537,7 +537,7 @@ class TestRenamePath:
             }
         ):
             src = mock_notes_folder / "tmp_rename" / "old-dir"
-            assert rename_path(str(src), "new-dir") is True
+            assert rename_basename(str(src), "new-dir") is True
 
             dst = mock_notes_folder / "tmp_rename" / "new-dir"
             assert not src.exists()
@@ -546,21 +546,21 @@ class TestRenamePath:
             shutil.rmtree(dst)
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
-        assert rename_path("/etc/passwd", "renamed") is False
+        assert rename_basename("/etc/passwd", "renamed") is False
 
     def test_rejects_note_folder_root(self, mock_notes_folder):
-        assert rename_path(str(mock_notes_folder), "renamed") is False
+        assert rename_basename(str(mock_notes_folder), "renamed") is False
 
     def test_rejects_missing_path(self, mock_notes_folder):
         assert (
-            rename_path(str(mock_notes_folder / "tmp_rename" / "missing.md"), "new.md")
+            rename_basename(str(mock_notes_folder / "tmp_rename" / "missing.md"), "new.md")
             is False
         )
 
     def test_rejects_new_name_outside_note_folder(self, mock_notes_folder):
         with temporary_notes({"tmp_rename/note.md": "x"}) as paths:
             assert (
-                rename_path(str(paths["tmp_rename/note.md"]), "../../../etc/passwd")
+                rename_basename(str(paths["tmp_rename/note.md"]), "../../../etc/passwd")
                 is False
             )
             assert paths["tmp_rename/note.md"].is_file()
@@ -572,7 +572,7 @@ class TestRenamePath:
                 "tmp_rename/dst.md": "dst",
             }
         ) as paths:
-            assert rename_path(str(paths["tmp_rename/src.md"]), "dst.md") is False
+            assert rename_basename(str(paths["tmp_rename/src.md"]), "dst.md") is False
             assert paths["tmp_rename/src.md"].is_file()
             assert paths["tmp_rename/dst.md"].read_text(encoding="utf-8") == "dst"
 
@@ -584,7 +584,7 @@ class TestRenamePath:
                 side_effect=OSError("permission denied"),
             ):
                 assert (
-                    rename_path(str(paths["tmp_rename/src/note.md"]), "renamed.md")
+                    rename_basename(str(paths["tmp_rename/src/note.md"]), "renamed.md")
                     is False
                 )
             assert paths["tmp_rename/src/note.md"].is_file()

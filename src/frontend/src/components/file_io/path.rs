@@ -68,7 +68,7 @@ pub(crate) fn rewrite_path_after_move(path: &str, src: &str, dst: &str) -> Optio
         .map(|rest| format!("{new_root}/{rest}"))
 }
 
-/// Basename after rename, matching backend `rename_path` rules.
+/// Basename after rename, matching backend `rename_basename` rules.
 /// For files, if `new_name` has no extension and `src_path`'s basename has one,
 /// the source extension is appended (e.g. `note.md` + `"renamed"` → `"renamed.md"`).
 /// Folder names are returned unchanged.

@@ -13,8 +13,8 @@ from src.backend.file_io import (
     delete_note_file,
     delete_notes_folder,
     get_dirs_and_md_files,
-    move_dir as move_dir_on_disk,
-    rename_path as rename_path_on_disk,
+    move_file_or_folder,
+    rename_basename,
     resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
@@ -143,7 +143,7 @@ def move_dir(
         src: Relative path of the file or folder to move e.g. "folder" or "folder/note.md"
         dst: Relative path of the destination directory e.g. "archive" or ""
     """
-    if move_dir_on_disk(src, dst):
+    if move_file_or_folder(src, dst):
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
         f"Failed to move '{src}' into '{dst}'. "
@@ -180,7 +180,7 @@ def rename_dir(
         path: Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"
         new_name: New basename for the file or folder e.g. "renamed" or "renamed.md"
     """
-    if rename_path_on_disk(path, new_name):
+    if rename_basename(path, new_name):
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
         f"Failed to rename '{path}' to '{new_name}'. "
