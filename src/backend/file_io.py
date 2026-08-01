@@ -227,6 +227,40 @@ def move_dir(src: str, dst: str) -> bool:
     return True
 
 
+def rename_path(path: str, new_name: str) -> bool:
+    """
+    Rename a file or directory within the note folder.
+    Returns True on success.
+
+    False if:
+    - path or resulting destination is outside note folder
+    - path is the note folder itself
+    - path does not exist
+    - destination already exists
+    - OS returns an error
+    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    """
+    normed_path = get_normalised_path(path)
+    if not normed_path:
+        return False
+
+    src_path = absolute_note_path(normed_path)
+    dst_normed = get_normalised_path(str(src_path.parent / new_name))
+    if not dst_normed:
+        return False
+
+    dst_path = absolute_note_path(dst_normed)
+
+    if not src_path.exists() or dst_path.exists():
+        return False
+
+    try:
+        src_path.rename(dst_path)
+    except OSError:
+        return False
+    return True
+
+
 def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
     """Return yaml dict in data if it can be parsed else empty data and file contents"""
     if not content.startswith("---"):

@@ -14,6 +14,7 @@ from src.backend.file_io import (
     get_normalised_path,
     move_dir,
     read_file_content,
+    rename_path,
     write_file_content,
 )
 from tests.backend.helpers import MOCK_NOTES_FOLDER, temporary_notes
@@ -482,6 +483,95 @@ class TestMoveDir:
                     is False
                 )
             assert paths["tmp_move/src/note.md"].is_file()
+
+
+# ---------------------------------------------------------------------------
+# rename_path
+# ---------------------------------------------------------------------------
+
+
+class TestRenamePath:
+    """Rename a file or directory within mock_notes."""
+
+    def test_renames_file(self, mock_notes_folder):
+        with temporary_notes({"tmp_rename/old-name.md": "hello"}) as paths:
+            src = paths["tmp_rename/old-name.md"]
+            assert rename_path(str(src), "new-name.md") is True
+
+            dst = mock_notes_folder / "tmp_rename" / "new-name.md"
+            assert not src.exists()
+            assert dst.is_file()
+            assert dst.read_text(encoding="utf-8") == "hello"
+            dst.unlink()
+
+    def test_renames_file_with_relative_path(self, mock_notes_folder):
+        """MCP tools pass note-folder-relative paths, not absolute filesystem paths."""
+        with temporary_notes({"tmp_rename/rel-old.md": "hello"}) as paths:
+            assert rename_path("tmp_rename/rel-old.md", "rel-new.md") is True
+
+            src = paths["tmp_rename/rel-old.md"]
+            dst = mock_notes_folder / "tmp_rename" / "rel-new.md"
+            assert not src.exists()
+            assert dst.is_file()
+            assert dst.read_text(encoding="utf-8") == "hello"
+            dst.unlink()
+
+    def test_renames_directory(self, mock_notes_folder):
+        with temporary_notes(
+            {
+                "tmp_rename/old-dir/a.md": "a",
+                "tmp_rename/old-dir/b.md": "b",
+            }
+        ):
+            src = mock_notes_folder / "tmp_rename" / "old-dir"
+            assert rename_path(str(src), "new-dir") is True
+
+            dst = mock_notes_folder / "tmp_rename" / "new-dir"
+            assert not src.exists()
+            assert (dst / "a.md").read_text(encoding="utf-8") == "a"
+            assert (dst / "b.md").read_text(encoding="utf-8") == "b"
+            shutil.rmtree(dst)
+
+    def test_rejects_path_outside_note_folder(self, mock_notes_folder):
+        assert rename_path("/etc/passwd", "renamed") is False
+
+    def test_rejects_note_folder_root(self, mock_notes_folder):
+        assert rename_path(str(mock_notes_folder), "renamed") is False
+
+    def test_rejects_missing_path(self, mock_notes_folder):
+        assert (
+            rename_path(str(mock_notes_folder / "tmp_rename" / "missing.md"), "new.md")
+            is False
+        )
+
+    def test_rejects_new_name_outside_note_folder(self, mock_notes_folder):
+        with temporary_notes({"tmp_rename/note.md": "x"}) as paths:
+            assert (
+                rename_path(str(paths["tmp_rename/note.md"]), "../../../etc/passwd")
+                is False
+            )
+            assert paths["tmp_rename/note.md"].is_file()
+
+    def test_rejects_when_sibling_already_exists(self, mock_notes_folder):
+        with temporary_notes(
+            {
+                "tmp_rename/src.md": "src",
+                "tmp_rename/dst.md": "dst",
+            }
+        ) as paths:
+            assert rename_path(str(paths["tmp_rename/src.md"]), "dst.md") is False
+            assert paths["tmp_rename/src.md"].is_file()
+            assert paths["tmp_rename/dst.md"].read_text(encoding="utf-8") == "dst"
+
+    def test_returns_false_when_rename_raises(self, mock_notes_folder):
+        with temporary_notes({"tmp_rename/src/note.md": "x"}) as paths:
+            with patch.object(
+                Path,
+                "rename",
+                side_effect=OSError("permission denied"),
+            ):
+                assert rename_path(str(paths["tmp_rename/src/note.md"]), "renamed.md") is False
+            assert paths["tmp_rename/src/note.md"].is_file()
 
 
 if __name__ == "__main__":
