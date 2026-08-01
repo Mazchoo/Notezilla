@@ -30,12 +30,12 @@ class TestSearchNotesByField:
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_field passes field, value, and n_results to the DB."""
+        """search_notes_by_field passes field, value, n_results, and offset to the DB."""
         mock_db.query_by_field.return_value = make_notes()
 
-        search_notes_by_field(field="title", value="hello", n_results=5)
+        search_notes_by_field(field="title", value="hello", n_results=5, offset=10)
 
-        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 5)
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 5, 10)
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field uses n_results=10 by default."""
@@ -43,7 +43,23 @@ class TestSearchNotesByField:
 
         search_notes_by_field(field="title", value="hello")
 
-        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 10)
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 10, 0)
+
+    def test_default_offset_is_zero(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_field uses offset=0 by default for pagination."""
+        mock_db.query_by_field.return_value = make_notes()
+
+        search_notes_by_field(field="title", value="hello", n_results=5)
+
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 5, 0)
+
+    def test_passes_pagination_offset(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_field forwards pagination offset to the DB."""
+        mock_db.query_by_field.return_value = make_notes()
+
+        search_notes_by_field(field="title", value="hello", n_results=10, offset=10)
+
+        mock_db.query_by_field.assert_called_once_with("title", "hello", ANY, 10, 10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_field wraps ValueError in an error response."""

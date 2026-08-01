@@ -238,6 +238,15 @@ def search_notes_by_field(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
+    offset: Annotated[
+        int,
+        Field(
+            description=(
+                "Pagination offset: number of matching notes to skip before "
+                "returning results (e.g. offset=10, n_results=10 yields results[10:20])"
+            )
+        ),
+    ] = 0,
 ) -> ToolResult:
     """Find notes where a metadata field exactly matches a value.
 
@@ -245,9 +254,12 @@ def search_notes_by_field(
         field: Metadata field name to filter on e.g. "filename"
         value: Exact value the field must equal
         n_results: Maximum number of results to return
+        offset: Pagination offset; skip this many matches before returning
     """
     try:
-        notes = init_db().query_by_field(field, value, init_column_types(), n_results)
+        notes = init_db().query_by_field(
+            field, value, init_column_types(), n_results, offset
+        )
         return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.notes_error(f"Type error: {e}")
@@ -263,6 +275,15 @@ def search_notes_by_tag(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
+    offset: Annotated[
+        int,
+        Field(
+            description=(
+                "Pagination offset: number of matching notes to skip before "
+                "returning results (e.g. offset=10, n_results=10 yields results[10:20])"
+            )
+        ),
+    ] = 0,
 ) -> ToolResult:
     """Find notes where a list metadata field contains a given value.
 
@@ -270,10 +291,11 @@ def search_notes_by_tag(
         field: List metadata field name e.g. "tags"
         value: Value that the list must contain
         n_results: Maximum number of results to return
+        offset: Pagination offset; skip this many matches before returning
     """
     try:
         notes = init_db().query_field_contains(
-            field, value, init_column_types(), n_results
+            field, value, init_column_types(), n_results, offset
         )
         return McpResponse.notes(notes)
     except ValueError as e:
@@ -289,15 +311,27 @@ def search_notes_by_text(
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
+    offset: Annotated[
+        int,
+        Field(
+            description=(
+                "Pagination offset: number of matching notes to skip before "
+                "returning results (e.g. offset=10, n_results=10 yields results[10:20])"
+            )
+        ),
+    ] = 0,
 ) -> ToolResult:
     """Semantically search notes by their content.
 
     Args:
         text: Natural language query to search for
         n_results: Maximum number of results to return
+        offset: Pagination offset; skip this many matches before returning
     """
     try:
-        notes = init_db().query_by_text(text, init_column_types(), n_results)
+        notes = init_db().query_by_text(
+            text, init_column_types(), n_results, offset=offset
+        )
         return McpResponse.notes(notes)
     except ValueError as e:
         return McpResponse.notes_error(f"Type error: {e}")

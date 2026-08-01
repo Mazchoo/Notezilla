@@ -96,8 +96,13 @@ class NoteDatabase:
         value: Union[str, bool, int, float],
         column_types: ColumnTypes,
         n_results: int = 10,
+        offset: int = 0,
     ) -> List[NoteData]:
-        """Return notes where a metadata field equals the given value"""
+        """Return notes where a metadata field equals the given value.
+
+        Pagination: ``offset`` skips that many matches before applying
+        ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
+        """
         if not isinstance(value, VALID_QUERY_TYPES):
             raise ValueError(
                 f"{value}: {type(value)} not in valid query types {VALID_QUERY_TYPES}"
@@ -106,6 +111,7 @@ class NoteDatabase:
         results = self._collection.get(
             where={field: value},
             limit=n_results,
+            offset=offset,
             include=["documents", "metadatas"],
         )
         return notes_from_chroma(
@@ -120,12 +126,17 @@ class NoteDatabase:
         value: str,
         column_types: ColumnTypes,
         n_results: int = 10,
+        offset: int = 0,
     ) -> List[NoteData]:
         """Return notes where a list field contains a value.
 
         List values are stored as ``field.value: True`` metadata keys.
+        Pagination: ``offset`` skips that many matches before applying
+        ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
         """
-        return self.query_by_field(f"{field}\t{value}", True, column_types, n_results)
+        return self.query_by_field(
+            f"{field}\t{value}", True, column_types, n_results, offset
+        )
 
     def query_by_text(
         self,
@@ -133,20 +144,24 @@ class NoteDatabase:
         column_types: ColumnTypes,
         n_results: int = 10,
         where: Optional[dict] = None,
+        offset: int = 0,
     ) -> List[NoteData]:
-        """Semantic search — returns matching notes"""
+        """Semantic search — returns matching notes.
+
+        Pagination: ``offset`` skips that many ranked matches before applying
+        ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
+        """
         results = self._collection.query(
             query_texts=[text],
-            n_results=n_results,
+            n_results=n_results + offset,
             where=where,
             include=["documents", "metadatas"],
         )
+        documents = results["documents"][0] if results["documents"] else []
+        metadatas = results["metadatas"][0] if results["metadatas"] else []
         return notes_from_chroma(
-            results["documents"][0] if results["documents"] else [],
-            cast(
-                List[Dict[str, Any]],
-                results["metadatas"][0] if results["metadatas"] else [],
-            ),
+            documents[offset:],
+            cast(List[Dict[str, Any]], metadatas[offset:]),
             column_types,
         )
 

@@ -29,12 +29,12 @@ class TestSearchNotesByText:
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text passes text and n_results to the DB."""
+        """search_notes_by_text passes text, n_results, and offset to the DB."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="hello world", n_results=7)
+        search_notes_by_text(text="hello world", n_results=7, offset=10)
 
-        mock_db.query_by_text.assert_called_once_with("hello world", ANY, 7)
+        mock_db.query_by_text.assert_called_once_with("hello world", ANY, 7, offset=10)
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text uses n_results=10 by default."""
@@ -42,7 +42,23 @@ class TestSearchNotesByText:
 
         search_notes_by_text(text="query")
 
-        mock_db.query_by_text.assert_called_once_with("query", ANY, 10)
+        mock_db.query_by_text.assert_called_once_with("query", ANY, 10, offset=0)
+
+    def test_default_offset_is_zero(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_text uses offset=0 by default for pagination."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", n_results=7)
+
+        mock_db.query_by_text.assert_called_once_with("query", ANY, 7, offset=0)
+
+    def test_passes_pagination_offset(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_text forwards pagination offset to the DB."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", n_results=10, offset=10)
+
+        mock_db.query_by_text.assert_called_once_with("query", ANY, 10, offset=10)
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text wraps ValueError in an error response."""
