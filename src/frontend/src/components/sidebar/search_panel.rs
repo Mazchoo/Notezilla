@@ -1,6 +1,5 @@
 use crate::mcp::tools::search_by_text;
 use crate::models::note::SearchResult;
-use crate::settings::SEARCH_LIMIT;
 use crate::state::AppState;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -9,6 +8,7 @@ fn run_search(
     query: RwSignal<String>,
     results: RwSignal<Vec<SearchResult>>,
     session: RwSignal<Option<String>>,
+    limit: RwSignal<usize>,
     warn_no_session: bool,
 ) {
     let q = query.get_untracked();
@@ -24,8 +24,9 @@ fn run_search(
             return;
         }
     };
+    let limit = limit.get_untracked();
     spawn_local(async move {
-        match search_by_text(&sid, &q, SEARCH_LIMIT).await {
+        match search_by_text(&sid, &q, limit).await {
             Ok(found) => results.set(found),
             Err(e) => web_sys::console::error_1(&e.into()),
         }
@@ -38,14 +39,15 @@ pub fn SearchPanel() -> impl IntoView {
     let query = state.search_query;
     let results = state.search_results;
     let session = state.session_id;
+    let limit = state.number_results_per_page;
 
-    let on_click = move |_| run_search(query, results, session, true);
+    let on_click = move |_| run_search(query, results, session, limit, true);
 
     let on_keydown = move |ev: web_sys::KeyboardEvent| {
         if ev.key() != "Enter" {
             return;
         }
-        run_search(query, results, session, false);
+        run_search(query, results, session, limit, false);
     };
 
     view! {

@@ -2,11 +2,13 @@ pub mod context_menu;
 pub mod file_tree;
 pub mod rename_modal;
 pub mod search_panel;
+pub mod settings_panel;
 
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
 use leptos::prelude::*;
 use search_panel::SearchPanel;
+use settings_panel::SettingsPanel;
 
 const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 const SIDEBAR_MAX_WIDTH: f64 = 600.0;
@@ -75,6 +77,15 @@ pub fn Sidebar() -> impl IntoView {
                 }
             }>
                 <SearchPanel/>
+            </div>
+            <div class=move || {
+                if state.active_panel.get() == Some(ActivePanel::Settings) {
+                    ""
+                } else {
+                    "is-hidden"
+                }
+            }>
+                <SettingsPanel/>
             </div>
             <Show when=move || state.active_panel.get().is_some()>
                 <div
