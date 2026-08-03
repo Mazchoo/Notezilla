@@ -9,7 +9,7 @@ status: todo
 
 **Phase 3: Leptos GUI Development**
 
-Build the UI for both keyword and semantic (vector) search queries.
+Build the UI for both keyword and semantic (vector) search queries. Searching is done with single text query and can be augmented with filters.
 
 ## Steps
 
@@ -17,16 +17,16 @@ Build the UI for both keyword and semantic (vector) search queries.
 2. Implement a keyword search mode that filters notes by title, tags, or content substring via the API.
 3. Implement a semantic search mode that sends the query to the vector search resource and displays ranked results.
 4. Build a search results panel showing matched notes with title, path, relevance score, and a content snippet.
-5. Add a toggle or tab to switch between keyword and semantic search modes.
-6. Implement click-to-open on search results to navigate to the note in the editor.
-7. Add search history or recent searches for quick re-access.
+5. Implement click-to-open on search results to navigate to the note in the editor.
 
 ## Acceptance Criteria
 
 - [x] A search bar is accessible from all views in the application.
-- [ ] Keyword search returns notes matching by title, tag, or content.
+- [x] Keyword search returns notes matching by title, tag, or content.
 - [x] Semantic search returns notes ranked by vector similarity with visible relevance scores.
-- [ ] Results display note title, path, a content preview snippet, and matching tags.
+- [x] Results can searched by frontmatter
+- [ ] Results can be filtered by comma separated path start
 - [x] Clicking a result opens the note in the editor.
-- [ ] The user can switch between keyword and semantic search modes.
-- [ ] Empty or no-match states display a helpful message.
+- [ ] Empty or no-match states display a helpful message for requesting missing field.
+- [ ] Searching without text (purely on tags or path) works
+- [ ] Totally empty query will return everything paginated
