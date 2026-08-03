@@ -23,10 +23,10 @@ Build the UI for both keyword and semantic (vector) search queries.
 
 ## Acceptance Criteria
 
-- [ ] A search bar is accessible from all views in the application.
+- [x] A search bar is accessible from all views in the application.
 - [ ] Keyword search returns notes matching by title, tag, or content.
-- [ ] Semantic search returns notes ranked by vector similarity with visible relevance scores.
+- [x] Semantic search returns notes ranked by vector similarity with visible relevance scores.
 - [ ] Results display note title, path, a content preview snippet, and matching tags.
-- [ ] Clicking a result opens the note in the editor.
+- [x] Clicking a result opens the note in the editor.
 - [ ] The user can switch between keyword and semantic search modes.
 - [ ] Empty or no-match states display a helpful message.
