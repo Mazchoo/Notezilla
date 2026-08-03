@@ -1,6 +1,6 @@
 """Tests for the search_notes_by_text MCP tool."""
 
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -34,7 +34,9 @@ class TestSearchNotesByText:
 
         search_notes_by_text(text="hello world", n_results=7, offset=10)
 
-        mock_db.query_by_text.assert_called_once_with("hello world", ANY, 7, offset=10)
+        mock_db.query_by_text.assert_called_once_with(
+            "hello world", ANY, 7, where=None, offset=10
+        )
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text uses n_results=10 by default."""
@@ -42,7 +44,9 @@ class TestSearchNotesByText:
 
         search_notes_by_text(text="query")
 
-        mock_db.query_by_text.assert_called_once_with("query", ANY, 10, offset=0)
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0
+        )
 
     def test_default_offset_is_zero(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text uses offset=0 by default for pagination."""
@@ -50,7 +54,9 @@ class TestSearchNotesByText:
 
         search_notes_by_text(text="query", n_results=7)
 
-        mock_db.query_by_text.assert_called_once_with("query", ANY, 7, offset=0)
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 7, where=None, offset=0
+        )
 
     def test_passes_pagination_offset(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text forwards pagination offset to the DB."""
@@ -58,7 +64,36 @@ class TestSearchNotesByText:
 
         search_notes_by_text(text="query", n_results=10, offset=10)
 
-        mock_db.query_by_text.assert_called_once_with("query", ANY, 10, offset=10)
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=10
+        )
+
+    def test_passes_parsed_frontmatter_as_where(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_text parses frontmatter YAML into the where filter."""
+        mock_db.query_by_text.return_value = make_notes()
+        column_types = {"status": "str", "tags": "list"}
+
+        with patch(
+            "src.backend.main.init_column_types", return_value=column_types
+        ):
+            search_notes_by_text(
+                text="query",
+                frontmatter='status: draft\ntags: ["cheese", "bread"]',
+            )
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query",
+            column_types,
+            10,
+            where={
+                "$and": [
+                    {"status": "draft"},
+                    {"tags\tcheese": True},
+                    {"tags\tbread": True},
+                ]
+            },
+            offset=0,
+        )
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text wraps ValueError in an error response."""

@@ -18,13 +18,19 @@ fn notes_from_structured(val: &Value) -> Result<Vec<NoteFile>, String> {
 pub async fn search_by_text(
     session_id: &str,
     text: &str,
+    frontmatter: &str,
     n_results: usize,
     offset: usize,
 ) -> Result<Vec<NoteFile>, String> {
     let val = call_tool(
         session_id,
         "search_notes_by_text",
-        json!({ "text": text, "n_results": n_results, "offset": offset }),
+        json!({
+            "text": text,
+            "frontmatter": frontmatter,
+            "n_results": n_results,
+            "offset": offset
+        }),
     )
     .await?;
 

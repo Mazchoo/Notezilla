@@ -9,6 +9,7 @@ use leptos::task::spawn_local;
 
 fn run_search(
     query: RwSignal<String>,
+    frontmatter: RwSignal<String>,
     results: RwSignal<Vec<NoteFile>>,
     session: RwSignal<Option<String>>,
     limit: RwSignal<usize>,
@@ -29,10 +30,11 @@ fn run_search(
             return;
         }
     };
+    let fm = frontmatter.get_untracked();
     let limit = limit.get_untracked();
     let offset = offset.get_untracked();
     spawn_local(async move {
-        match search_by_text(&sid, &q, limit, offset).await {
+        match search_by_text(&sid, &q, &fm, limit, offset).await {
             Ok(found) => results.set(found),
             Err(e) => {
                 web_sys::console::error_1(&e.clone().into());
@@ -53,10 +55,20 @@ pub fn SearchPanel() -> impl IntoView {
     let entries = state.entries;
     let error_toast = state.error_toast;
     let offset = RwSignal::new(0usize);
+    let frontmatter = RwSignal::new(String::new());
 
     let on_search = move |_| {
         offset.set(0);
-        run_search(query, results, session, limit, offset, error_toast, true);
+        run_search(
+            query,
+            frontmatter,
+            results,
+            session,
+            limit,
+            offset,
+            error_toast,
+            true,
+        );
     };
 
     let on_keydown = move |ev: web_sys::KeyboardEvent| {
@@ -64,19 +76,46 @@ pub fn SearchPanel() -> impl IntoView {
             return;
         }
         offset.set(0);
-        run_search(query, results, session, limit, offset, error_toast, false);
+        run_search(
+            query,
+            frontmatter,
+            results,
+            session,
+            limit,
+            offset,
+            error_toast,
+            false,
+        );
     };
 
     let on_prev = move |_| {
         let page = limit.get_untracked();
         offset.update(|o| *o = o.saturating_sub(page));
-        run_search(query, results, session, limit, offset, error_toast, true);
+        run_search(
+            query,
+            frontmatter,
+            results,
+            session,
+            limit,
+            offset,
+            error_toast,
+            true,
+        );
     };
 
     let on_next = move |_| {
         let page = limit.get_untracked();
         offset.update(|o| *o = o.saturating_add(page));
-        run_search(query, results, session, limit, offset, error_toast, true);
+        run_search(
+            query,
+            frontmatter,
+            results,
+            session,
+            limit,
+            offset,
+            error_toast,
+            true,
+        );
     };
 
     let can_prev = move || offset.get() > 0;
@@ -100,6 +139,21 @@ pub fn SearchPanel() -> impl IntoView {
                     <button class="button is-small is-dark" on:click=on_search>
                         "Go"
                     </button>
+                </div>
+            </div>
+
+            <div class="field mt-2">
+                <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
+                    "Front matter filter"
+                </label>
+                <div class="control">
+                    <textarea
+                        class="textarea is-small"
+                        rows="2"
+                        placeholder={"tags: [hello]\ndate: 2025-01-01"}
+                        prop:value=move || frontmatter.get()
+                        on:input=move |ev| frontmatter.set(event_target_value(&ev))
+                    />
                 </div>
             </div>
 

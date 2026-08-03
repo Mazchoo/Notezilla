@@ -120,7 +120,13 @@ if __name__ == "__main__":
     print("\n=== search_notes_by_text ===")
     print(
         call_tool(
-            session, "search_notes_by_text", {"text": "python async", "n_results": 5}
+            session,
+            "search_notes_by_text",
+            {
+                "text": "python async",
+                "n_results": 5,
+                "frontmatter": 'tags: [paragraph]',
+            },
         )
     )
 

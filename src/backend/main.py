@@ -19,7 +19,7 @@ from src.backend.file_io import (
     resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
-from src.backend.parse_markdown import IMarkdownFile
+from src.backend.parse_markdown import IMarkdownFile, parse_frontmatter
 from src.backend.logger import LOGGER
 from src.backend.mcp_interface import init_db, init_column_types, McpResponse
 from src.backend.output_schema import (
@@ -335,6 +335,16 @@ def search_notes_by_tag(
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes_by_text(
     text: Annotated[str, Field(description="Natural language query to search for")],
+    frontmatter: Annotated[
+        str,
+        Field(
+            description=(
+                "Optional YAML front matter filter. Known columns become a Chroma "
+                "metadata where clause; unknown columns are ignored. List fields "
+                'e.g. tags: ["cheese"] match notes that contain those values.'
+            )
+        ),
+    ] = "",
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
@@ -352,12 +362,15 @@ def search_notes_by_text(
 
     Args:
         text: Natural language query to search for
+        frontmatter: Optional YAML front matter used as a metadata filter
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
     try:
+        column_types = init_column_types()
+        where = parse_frontmatter(frontmatter, column_types)
         notes = init_db().query_by_text(
-            text, init_column_types(), n_results, offset=offset
+            text, column_types, n_results, where=where, offset=offset
         )
         return McpResponse.notes(notes)
     except ValueError as e:
