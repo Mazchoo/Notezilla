@@ -31,6 +31,47 @@
         "panel": "new"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Format Frontend",
+      "type": "shell",
+      "command": "cargo fmt",
+      "options": {
+        "cwd": "${workspaceFolder}/src/frontend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Format Backend",
+      "type": "shell",
+      "command": "ruff format .",
+      "options": {
+        "cwd": "${workspaceFolder}/src/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pytest", "."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }
