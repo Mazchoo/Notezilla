@@ -24,9 +24,9 @@ Build a Rust WebAssembly (wasm-bindgen) component that accepts byte strings as i
 
 ## Acceptance Criteria
 
-- [ ] The WASM module exposes a function that accepts byte string input and returns rendered HTML.
-- [ ] Standard Markdown elements (headings, lists, tables, links, images, blockquotes) render correctly.
-- [ ] Fenced code blocks render with syntax highlighting for common languages (Python, JS, Rust, C#, etc.).
-- [ ] Mermaid code blocks are identified and wrapped in a way that enables client-side Mermaid.js rendering.
-- [ ] The WASM binary is optimized and under a reasonable size target (< 2MB).
-- [ ] Input encoding errors (invalid UTF-8) are handled gracefully.
+- [x] The WASM module exposes a function that accepts byte string input and returns rendered HTML.
+- [x] Standard Markdown elements (headings, lists, tables, links, images, blockquotes) render correctly.
+- [x] Fenced code blocks render with syntax highlighting for common languages (Python, JS, Rust, C#, etc.).
+- [x] Mermaid code blocks are identified and wrapped in a way that enables client-side Mermaid.js rendering.
+- [ ] Task exists to perform wasm-opt
+- [x] Input encoding errors (invalid UTF-8) are handled gracefully.
