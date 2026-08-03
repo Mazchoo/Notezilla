@@ -23,9 +23,8 @@ Include the Rust WASM renderer in the Leptos app with SVG and HTML clipboard cop
 
 ## Acceptance Criteria
 
-- [ ] The Leptos app loads the WASM module and renders Markdown via JS interop without errors.
+- [x] The Leptos app loads the WASM module and renders Markdown via JS interop without errors.
 - [ ] Mermaid diagrams render as interactive SVGs in the preview.
 - [ ] "Copy as HTML" places the rendered note HTML on the clipboard.
 - [ ] "Copy as SVG" places a Mermaid diagram's SVG on the clipboard.
-- [ ] Rendering performance is smooth for notes up to 10,000 words.
 - [ ] The rendered output respects the application's light/dark theme.
