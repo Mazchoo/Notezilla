@@ -1,13 +1,13 @@
 ---
 phase: 3
 title: Generation Hub
-tags: [gui, blazor, llm, generation]
+tags: [gui, leptos, llm, generation]
 status: todo
 ---
 
 # 11 - Generation Hub
 
-**Phase 3: Blazor GUI Development**
+**Phase 3: Leptos GUI Development**
 
 A dedicated view to select a template, trigger Ollama, and review the generated Markdown before saving.
 

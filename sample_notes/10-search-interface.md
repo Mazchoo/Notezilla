@@ -1,13 +1,13 @@
 ---
 phase: 3
 title: Search Interface
-tags: [gui, blazor, search, vector]
+tags: [gui, leptos, search, vector]
 status: todo
 ---
 
 # 10 - Search Interface
 
-**Phase 3: Blazor GUI Development**
+**Phase 3: Leptos GUI Development**
 
 Build the UI for both keyword and semantic (vector) search queries.
 

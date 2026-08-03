@@ -22,14 +22,14 @@ Ollama Connector: Build the logic to send system prompts and context (retrieved 
 
 Summarization Logic: Implement the "structured summary" principle to ensure LLM outputs are saved directly into the Notezilla file tree.
 
-Phase 3: Blazor GUI Development
-This is where the user interacts with the system. Using Blazor allows for a robust desktop-like experience.
+Phase 3: Leptos GUI Development
+This is where the user interacts with the system. Using Leptos allows for a robust desktop-like experience.
 
-Use Mud Blazor for the styling.
+Use Bulma for the styling.
 
 Layout & Navigation: Create a side-bar file tree based on the "ordered file tree path."
 
-Markdown Editor: Integrate a side-by-side editor (e.g., using Markdig for rendering) with live preview and Mermaid diagram support.
+Markdown Editor: Integrate a side-by-side editor (e.g. using Markdig for rendering) with live preview and Mermaid diagram support.
 
 Search Interface: Build the UI for both keyword and semantic (vector) search queries.
 
@@ -40,10 +40,10 @@ This object of this step is to get fast markdown rendering with a Web Assembly c
 
 Make a Rust Webassembly Bindgen Component that accepts byte strings as input (and converts to unicode). Use an appropriate Rust library to handle rendering, mermaid diagrams and code syntax highlighting should be supported.
 
-Include Component in Blazor App with svg and html copied to clipboard usecases.
+Include Component in Leptos App with svg and html copied to clipboard usecases.
 
 Phase 5: Sync & Polish
-Bi-directional Sync: Ensure that manual edits in the Blazor GUI trigger immediate updates in the Vector DB via the FastMCP service.
+Bi-directional Sync: Ensure that manual edits in the Leptos GUI trigger immediate updates in the Vector DB via the FastMCP service.
 
 Mermaid Rendering: Ensure the GUI correctly renders diagrams to satisfy the "extending user memory" principle.
 

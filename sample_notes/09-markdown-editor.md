@@ -1,13 +1,13 @@
 ---
 phase: 3
 title: Markdown Editor
-tags: [gui, blazor, editor, markdown]
+tags: [gui, leptos, editor, markdown]
 status: todo
 ---
 
 # 09 - Markdown Editor
 
-**Phase 3: Blazor GUI Development**
+**Phase 3: Leptos GUI Development**
 
 Integrate a side-by-side Markdown editor with live preview and Mermaid diagram support.
 

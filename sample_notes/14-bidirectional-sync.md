@@ -9,11 +9,11 @@ status: todo
 
 **Phase 5: Sync & Polish**
 
-Ensure that manual edits in the Blazor GUI trigger immediate updates in the Vector DB via the FastMCP service.
+Ensure that manual edits in the Leptos GUI trigger immediate updates in the Vector DB via the FastMCP service.
 
 ## Steps
 
-1. Implement a save hook in the Blazor editor that calls the `update_note` API on every save, triggering re-indexing.
+1. Implement a save hook in the Leptos editor that calls the `update_note` API on every save, triggering re-indexing.
 2. Add a file watcher notification channel (e.g. WebSocket or SSE) from the FastMCP service to the GUI so external file changes are reflected live.
 3. Implement conflict detection: if a note is edited in both the GUI and the filesystem simultaneously, alert the user with a diff view.
 4. Add a manual "Resync All" action that triggers a full re-index of the filesystem into the vector database.
