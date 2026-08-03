@@ -1,4 +1,4 @@
-use crate::models::{block::EditorEntry, note::SearchResult};
+use crate::models::{block::EditorEntry, note::NoteFile};
 use crate::settings::DEFAULT_NUMBER_RESULTS_PER_PAGE;
 use leptos::prelude::*;
 
@@ -23,7 +23,7 @@ pub struct AppState {
     pub entries: RwSignal<Vec<EditorEntry>>,
     pub current_path: RwSignal<Option<String>>,
     pub search_query: RwSignal<String>,
-    pub search_results: RwSignal<Vec<SearchResult>>,
+    pub search_results: RwSignal<Vec<NoteFile>>,
     /// When false, clicking the main markdown block does not enter edit mode.
     pub markdown_editing_enabled: RwSignal<bool>,
     /// Transient user-facing message (e.g. save summary). Cleared automatically.

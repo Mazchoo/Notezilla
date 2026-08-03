@@ -29,4 +29,4 @@ Integrate a side-by-side Markdown editor with live preview and Mermaid diagram s
 - [x] Code blocks display with syntax highlighting in the preview.
 - [x] Frontmatter fields (tags, path) are editable via a structured form or inline YAML.
 - [x] Saving a note calls the API and shows a success/error notification.
-- [ ] Standard keyboard shortcuts work for formatting and saving.
+- [ ] Standard keyboard shortcuts work for common actions.

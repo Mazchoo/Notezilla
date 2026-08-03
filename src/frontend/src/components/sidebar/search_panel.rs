@@ -1,7 +1,7 @@
 use crate::components::file_io::open_note_at_path;
 use crate::components::toast::show_error_toast;
 use crate::mcp::tools::search_by_text;
-use crate::models::note::SearchResult;
+use crate::models::note::NoteFile;
 use crate::settings::DEFAULT_SEARCH_PREVIEW_CHARS;
 use crate::state::AppState;
 use leptos::prelude::*;
@@ -9,7 +9,7 @@ use leptos::task::spawn_local;
 
 fn run_search(
     query: RwSignal<String>,
-    results: RwSignal<Vec<SearchResult>>,
+    results: RwSignal<Vec<NoteFile>>,
     session: RwSignal<Option<String>>,
     limit: RwSignal<usize>,
     offset: RwSignal<usize>,
@@ -106,11 +106,11 @@ pub fn SearchPanel() -> impl IntoView {
             <div class="mt-3">
                 <For
                     each=move || results.get()
-                    key=|r: &SearchResult| r.path()
-                    children=move |result: SearchResult| {
-                        let path = result.path();
+                    key=|r: &NoteFile| r.filename.clone()
+                    children=move |result: NoteFile| {
+                        let path = result.filename.clone();
                         let file_name = result.file_name();
-                        let document = result.document.clone();
+                        let text = result.text.clone();
                         let path_click = path.clone();
                         view! {
                             <div
@@ -127,7 +127,7 @@ pub fn SearchPanel() -> impl IntoView {
                             >
                                 <div style="color:var(--text);">{file_name}</div>
                                 <div style="color:var(--text-muted); font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                    {SearchResult::snippet_text(&document, DEFAULT_SEARCH_PREVIEW_CHARS)}
+                                    {NoteFile::snippet_text(&text, DEFAULT_SEARCH_PREVIEW_CHARS)}
                                 </div>
                             </div>
                         }
