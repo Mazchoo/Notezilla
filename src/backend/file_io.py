@@ -165,6 +165,32 @@ def delete_note_file(path: str) -> bool:
     return True
 
 
+def create_new_folder(path: str) -> bool:
+    """
+    Create a folder within the note folder.
+    Returns True on success.
+
+    Creates missing parent directories. False if:
+    - path is outside note folder
+    - path is the note folder itself
+    - path already exists
+    - OS returns an error
+    """
+    normed_path = get_normalised_path(path)
+    if not normed_path:
+        return False
+
+    target = absolute_note_path(normed_path)
+    if target.exists():
+        return False
+
+    try:
+        target.mkdir(parents=True, exist_ok=False)
+    except OSError:
+        return False
+    return True
+
+
 def delete_notes_folder(path: str) -> bool:
     """
     Recursively delete a folder (and its contents) within the note folder.

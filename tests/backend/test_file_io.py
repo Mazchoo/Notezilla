@@ -7,6 +7,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from src.backend.file_io import (
+    create_new_folder,
     delete_notes_folder,
     ensure_md_extension,
     ensure_note_parent_dirs,
@@ -269,6 +270,65 @@ class TestWriteFileContent:
                 write_file_content(str(mock_notes_folder / "new-note.md"), "body")
                 is False
             )
+
+
+# ---------------------------------------------------------------------------
+# create_new_folder
+# ---------------------------------------------------------------------------
+
+
+class TestCreateNewFolder:
+    """Create a folder within mock_notes."""
+
+    def test_creates_folder(self, mock_notes_folder):
+        with temporary_notes(dirs=["tmp_create"]) as paths:
+            target = paths["tmp_create"] / "new_folder"
+            assert create_new_folder(str(target)) is True
+            assert target.is_dir()
+            target.rmdir()
+
+    def test_creates_nested_folder_with_parents(self, mock_notes_folder):
+        target = mock_notes_folder / "tmp_create" / "deep" / "nested"
+        try:
+            assert create_new_folder(str(target)) is True
+            assert target.is_dir()
+        finally:
+            if target.exists():
+                shutil.rmtree(mock_notes_folder / "tmp_create")
+
+    def test_creates_folder_with_relative_path(self, mock_notes_folder):
+        """MCP tools pass note-folder-relative paths, not absolute filesystem paths."""
+        target = mock_notes_folder / "tmp_create" / "rel_folder"
+        try:
+            assert create_new_folder("tmp_create/rel_folder") is True
+            assert target.is_dir()
+        finally:
+            if target.exists():
+                shutil.rmtree(mock_notes_folder / "tmp_create")
+
+    def test_rejects_path_outside_note_folder(self, mock_notes_folder):
+        assert create_new_folder("/etc/passwd") is False
+
+    def test_rejects_note_folder_root(self, mock_notes_folder):
+        assert create_new_folder(str(mock_notes_folder)) is False
+        assert create_new_folder("") is False
+
+    def test_rejects_when_folder_already_exists(self, mock_notes_folder):
+        with temporary_notes(dirs=["tmp_create/existing"]) as paths:
+            assert create_new_folder(str(paths["tmp_create/existing"])) is False
+
+    def test_rejects_when_path_is_existing_file(self, mock_notes_folder):
+        with temporary_notes({"tmp_create/solo.md": "x"}) as paths:
+            assert create_new_folder(str(paths["tmp_create/solo.md"])) is False
+            assert paths["tmp_create/solo.md"].is_file()
+
+    def test_returns_false_when_mkdir_raises(self, mock_notes_folder):
+        with temporary_notes(dirs=["tmp_create"]) as paths:
+            with patch.object(Path, "mkdir", side_effect=OSError("permission denied")):
+                assert (
+                    create_new_folder(str(paths["tmp_create"] / "blocked")) is False
+                )
+            assert not (paths["tmp_create"] / "blocked").exists()
 
 
 # ---------------------------------------------------------------------------
