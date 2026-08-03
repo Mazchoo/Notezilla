@@ -10,11 +10,10 @@ Responses arrive as Server-Sent Events (SSE):
 """
 
 import json
-import os
 
 import httpx
 
-from src.config import MCP_PORT, NOTE_FOLDER
+from src.config import MCP_PORT
 
 MCP_URL = f"http://localhost:{MCP_PORT}/mcp"
 HEADERS = {
@@ -86,7 +85,7 @@ def call_tool(session_id: str, name: str, arguments: dict, req_id: int = 1) -> d
         },
     )
     parsed_response = _parse_sse(resp.text)
-    assert parsed_response["result"]["isError"] is False
+    assert parsed_response["result"]["isError"] is False, parsed_response
 
     return parsed_response["result"]
 
@@ -113,7 +112,7 @@ if __name__ == "__main__":
     print(list_tools(session))
 
     print("\n=== get_note ===")
-    print(call_tool(session, "get_note", {"path": "new_file.md"}))
+    print(call_tool(session, "get_note", {"path": "hello.md"}))
 
     print("\n=== get_dir_contents ===")
     print(call_tool(session, "get_dir_contents", {"path": "."}))
@@ -150,7 +149,8 @@ if __name__ == "__main__":
         )
     )
 
-    os.makedirs(f"{NOTE_FOLDER}/some-random-folder", exist_ok=True)
+    print("\n=== new_dir ===")
+    print(call_tool(session, "new_dir", {"path": "some-random-folder"}))
 
     print("\n=== move_dir ===")
     print(

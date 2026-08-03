@@ -6,9 +6,10 @@ use crate::components::file_io::{
     },
 };
 use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
+use crate::components::sidebar::new_folder_modal::{NewFolderModal, NewFolderModalCtrl};
 use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::mcp::tools::{delete_folder, delete_note, move_dir, rename_dir};
+use crate::mcp::tools::{delete_folder, delete_note, move_dir, new_dir, rename_dir};
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -131,6 +132,46 @@ fn on_drop_at(ev: web_sys::DragEvent, state: &AppState, dnd: FileTreeDnD, dst: &
     perform_move(state, dnd, src, dst.to_string());
 }
 
+fn perform_new_folder(state: &AppState, parent_path: String, name: String) {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return;
+    }
+    if name.contains('/') || name.contains('\\') {
+        show_error_toast(
+            state.error_toast,
+            "Create folder failed: name cannot contain path separators",
+        );
+        return;
+    }
+
+    let sid = match state.session_id.get_untracked() {
+        Some(s) => s,
+        None => {
+            web_sys::console::warn_1(&"MCP session not ready".into());
+            return;
+        }
+    };
+
+    let path = join_path(&parent_path, &name);
+    let file_tree_epoch = state.file_tree_epoch;
+    let toast = state.toast;
+    let error_toast = state.error_toast;
+
+    spawn_local(async move {
+        match new_dir(&sid, &path).await {
+            Ok(()) => {
+                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                show_toast(toast, format!("Created folder {path}"));
+            }
+            Err(e) => {
+                web_sys::console::error_1(&format!("Create folder failed for {path}: {e}").into());
+                show_error_toast(error_toast, format!("Create folder failed for {path}: {e}"));
+            }
+        }
+    });
+}
+
 fn perform_rename(state: &AppState, path: String, new_name: String, is_file: bool) {
     let new_name = new_name.trim().to_string();
     if new_name.is_empty() {
@@ -206,8 +247,10 @@ pub fn FileTree() -> impl IntoView {
         drop_target: RwSignal::new(None::<String>),
     };
     let rename_ctrl = RenameModalCtrl::new();
+    let new_folder_ctrl = NewFolderModalCtrl::new();
     provide_context(dnd);
     provide_context(rename_ctrl);
+    provide_context(new_folder_ctrl);
 
     Effect::new(move |_| {
         let _ = file_tree_epoch.get();
@@ -235,6 +278,12 @@ pub fn FileTree() -> impl IntoView {
         let state = state.clone();
         move |path: String, new_name: String, is_file: bool| {
             perform_rename(&state, path, new_name, is_file);
+        }
+    };
+    let on_new_folder_confirm = {
+        let state = state.clone();
+        move |parent_path: String, name: String| {
+            perform_new_folder(&state, parent_path, name);
         }
     };
 
@@ -276,6 +325,7 @@ pub fn FileTree() -> impl IntoView {
                 </ul>
             </aside>
             <RenameModal ctrl=rename_ctrl on_confirm=on_rename_confirm />
+            <NewFolderModal ctrl=new_folder_ctrl on_confirm=on_new_folder_confirm />
         </div>
     }
 }
@@ -285,6 +335,8 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let dnd = use_context::<FileTreeDnD>().expect("FileTreeDnD not provided");
     let rename_ctrl = use_context::<RenameModalCtrl>().expect("RenameModalCtrl not provided");
+    let new_folder_ctrl =
+        use_context::<NewFolderModalCtrl>().expect("NewFolderModalCtrl not provided");
     let session = state.session_id;
     let file_tree_epoch = state.file_tree_epoch;
     let toast = state.toast;
@@ -341,6 +393,14 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                     }
                 }
             });
+        }
+    };
+
+    let new_folder = {
+        let path = path.clone();
+        move || {
+            open.set(true);
+            new_folder_ctrl.open(path.clone());
         }
     };
 
@@ -418,6 +478,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                 visible=menu_visible
                 x=menu_x
                 y=menu_y
+                on_new_folder=new_folder
                 on_rename=rename_folder
                 on_delete=delete_dir
             />

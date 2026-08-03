@@ -79,14 +79,16 @@ where
 
 /// Right-click context menu for folder tree items.
 #[component]
-pub fn FolderContextMenu<FRename, FDelete>(
+pub fn FolderContextMenu<FNewFolder, FRename, FDelete>(
     visible: RwSignal<bool>,
     x: RwSignal<f64>,
     y: RwSignal<f64>,
+    on_new_folder: FNewFolder,
     on_rename: FRename,
     on_delete: FDelete,
 ) -> impl IntoView
 where
+    FNewFolder: Fn() + 'static + Clone + Send + Sync,
     FRename: Fn() + 'static + Clone + Send + Sync,
     FDelete: Fn() + 'static + Clone + Send + Sync,
 {
@@ -101,6 +103,21 @@ where
                 on:click=|ev: web_sys::MouseEvent| ev.stop_propagation()
             >
                 <ul class="menu-list">
+                    <li>
+                        <a
+                            class="context-menu-item"
+                            on:click={
+                                let on_new_folder = on_new_folder.clone();
+                                move |ev: web_sys::MouseEvent| {
+                                    ev.prevent_default();
+                                    on_new_folder();
+                                    visible.set(false);
+                                }
+                            }
+                        >
+                            "New Folder"
+                        </a>
+                    </li>
                     <li>
                         <a
                             class="context-menu-item"

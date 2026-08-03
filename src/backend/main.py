@@ -10,6 +10,7 @@ from starlette.responses import JSONResponse
 
 from src.config import MCP_PORT
 from src.backend.file_io import (
+    create_new_folder,
     delete_note_file,
     delete_notes_folder,
     get_dirs_and_md_files,
@@ -95,6 +96,32 @@ def delete_note(
         return McpResponse.success(EmptyResponse())
     return McpResponse.error(
         f"Failed to delete note at '{path}'. Ensure the path is valid.",
+        EmptyResponse(),
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def new_dir(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the folder to create e.g. "folder" or "folder/subfolder"'
+        ),
+    ],
+) -> ToolResult:
+    """Create a new folder within the note folder.
+
+    Creates missing parent directories. Fails if the path already exists
+    or is outside the note folder.
+
+    Args:
+        path: Relative path of the folder to create e.g. "folder" or "folder/subfolder"
+    """
+    if create_new_folder(path):
+        return McpResponse.success(EmptyResponse())
+    return McpResponse.error(
+        f"Failed to create folder at '{path}'. "
+        "Ensure the path is inside the note folder and does not already exist.",
         EmptyResponse(),
     )
 

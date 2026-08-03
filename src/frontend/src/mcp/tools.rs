@@ -64,6 +64,12 @@ pub async fn delete_folder(session_id: &str, path: &str) -> Result<(), String> {
         .map(|_| ())
 }
 
+pub async fn new_dir(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "new_dir", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
 pub async fn move_dir(session_id: &str, src: &str, dst: &str) -> Result<(), String> {
     call_tool(session_id, "move_dir", json!({ "src": src, "dst": dst }))
         .await

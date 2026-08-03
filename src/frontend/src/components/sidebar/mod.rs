@@ -1,5 +1,6 @@
 pub mod context_menu;
 pub mod file_tree;
+pub mod new_folder_modal;
 pub mod rename_modal;
 pub mod search_panel;
 pub mod settings_panel;
