@@ -125,7 +125,7 @@ if __name__ == "__main__":
             {
                 "text": "python async",
                 "n_results": 5,
-                "frontmatter": 'tags: [paragraph]',
+                "frontmatter": "tags: [paragraph]",
             },
         )
     )

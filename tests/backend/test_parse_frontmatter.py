@@ -71,9 +71,9 @@ class TestParseFrontmatter:
 
     def test_bool_and_int_types(self):
         """Non-string scalars keep their typed values for equality."""
-        assert parse_frontmatter(
-            "published: true\nphase: 100", COLUMN_TYPES
-        ) == {"$and": [{"published": True}, {"phase": 100}]}
+        assert parse_frontmatter("published: true\nphase: 100", COLUMN_TYPES) == {
+            "$and": [{"published": True}, {"phase": 100}]
+        }
 
     def test_malformed_yaml_returns_none(self):
         """Unparseable YAML yields no filter instead of raising."""

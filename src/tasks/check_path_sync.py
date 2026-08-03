@@ -6,6 +6,7 @@ from src.backend.file_io import get_normalised_path, iterate_all_markdowns
 
 ## ToDo - This is querying double note folder ./notes/notes/...
 
+
 def get_database_paths(db: NoteDatabase) -> set[str]:
     """Return all normalised note paths stored in the database."""
     results = db._collection.get(include=[])

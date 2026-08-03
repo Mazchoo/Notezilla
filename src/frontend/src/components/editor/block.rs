@@ -211,11 +211,22 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     // appear before mermaid/graphviz layout blocks the main thread.
     Effect::new(move |_| {
         let raw = block.text.try_get_untracked().unwrap_or_default();
-        if raw.is_empty() || !block.html.try_get_untracked().unwrap_or_default().is_empty() {
+        if raw.is_empty()
+            || !block
+                .html
+                .try_get_untracked()
+                .unwrap_or_default()
+                .is_empty()
+        {
             return;
         }
         request_animation_frame(move || {
-            if block.html.try_get_untracked().unwrap_or_default().is_empty() {
+            if block
+                .html
+                .try_get_untracked()
+                .unwrap_or_default()
+                .is_empty()
+            {
                 block.rerender();
             }
         });

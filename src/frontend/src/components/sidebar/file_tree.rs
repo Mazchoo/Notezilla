@@ -117,14 +117,11 @@ fn on_drag_end(dnd: FileTreeDnD) {
 fn on_drop_at(ev: web_sys::DragEvent, state: &AppState, dnd: FileTreeDnD, dst: &str) {
     ev.prevent_default();
     ev.stop_propagation();
-    let src = dnd
-        .drag_src
-        .get_untracked()
-        .or_else(|| {
-            ev.data_transfer()
-                .and_then(|dt| dt.get_data(DRAG_MIME).ok())
-                .filter(|s| !s.is_empty())
-        });
+    let src = dnd.drag_src.get_untracked().or_else(|| {
+        ev.data_transfer()
+            .and_then(|dt| dt.get_data(DRAG_MIME).ok())
+            .filter(|s| !s.is_empty())
+    });
     let Some(src) = src else {
         clear_dnd(dnd);
         return;
@@ -216,8 +213,7 @@ fn perform_rename(state: &AppState, path: String, new_name: String, is_file: boo
                 entries.with_untracked(|list: &Vec<EditorEntry>| {
                     for entry in list {
                         let norm = normalize_note_path(&entry.title.path.get_untracked());
-                        if let Some(new_path) = rewrite_path_after_rename(&norm, &path, &resolved)
-                        {
+                        if let Some(new_path) = rewrite_path_after_rename(&norm, &path, &resolved) {
                             entry.title.path.set(display_note_path(&new_path));
                         }
                     }

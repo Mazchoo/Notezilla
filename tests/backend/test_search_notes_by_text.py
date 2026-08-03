@@ -73,9 +73,7 @@ class TestSearchNotesByText:
         mock_db.query_by_text.return_value = make_notes()
         column_types = {"status": "str", "tags": "list"}
 
-        with patch(
-            "src.backend.main.init_column_types", return_value=column_types
-        ):
+        with patch("src.backend.main.init_column_types", return_value=column_types):
             search_notes_by_text(
                 text="query",
                 frontmatter='status: draft\ntags: ["cheese", "bread"]',
