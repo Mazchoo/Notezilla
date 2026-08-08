@@ -352,6 +352,7 @@ def search_notes_by_text(
             description=(
                 "Optional path prefix filter. Only notes whose filenames start "
                 'with this path are returned (e.g. "2026/02" or "./folder*").'
+                "Do not introduce by default, adds overhead to the search."
             )
         ),
     ] = "",
