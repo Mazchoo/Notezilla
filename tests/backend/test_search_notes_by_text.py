@@ -35,7 +35,7 @@ class TestSearchNotesByText:
         search_notes_by_text(text="hello world", n_results=7, offset=10)
 
         mock_db.query_by_text.assert_called_once_with(
-            "hello world", ANY, 7, where=None, offset=10
+            "hello world", ANY, 7, where=None, offset=10, path_filter=None
         )
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -45,7 +45,7 @@ class TestSearchNotesByText:
         search_notes_by_text(text="query")
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 10, where=None, offset=0
+            "query", ANY, 10, where=None, offset=0, path_filter=None
         )
 
     def test_default_offset_is_zero(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -55,7 +55,7 @@ class TestSearchNotesByText:
         search_notes_by_text(text="query", n_results=7)
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 7, where=None, offset=0
+            "query", ANY, 7, where=None, offset=0, path_filter=None
         )
 
     def test_passes_pagination_offset(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -65,7 +65,27 @@ class TestSearchNotesByText:
         search_notes_by_text(text="query", n_results=10, offset=10)
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 10, where=None, offset=10
+            "query", ANY, 10, where=None, offset=10, path_filter=None
+        )
+
+    def test_passes_normalised_path_filter(self, mock_db):  # pylint: disable=redefined-outer-name
+        """search_notes_by_text normalises path_filter before calling the DB."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", path_filter=".\\2026\\02*")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter="2026/02"
+        )
+
+    def test_blank_path_filter_sent_as_none(self, mock_db):  # pylint: disable=redefined-outer-name
+        """Blank path_filter is passed as None so the DB ignores it."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", path_filter="")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter=None
         )
 
     def test_passes_parsed_frontmatter_as_where(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -91,6 +111,7 @@ class TestSearchNotesByText:
                 ]
             },
             offset=0,
+            path_filter=None,
         )
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name

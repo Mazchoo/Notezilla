@@ -138,6 +138,22 @@ class NoteDatabase:
             f"{field}\t{value}", True, column_types, n_results, offset
         )
 
+    @staticmethod
+    def _filter_by_path_prefix(
+        documents: List[str],
+        metadatas: List[Dict[str, Any]],
+        path_filter: str,
+    ) -> tuple[List[str], List[Dict[str, Any]]]:
+        """Keep only documents whose filename metadata starts with path_filter."""
+        filtered_docs: List[str] = []
+        filtered_metas: List[Dict[str, Any]] = []
+        for doc, meta in zip(documents, metadatas):
+            filename = str(meta.get(ReservedFields.FILENAME, ""))
+            if filename.startswith(path_filter):
+                filtered_docs.append(doc)
+                filtered_metas.append(meta)
+        return filtered_docs, filtered_metas
+
     def query_by_text(
         self,
         text: str,
@@ -145,23 +161,40 @@ class NoteDatabase:
         n_results: int = 10,
         where: Optional[dict] = None,
         offset: int = 0,
+        path_filter: Optional[str] = None,
     ) -> List[NoteData]:
         """Semantic search — returns matching notes.
 
         Pagination: ``offset`` skips that many ranked matches before applying
         ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
+
+        When ``path_filter`` is non-empty, only notes whose filenames start
+        with that prefix are kept (applied before pagination).
         """
+        fetch_count = n_results + offset
+        if path_filter:
+            fetch_count = max(fetch_count, len(self))
+        if fetch_count < 1:
+            return []
+
         results = self._collection.query(
             query_texts=[text],
-            n_results=n_results + offset,
+            n_results=fetch_count,
             where=where,
             include=["documents", "metadatas"],
         )
         documents = results["documents"][0] if results["documents"] else []
         metadatas = results["metadatas"][0] if results["metadatas"] else []
+
+        if path_filter:
+            documents, metadatas = self._filter_by_path_prefix(
+                documents, cast(List[Dict[str, Any]], metadatas), path_filter
+            )
+
+        end = offset + n_results
         return notes_from_chroma(
-            documents[offset:],
-            cast(List[Dict[str, Any]], metadatas[offset:]),
+            documents[offset:end],
+            cast(List[Dict[str, Any]], metadatas[offset:end]),
             column_types,
         )
 

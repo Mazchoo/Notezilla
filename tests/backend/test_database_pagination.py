@@ -153,6 +153,47 @@ class TestQueryByTextPagination:
 
         assert page == []
 
+    def test_path_filter_keeps_only_matching_filenames(self, temp_db):
+        """path_filter keeps notes whose filenames start with the prefix."""
+        notes = [
+            NoteData(
+                filename="keep/a.md",
+                text="Cats and feline companions in keep",
+                fields={},
+            ),
+            NoteData(
+                filename="drop/b.md",
+                text="Cats and feline companions in drop",
+                fields={},
+            ),
+            NoteData(
+                filename="keep/nested/c.md",
+                text="Cats and feline companions nested",
+                fields={},
+            ),
+        ]
+        _upsert_notes(temp_db, notes)
+
+        results = temp_db.query_by_text(
+            "cats feline", COLUMN_TYPES, n_results=10, path_filter="keep/"
+        )
+
+        assert {n.filename for n in results} == {"keep/a.md", "keep/nested/c.md"}
+
+    def test_blank_path_filter_ignored(self, temp_db):
+        """Blank or None path_filter does not restrict results."""
+        _upsert_notes(temp_db, _semantic_notes(5))
+        unrestricted = temp_db.query_by_text("cats feline", COLUMN_TYPES, n_results=5)
+        blank = temp_db.query_by_text(
+            "cats feline", COLUMN_TYPES, n_results=5, path_filter=""
+        )
+        none_filter = temp_db.query_by_text(
+            "cats feline", COLUMN_TYPES, n_results=5, path_filter=None
+        )
+
+        assert [n.filename for n in blank] == [n.filename for n in unrestricted]
+        assert [n.filename for n in none_filter] == [n.filename for n in unrestricted]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-x", "--verbose"])

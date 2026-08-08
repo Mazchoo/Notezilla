@@ -50,6 +50,26 @@ def get_normalised_path(path: Union[str, Path]) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
+def normalise_filter(path_filter: Optional[str]) -> str:
+    """Normalise a path prefix filter for note filename matching.
+
+    Converts backslashes to forward slashes, strips a trailing ``*``,
+    and removes a leading ``./`` or ``/`` when present. Blank or None
+    yields an empty string.
+    """
+    if not path_filter:
+        return ""
+
+    normalised = path_filter.replace("\\", "/")
+    if normalised.endswith("*"):
+        normalised = normalised[:-1]
+    if normalised.startswith("./"):
+        normalised = normalised[2:]
+    elif normalised.startswith("/"):
+        normalised = normalised[1:]
+    return normalised
+
+
 def absolute_note_path(path_key: str) -> Path:
     """Absolute Path for a normalised (note-folder-relative) path."""
     if not path_key:

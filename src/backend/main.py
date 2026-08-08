@@ -15,6 +15,7 @@ from src.backend.file_io import (
     delete_notes_folder,
     get_dirs_and_md_files,
     move_file_or_folder,
+    normalise_filter,
     rename_basename,
     resolve_note_path,
 )
@@ -345,6 +346,15 @@ def search_notes_by_text(
             )
         ),
     ] = "",
+    path_filter: Annotated[
+        str,
+        Field(
+            description=(
+                "Optional path prefix filter. Only notes whose filenames start "
+                'with this path are returned (e.g. "2026/02" or "./folder*").'
+            )
+        ),
+    ] = "",
     n_results: Annotated[
         int, Field(description="Maximum number of results to return")
     ] = 10,
@@ -363,14 +373,21 @@ def search_notes_by_text(
     Args:
         text: Natural language query to search for
         frontmatter: Optional YAML front matter used as a metadata filter
+        path_filter: Optional path prefix; only matching filenames are returned
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
     try:
         column_types = init_column_types()
         where = parse_frontmatter(frontmatter, column_types)
+        cleaned_filter = normalise_filter(path_filter)
         notes = init_db().query_by_text(
-            text, column_types, n_results, where=where, offset=offset
+            text,
+            column_types,
+            n_results,
+            where=where,
+            offset=offset,
+            path_filter=cleaned_filter or None,
         )
         return McpResponse.notes(notes)
     except ValueError as e:
