@@ -64,7 +64,7 @@ def check_content_sync() -> list[ContentMismatch]:
     mismatches: list[ContentMismatch] = []
 
     for path in tqdm(sorted(shared_paths), desc="Checking content"):
-        note_from_db = db.get_frontmatter_from_path_key(path, column_types)
+        note_from_db = db.get_note_from_path_key(path, column_types)
         expected = _expected_from_disk(path)
 
         if note_from_db is None or expected is None:

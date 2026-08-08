@@ -83,7 +83,7 @@ class NoteDatabase:
             column_types,
         )
 
-    def get_frontmatter_from_path_key(
+    def get_note_from_path_key(
         self, path_key: str, column_types: ColumnTypes
     ) -> Optional[NoteData]:
         """Load note text and decoded front matter for a path key."""

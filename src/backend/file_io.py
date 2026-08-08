@@ -46,6 +46,18 @@ def get_normalised_path(path: str) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
+def get_path_key(path: str) -> Optional[str]:
+    """
+        Get the normalised path without NOTE_FOLDER prefix.
+        Returns None if
+        - path is not in note folder
+        - path is the entire note folder
+    """
+    if not (normed_path := get_normalised_path(path)):
+        return None
+    return normed_path[len(RESOLVED_NOTE_FOLDER.stem) + 1:]
+
+
 def absolute_note_path(normed_path: str) -> Path:
     """Absolute Path for a normalised (note-folder-relative) path."""
     if not normed_path:

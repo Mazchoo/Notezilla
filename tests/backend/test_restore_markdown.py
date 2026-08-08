@@ -35,7 +35,7 @@ def _assert_file_contents_recover(
     """
     original = NoteData.from_payload(contents, filename)
     db.upsert_batch([prepate_database_row(original, COLUMN_TYPES)])
-    recovered = db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
+    recovered = db.get_note_from_path_key(filename, COLUMN_TYPES)
     assert recovered is not None
     assert recovered.filename == filename
     assert recovered.to_file_string() == (contents if expected is None else expected)
