@@ -19,6 +19,7 @@ pub async fn search_by_text(
     session_id: &str,
     text: &str,
     frontmatter: &str,
+    path_filter: &str,
     n_results: usize,
     offset: usize,
 ) -> Result<Vec<NoteFile>, String> {
@@ -28,6 +29,7 @@ pub async fn search_by_text(
         json!({
             "text": text,
             "frontmatter": frontmatter,
+            "path_filter": path_filter,
             "n_results": n_results,
             "offset": offset
         }),

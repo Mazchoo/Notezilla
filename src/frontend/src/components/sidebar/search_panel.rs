@@ -10,6 +10,7 @@ use leptos::task::spawn_local;
 fn run_search(
     query: RwSignal<String>,
     frontmatter: RwSignal<String>,
+    path_filter: RwSignal<String>,
     results: RwSignal<Vec<NoteFile>>,
     session: RwSignal<Option<String>>,
     limit: RwSignal<usize>,
@@ -31,10 +32,11 @@ fn run_search(
         }
     };
     let fm = frontmatter.get_untracked();
+    let pf = path_filter.get_untracked();
     let limit = limit.get_untracked();
     let offset = offset.get_untracked();
     spawn_local(async move {
-        match search_by_text(&sid, &q, &fm, limit, offset).await {
+        match search_by_text(&sid, &q, &fm, &pf, limit, offset).await {
             Ok(found) => results.set(found),
             Err(e) => {
                 web_sys::console::error_1(&e.clone().into());
@@ -42,6 +44,34 @@ fn run_search(
             }
         }
     });
+}
+
+fn search_on_enter(
+    ev: web_sys::KeyboardEvent,
+    query: RwSignal<String>,
+    frontmatter: RwSignal<String>,
+    path_filter: RwSignal<String>,
+    results: RwSignal<Vec<NoteFile>>,
+    session: RwSignal<Option<String>>,
+    limit: RwSignal<usize>,
+    offset: RwSignal<usize>,
+    error_toast: RwSignal<Option<String>>,
+) {
+    if ev.key() != "Enter" {
+        return;
+    }
+    offset.set(0);
+    run_search(
+        query,
+        frontmatter,
+        path_filter,
+        results,
+        session,
+        limit,
+        offset,
+        error_toast,
+        false,
+    );
 }
 
 #[component]
@@ -56,12 +86,14 @@ pub fn SearchPanel() -> impl IntoView {
     let error_toast = state.error_toast;
     let offset = RwSignal::new(0usize);
     let frontmatter = RwSignal::new(String::new());
+    let path_filter = RwSignal::new(String::new());
 
     let on_search = move |_| {
         offset.set(0);
         run_search(
             query,
             frontmatter,
+            path_filter,
             results,
             session,
             limit,
@@ -71,29 +103,13 @@ pub fn SearchPanel() -> impl IntoView {
         );
     };
 
-    let on_keydown = move |ev: web_sys::KeyboardEvent| {
-        if ev.key() != "Enter" {
-            return;
-        }
-        offset.set(0);
-        run_search(
-            query,
-            frontmatter,
-            results,
-            session,
-            limit,
-            offset,
-            error_toast,
-            false,
-        );
-    };
-
     let on_prev = move |_| {
         let page = limit.get_untracked();
         offset.update(|o| *o = o.saturating_sub(page));
         run_search(
             query,
             frontmatter,
+            path_filter,
             results,
             session,
             limit,
@@ -109,6 +125,7 @@ pub fn SearchPanel() -> impl IntoView {
         run_search(
             query,
             frontmatter,
+            path_filter,
             results,
             session,
             limit,
@@ -132,13 +149,49 @@ pub fn SearchPanel() -> impl IntoView {
                         placeholder="Search notes..."
                         prop:value=move || query.get()
                         on:input=move |ev| query.set(event_target_value(&ev))
-                        on:keydown=on_keydown
+                        on:keydown=move |ev| search_on_enter(
+                            ev,
+                            query,
+                            frontmatter,
+                            path_filter,
+                            results,
+                            session,
+                            limit,
+                            offset,
+                            error_toast,
+                        )
                     />
                 </div>
                 <div class="control">
                     <button class="button is-small is-dark" on:click=on_search>
                         "Go"
                     </button>
+                </div>
+            </div>
+
+            <div class="field mt-2">
+                <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
+                    "Path filter"
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="2026/02"
+                        prop:value=move || path_filter.get()
+                        on:input=move |ev| path_filter.set(event_target_value(&ev))
+                        on:keydown=move |ev| search_on_enter(
+                            ev,
+                            query,
+                            frontmatter,
+                            path_filter,
+                            results,
+                            session,
+                            limit,
+                            offset,
+                            error_toast,
+                        )
+                    />
                 </div>
             </div>
 
