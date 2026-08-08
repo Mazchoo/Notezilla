@@ -332,11 +332,27 @@ def extract_yaml_from_file_contents(content: str) -> Tuple[str, dict]:
     return text, data
 
 
+class _FlowListDumper(yaml.SafeDumper):
+    """YAML dumper that serialises sequences in flow style (e.g. tags: [a, b])."""
+
+
+def _represent_list_flow(dumper: yaml.SafeDumper, data: list):
+    return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+
+
+_FlowListDumper.add_representer(list, _represent_list_flow)
+
+
 def construct_yaml_header(data: dict) -> str:
     """Construct a yaml frontmatter header from a dictionary"""
     if not data:
         return ""
-    yaml_block = yaml.dump(data, default_flow_style=False, sort_keys=True)
+    yaml_block = yaml.dump(
+        data,
+        Dumper=_FlowListDumper,
+        default_flow_style=False,
+        sort_keys=True,
+    )
     return f"---\n{yaml_block}---\n"
 
 

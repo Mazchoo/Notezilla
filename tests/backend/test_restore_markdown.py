@@ -62,16 +62,13 @@ class TestDatabaseRoundTrip:
         )
 
     def test_tag_list_survives_and_is_sorted_on_recovery(self, temp_db):
-        """Assert list tags are recovered in sorted order after Chroma storage."""
+        """Assert list tags recover as flow-style YAML in sorted order."""
         _assert_file_contents_recover(
             temp_db,
             filename="folder/tagged.md",
             contents=(
                 "---\n"
-                "tags:\n"
-                "- python\n"
-                "- rust\n"
-                "- zig\n"
+                "tags: [python, rust, zig]\n"
                 "title: Tagged\n"
                 "---\n"
                 "# Heading\n"
@@ -88,9 +85,7 @@ class TestDatabaseRoundTrip:
             contents=(
                 "---\n"
                 "meta:\n"
-                "  nested:\n"
-                "  - 1\n"
-                "  - 2\n"
+                "  nested: [1, 2]\n"
                 "  source: import\n"
                 "  version: 2\n"
                 "---\n"
@@ -128,10 +123,7 @@ class TestDatabaseRoundTrip:
             filename="yaml/tricky.md",
             contents=(
                 "---\n"
-                "tags:\n"
-                "- UPPER\n"
-                "- has-dash\n"
-                "- has.dot\n"
+                "tags: [UPPER, has-dash, has.dot]\n"
                 "title: 'Title: with \"quotes\" and apostrophe''s'\n"
                 "---\n"
                 "Values that stress YAML quoting."
@@ -323,9 +315,7 @@ class TestDatabaseRoundTrip:
             filename="raw/literal.md",
             contents=(
                 "---\n"
-                "tags:\n"
-                "- alpha\n"
-                "- beta\n"
+                "tags: [alpha, beta]\n"
                 "title: From raw file\n"
                 "---\n"
                 "# Heading\n"
