@@ -1,9 +1,9 @@
 """Compare note paths in the database against files on disk."""
 
-from src.config import NOTE_FOLDER
+from pathlib import Path
+
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import (
-    get_normalised_path,
     iterate_all_markdowns,
     resolve_note_path,
 )
@@ -13,8 +13,8 @@ def get_database_paths(db: NoteDatabase) -> set[str]:
     """Return all normalised note paths stored in the database."""
     paths = set()
     for key in db._collection.get(include=[]).get("ids", []):
-        if normed_path := get_normalised_path(f"{NOTE_FOLDER}/{key}"):
-            paths.add(resolve_note_path(normed_path))
+        if path := resolve_note_path(key):
+            paths.add(path)
     return paths
 
 
@@ -22,8 +22,7 @@ def get_directory_paths() -> set[str]:
     """Return all normalised note paths found under the notes folder."""
     paths: set[str] = set()
     for path in iterate_all_markdowns():
-        if normed_path := get_normalised_path(path):
-            paths.add(resolve_note_path(normed_path))
+        paths.add(resolve_note_path(Path(path).resolve()))
     return paths
 
 

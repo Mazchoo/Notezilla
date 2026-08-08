@@ -1,7 +1,7 @@
 """Restore note files that exist in the database but are missing on disk."""
 
 from src.backend.database_adapter import NoteDatabase
-from src.backend.file_io import get_db_column_types, get_path_key
+from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
 from src.tasks.check_path_sync import check_path_sync
 
@@ -21,14 +21,14 @@ def restore_missing_files_from_db() -> int:
     saved = 0
 
     for path in sorted(db_only):
-        path_key = get_path_key(path)
+        path_key = get_normalised_path(path)
+        if path_key is None:
+            continue
         note = db.get_note_from_path_key(path_key, column_types)
         if note is None:
             continue
 
-        if IMarkdownFile.construct_from_data(
-            path_key, note.text, note.fields
-        ):
+        if IMarkdownFile.construct_from_data(path_key, note.text, note.fields):
             saved += 1
 
     return saved

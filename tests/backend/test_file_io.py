@@ -124,6 +124,20 @@ class TestGetNormalisedPath:
     def test_empty_path_is_note_folder_root(self, mock_notes_folder):
         assert get_normalised_path("") == ""
 
+    def test_applied_twice_equals_once(self, mock_notes_folder):
+        paths = [
+            str(mock_notes_folder / "example.md"),
+            str(mock_notes_folder / "folder" / "another_example.md"),
+            str(mock_notes_folder / "folder."),
+            str(mock_notes_folder / "folder*"),
+            "folder/another_example.md",
+            "",
+        ]
+        for path in paths:
+            once = get_normalised_path(path)
+            assert once is not None
+            assert get_normalised_path(once) == once
+
 
 # ---------------------------------------------------------------------------
 # ensure_md_extension

@@ -1,6 +1,6 @@
 """Handles interaction with files"""
 
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple, Iterable, Union
 import os
 from pathlib import Path
 import uuid
@@ -24,14 +24,18 @@ def read_file_content(path: str) -> Optional[str]:
         return None
 
 
-def get_normalised_path(path: str) -> Optional[str]:
+def get_normalised_path(path: Union[str, Path]) -> Optional[str]:
     """
     Get standardized path with forward slashes to make path a unique identifier.
+    This key is the relative path in the repo to the note folder and defintitive key.
     Trailing . and * will be removed.
 
     Relative paths are resolved against the note folder. Absolute paths must
     already lie inside the note folder.
     """
+    if isinstance(path, Path):
+        path = str(path)
+
     if len(path) > 0 and path[-1] in [".", "*"]:
         path = path[:-1]
 
@@ -46,23 +50,11 @@ def get_normalised_path(path: str) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
-def get_path_key(path: str) -> Optional[str]:
-    """
-        Get the normalised path without NOTE_FOLDER prefix.
-        Returns None if
-        - path is not in note folder
-        - path is the entire note folder
-    """
-    if not (normed_path := get_normalised_path(path)):
-        return None
-    return normed_path[len(RESOLVED_NOTE_FOLDER.stem) + 1:]
-
-
-def absolute_note_path(normed_path: str) -> Path:
+def absolute_note_path(path_key: str) -> Path:
     """Absolute Path for a normalised (note-folder-relative) path."""
-    if not normed_path:
+    if not path_key:
         return RESOLVED_NOTE_FOLDER
-    return RESOLVED_NOTE_FOLDER.joinpath(*Path(normed_path).parts)
+    return RESOLVED_NOTE_FOLDER.joinpath(*Path(path_key).parts)
 
 
 def resolve_note_path(path: str) -> Optional[str]:

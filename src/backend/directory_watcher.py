@@ -2,6 +2,7 @@
 
 import threading
 from typing import List
+from pathlib import Path
 
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
@@ -74,17 +75,18 @@ class PyFileHandler(FileSystemEventHandler):
         delete_batch, total_removed = [], 0
         for update in queue:
             if update.event_type in ["created", "modified"]:
-                total_upserted += 1
-                if markdown := IMarkdownFile.construct_from_path(str(update.src_path)):
+                resolved_path = Path(str(update.src_path)).resolve()
+                if markdown := IMarkdownFile.construct_from_path(resolved_path):
                     upsert_batch.append(
                         prepate_database_row(markdown, self.column_types)
                     )
+                    total_upserted += 1
 
             if update.event_type == "deleted":
-                total_removed += 1
-                if not (normed_path := get_normalised_path(str(update.src_path))):
-                    continue
-                delete_batch.append(normed_path)
+                resolved_path = Path(str(update.src_path)).resolve()
+                if path_key := get_normalised_path(resolved_path):
+                    delete_batch.append(path_key)
+                    total_removed += 1
 
         with self._database_lock:
             self.database.upsert_batch(upsert_batch)

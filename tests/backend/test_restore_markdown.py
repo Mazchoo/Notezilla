@@ -260,7 +260,7 @@ class TestDatabaseRoundTrip:
             )
 
         for filename, contents in notes:
-            recovered = temp_db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
+            recovered = temp_db.get_note_from_path_key(filename, COLUMN_TYPES)
             assert recovered is not None
             assert recovered.to_file_string() == contents
 
@@ -285,16 +285,13 @@ class TestDatabaseRoundTrip:
             ]
         )
 
-        recovered = temp_db.get_frontmatter_from_path_key(path, COLUMN_TYPES)
+        recovered = temp_db.get_note_from_path_key(path, COLUMN_TYPES)
         assert recovered is not None
         assert recovered.to_file_string() == replacement_contents
 
     def test_missing_path_returns_none(self, temp_db):
-        """Assert get_frontmatter_from_path_key returns None for unknown ids."""
-        assert (
-            temp_db.get_frontmatter_from_path_key("does/not/exist.md", COLUMN_TYPES)
-            is None
-        )
+        """Assert get_note_from_path_key returns None for unknown ids."""
+        assert temp_db.get_note_from_path_key("does/not/exist.md", COLUMN_TYPES) is None
 
     def test_tab_inside_tag_value_corrupts_list_encoding(self, temp_db):
         """Assert tabs in tag values break field\\titem storage (known limitation)."""
@@ -315,7 +312,7 @@ class TestDatabaseRoundTrip:
             ]
         )
 
-        recovered = temp_db.get_frontmatter_from_path_key(filename, COLUMN_TYPES)
+        recovered = temp_db.get_note_from_path_key(filename, COLUMN_TYPES)
         assert recovered is not None
         assert recovered.to_file_string() != contents
 
