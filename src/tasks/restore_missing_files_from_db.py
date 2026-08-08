@@ -6,19 +6,19 @@ from src.backend.parse_markdown import IMarkdownFile
 from src.tasks.check_path_sync import check_path_sync
 
 
-def restore_missing_files_from_db() -> int:
+def restore_missing_files_from_db() -> list[str]:
     """
     Write note files for database paths that are missing on disk.
 
-    Returns the number of files saved.
+    Returns the absolute path strings that were saved.
     """
     db_only, _ = check_path_sync()
     if not db_only:
-        return 0
+        return []
 
     db = NoteDatabase()
     column_types = get_db_column_types()
-    saved = 0
+    saved: list[str] = []
 
     for path in sorted(db_only):
         path_key = get_normalised_path(path)
@@ -29,11 +29,16 @@ def restore_missing_files_from_db() -> int:
             continue
 
         if IMarkdownFile.construct_from_data(path_key, note.text, note.fields):
-            saved += 1
+            saved.append(path)
 
     return saved
 
 
 if __name__ == "__main__":
-    count = restore_missing_files_from_db()
-    print(f"Saved {count} file(s) from database to disk.")
+    saved_paths = restore_missing_files_from_db()
+    if not saved_paths:
+        print("No database-only files restored.")
+    else:
+        print(f"Saved {len(saved_paths)} file(s) from database to disk:")
+        for saved_path in saved_paths:
+            print(saved_path)
