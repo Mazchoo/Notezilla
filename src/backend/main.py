@@ -15,13 +15,11 @@ from src.backend.file_io import (
     delete_notes_folder,
     get_dirs_and_md_files,
     move_file_or_folder,
-    normalise_filter,
     rename_basename,
     resolve_note_path,
-    split_path_filters,
 )
 from src.backend.directory_watcher import PyFileHandler
-from src.backend.parse_markdown import IMarkdownFile, parse_frontmatter
+from src.backend.parse_markdown import IMarkdownFile, clean_path_filter, parse_frontmatter
 from src.backend.logger import LOGGER
 from src.backend.mcp_interface import init_db, init_column_types, McpResponse
 from src.backend.output_schema import (
@@ -351,8 +349,9 @@ def search_notes_by_text(
         Field(
             description=(
                 "Optional YAML front matter filter. Known columns become a Chroma "
-                "metadata where clause; unknown columns are ignored. List fields "
-                'e.g. tags: ["cheese"] match notes that contain those values.'
+                "metadata where clause; unknown columns are omitted and reported "
+                'as warnings. List fields e.g. tags: ["cheese"] match notes that '
+                "contain those values."
             )
         ),
     ] = "",
@@ -363,7 +362,8 @@ def search_notes_by_text(
                 "Optional comma-separated path prefix filter. Only notes whose "
                 "filenames start with any listed path are returned "
                 '(e.g. "2026/02, folder" or "./folder*"). Spaces around each '
-                "path are trimmed. Do not introduce by default, adds overhead "
+                "path are trimmed. Empty segments are omitted and reported as "
+                "warnings. Do not introduce by default, adds overhead "
                 "to the search."
             )
         ),
@@ -393,18 +393,13 @@ def search_notes_by_text(
     warnings: list[str] = []
     try:
         column_types = init_column_types()
-        where = parse_frontmatter(frontmatter, column_types)
-        cleaned_parts = []
-        for part in split_path_filters(path_filter):
-            normalised = normalise_filter(part)
-            if normalised:
-                cleaned_parts.append(normalised)
-        cleaned_filter = ",".join(cleaned_parts)
+        frontmatter_filter = parse_frontmatter(frontmatter, column_types, warnings)
+        cleaned_filter = clean_path_filter(path_filter, warnings)
         notes = init_db().query_by_text(
             text,
             column_types,
             n_results,
-            where=where,
+            where=frontmatter_filter,
             offset=offset,
             path_filter=cleaned_filter or None,
         )

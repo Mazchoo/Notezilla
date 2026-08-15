@@ -32,6 +32,8 @@ pub struct AppState {
     pub markdown_editing_enabled: RwSignal<bool>,
     /// Transient user-facing message (e.g. save summary). Cleared automatically.
     pub toast: RwSignal<Option<String>>,
+    /// Transient MCP warning messages. Cleared automatically.
+    pub warning_toast: RwSignal<Option<String>>,
     /// Transient error message (e.g. save failures). Cleared automatically.
     pub error_toast: RwSignal<Option<String>>,
     /// Bumped after successful note upserts so open file-tree folders re-fetch.
@@ -70,6 +72,7 @@ impl AppState {
             search_results: RwSignal::new(vec![]),
             markdown_editing_enabled: RwSignal::new(true),
             toast: RwSignal::new(None),
+            warning_toast: RwSignal::new(None),
             error_toast: RwSignal::new(None),
             file_tree_epoch: RwSignal::new(0),
             sidebar_width: RwSignal::new(250.0),

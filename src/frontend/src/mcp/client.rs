@@ -1,3 +1,4 @@
+use crate::components::toast::show_mcp_warnings;
 use gloo_net::http::Request;
 use leptos::task::spawn_local;
 use serde::Deserialize;
@@ -123,6 +124,12 @@ pub async fn call_tool(
         .and_then(|v| v.as_str())
         .ok_or_else(|| format!("Unexpected result shape: {result}"))?;
 
+    let structured = result
+        .get("structuredContent")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    show_mcp_warnings(&warnings_from_structured(&structured));
+
     if let Some(error_message) = message.strip_prefix("Error: ") {
         return Err(error_message.to_string());
     }
@@ -131,8 +138,16 @@ pub async fn call_tool(
         return Err(format!("Unexpected tool message: {message}"));
     }
 
-    Ok(result
-        .get("structuredContent")
-        .cloned()
-        .unwrap_or_else(|| json!({})))
+    Ok(structured)
+}
+
+fn warnings_from_structured(structured: &Value) -> Vec<String> {
+    let Some(arr) = structured.get("warnings").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+    arr.iter()
+        .filter_map(Value::as_str)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .collect()
 }

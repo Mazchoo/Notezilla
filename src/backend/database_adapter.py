@@ -9,7 +9,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.field_enums import ColumnTypes, ReservedFields
 from src.backend.chroma_parsing import notes_from_chroma
-from src.backend.file_io import delete_all_old_index_folders, split_path_filters
+from src.backend.file_io import delete_all_old_index_folders
 from src.backend.note import NoteData
 
 
@@ -161,21 +161,18 @@ class NoteDatabase:
         n_results: int = 10,
         where: Optional[dict] = None,
         offset: int = 0,
-        path_filter: Optional[str] = None,
+        path_filter: Optional[List[str]] = None,
     ) -> List[NoteData]:
         """Semantic search — returns matching notes.
 
         Pagination: ``offset`` skips that many ranked matches before applying
         ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
 
-        When ``path_filter`` is non-empty, it is treated as a comma-separated
-        list of prefixes (spaces around each path are trimmed). Only notes
-        whose filenames start with any listed prefix are kept (applied
-        before pagination).
+        When ``path_filter`` is non-empty, only notes whose filenames start
+        with any listed prefix are kept (applied before pagination).
         """
-        path_filters = split_path_filters(path_filter)
         fetch_count = n_results + offset
-        if path_filters:
+        if path_filter:
             fetch_count = max(fetch_count, len(self))
         if fetch_count < 1:
             return []
@@ -189,9 +186,9 @@ class NoteDatabase:
         documents = results["documents"][0] if results["documents"] else []
         metadatas = results["metadatas"][0] if results["metadatas"] else []
 
-        if path_filters:
+        if path_filter:
             documents, metadatas = self._filter_by_path_prefix(
-                documents, cast(List[Dict[str, Any]], metadatas), path_filters
+                documents, cast(List[Dict[str, Any]], metadatas), path_filter
             )
 
         end = offset + n_results

@@ -496,12 +496,20 @@
     .button.is-dark:hover { background: var(--border); }
 
     /* ── Toast notifications ───────────────────────────────────────── */
-    .toast {
+    .toast-stack {
       position: fixed;
       bottom: 1.5rem;
       left: 50%;
       transform: translateX(-50%);
       z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+      pointer-events: none;
+      max-width: min(32rem, calc(100vw - 2rem));
+    }
+    .toast {
       background: var(--bg-1);
       border: 1px solid var(--border);
       color: var(--text);
@@ -509,11 +517,15 @@
       border-radius: 6px;
       font-size: 0.875rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-      pointer-events: none;
+      white-space: pre-line;
+    }
+
+    .toast-warning {
+      border-color: #df8e1d;
+      color: #f9e2af;
     }
 
     .toast-error {
-      bottom: 4.25rem;
       border-color: #c0392b;
       color: #ffb4a8;
     }

@@ -1,9 +1,11 @@
 """Tests for parse_frontmatter YAML → Chroma where conversion."""
 
+from typing import Any, Optional
+
 import pytest
 
-from src.backend.parse_markdown import parse_frontmatter
-from src.field_enums import FieldTypes, ReservedFields
+from src.backend.parse_markdown import clean_path_filter, parse_frontmatter
+from src.field_enums import ColumnTypes, FieldTypes, ReservedFields
 
 
 COLUMN_TYPES = {
@@ -15,52 +17,65 @@ COLUMN_TYPES = {
 }
 
 
+def _parse(
+    raw: str, column_types: ColumnTypes | None = None
+) -> tuple[Optional[dict[str, Any]], list[str]]:
+    warnings: list[str] = []
+    result = parse_frontmatter(raw, column_types or COLUMN_TYPES, warnings)
+    return result, warnings
+
+
 class TestParseFrontmatter:
     """parse_frontmatter builds Chroma where filters from YAML strings."""
 
     def test_empty_string_returns_none(self):
         """Empty or whitespace-only input yields no filter."""
-        assert parse_frontmatter("", COLUMN_TYPES) is None
-        assert parse_frontmatter("   \n  ", COLUMN_TYPES) is None
+        result, warnings = _parse("")
+        assert result is None
+        assert warnings == []
+        result, warnings = _parse("   \n  ")
+        assert result is None
+        assert warnings == []
 
     def test_scalar_field_equality(self):
         """A single known scalar field becomes a simple where clause."""
-        assert parse_frontmatter("status: todo", COLUMN_TYPES) == {"status": "todo"}
+        result, warnings = _parse("status: todo")
+        assert result == {"status": "todo"}
+        assert warnings == []
 
     def test_fenced_frontmatter(self):
         """YAML delimited by --- fences is parsed the same as bare YAML."""
-        raw = "---\nstatus: todo\nphase: 2\n---\n"
-        assert parse_frontmatter(raw, COLUMN_TYPES) == {
-            "$and": [{"status": "todo"}, {"phase": 2}]
-        }
+        result, warnings = _parse("---\nstatus: todo\nphase: 2\n---\n")
+        assert result == {"$and": [{"status": "todo"}, {"phase": 2}]}
+        assert warnings == []
 
     def test_unknown_columns_ignored(self):
-        """Columns absent from column_types are dropped from the filter."""
-        assert parse_frontmatter(
-            "status: todo\nunknown_field: ignore-me", COLUMN_TYPES
-        ) == {"status": "todo"}
+        """Columns absent from column_types are dropped and warned about."""
+        result, warnings = _parse("status: todo\nunknown_field: ignore-me")
+        assert result == {"status": "todo"}
+        assert warnings
 
     def test_only_unknown_columns_returns_none(self):
         """When every key is unknown, no where clause is produced."""
-        assert parse_frontmatter("nope: 1\nalso_nope: x", COLUMN_TYPES) is None
+        result, warnings = _parse("nope: 1\nalso_nope: x")
+        assert result is None
+        assert len(warnings) == 2
 
     def test_list_field_single_value(self):
         """A one-item list becomes field\\titem: True."""
-        assert parse_frontmatter('tags: ["cheese"]', COLUMN_TYPES) == {
-            "tags\tcheese": True
-        }
+        result, warnings = _parse('tags: ["cheese"]')
+        assert result == {"tags\tcheese": True}
+        assert warnings == []
 
     def test_list_field_multiple_values(self):
         """Multiple list items become an $and of field\\titem: True keys."""
-        assert parse_frontmatter('tags: ["cheese", "bread"]', COLUMN_TYPES) == {
-            "$and": [{"tags\tcheese": True}, {"tags\tbread": True}]
-        }
+        result, warnings = _parse('tags: ["cheese", "bread"]')
+        assert result == {"$and": [{"tags\tcheese": True}, {"tags\tbread": True}]}
+        assert warnings == []
 
     def test_list_and_scalar_combined(self):
         """List keys and scalar fields share one $and filter."""
-        result = parse_frontmatter(
-            'status: draft\ntags: ["cheese", "bread"]', COLUMN_TYPES
-        )
+        result, warnings = _parse('status: draft\ntags: ["cheese", "bread"]')
         assert result == {
             "$and": [
                 {"status": "draft"},
@@ -68,33 +83,104 @@ class TestParseFrontmatter:
                 {"tags\tbread": True},
             ]
         }
+        assert warnings == []
 
     def test_bool_and_int_types(self):
         """Non-string scalars keep their typed values for equality."""
-        assert parse_frontmatter("published: true\nphase: 100", COLUMN_TYPES) == {
-            "$and": [{"published": True}, {"phase": 100}]
-        }
+        result, warnings = _parse("published: true\nphase: 100")
+        assert result == {"$and": [{"published": True}, {"phase": 100}]}
+        assert warnings == []
 
     def test_malformed_yaml_returns_none(self):
-        """Unparseable YAML yields no filter instead of raising."""
-        assert parse_frontmatter(": not: valid: [", COLUMN_TYPES) is None
+        """Unparseable YAML yields no filter and a warning instead of raising."""
+        result, warnings = _parse(": not: valid: [")
+        assert result is None
+        assert warnings
 
     def test_non_mapping_yaml_returns_none(self):
         """A YAML list or scalar root is not a valid front matter filter."""
-        assert parse_frontmatter("- just\n- a\n- list", COLUMN_TYPES) is None
-        assert parse_frontmatter("plain string", COLUMN_TYPES) is None
+        result, warnings = _parse("- just\n- a\n- list")
+        assert result is None
+        assert warnings == []
+        result, warnings = _parse("plain string")
+        assert result is None
+        assert warnings == []
 
     def test_text_reserved_field_ignored(self):
         """Reserved text field is never used as a metadata where key."""
-        assert parse_frontmatter("text: body\nstatus: todo", COLUMN_TYPES) == {
-            "status": "todo"
-        }
+        result, warnings = _parse("text: body\nstatus: todo")
+        assert result == {"status": "todo"}
+        assert warnings
+
+    def test_empty_field_value_omitted(self):
+        """A null field value is omitted from the where clause and warned about."""
+        result, warnings = _parse("status:")
+        assert result is None
+        assert warnings
+        result, warnings = _parse("status:\nphase: 2")
+        assert result == {"phase": 2}
+        assert warnings
 
     def test_filename_allowed_when_in_column_types(self):
         """filename is stored in metadata and may be used as a filter."""
-        assert parse_frontmatter("filename: note.md", COLUMN_TYPES) == {
-            "filename": "note.md"
-        }
+        result, warnings = _parse("filename: note.md")
+        assert result == {"filename": "note.md"}
+        assert warnings == []
+
+
+def _clean(path_filter: Optional[str]) -> tuple[list[str], list[str]]:
+    warnings: list[str] = []
+    result = clean_path_filter(path_filter, warnings)
+    return result, warnings
+
+
+class TestCleanPathFilter:
+    """clean_path_filter splits, normalises, and warns on empty segments."""
+
+    def test_none_returns_empty_without_warning(self):
+        """None input yields an empty list and no warning."""
+        result, warnings = _clean(None)
+        assert result == []
+        assert warnings == []
+
+    def test_blank_returns_empty_without_warning(self):
+        """Blank input yields an empty list and no warning."""
+        result, warnings = _clean("")
+        assert result == []
+        assert warnings == []
+
+    def test_single_path_normalised(self):
+        """A single path prefix is normalised with no warning."""
+        result, warnings = _clean(".\\2026\\02*")
+        assert result == ["2026/02"]
+        assert warnings == []
+
+    def test_comma_separated_paths(self):
+        """Comma-separated prefixes are each normalised with no warning."""
+        result, warnings = _clean("2026/02,folder")
+        assert result == ["2026/02", "folder"]
+        assert warnings == []
+
+    def test_empty_segment_omitted_with_warning(self):
+        """Empty comma segments are omitted and produce a warning."""
+        result, warnings = _clean("keep/,, drop/")
+        assert result == ["keep/", "drop/"]
+        assert warnings
+
+    def test_only_empty_segments_return_empty_with_warning(self):
+        """A filter of only empty segments yields [] and a warning."""
+        result, warnings = _clean("  ,  , ")
+        assert result == []
+        assert warnings
+
+    def test_normalises_to_empty_with_warning(self):
+        """A segment that normalises to empty is omitted and warned about."""
+        result, warnings = _clean("*")
+        assert result == []
+        assert warnings
+        result, warnings = _clean("folder, ./")
+        assert result == ["folder"]
+        assert warnings
 
 
 if __name__ == "__main__":

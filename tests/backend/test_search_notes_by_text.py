@@ -75,27 +75,28 @@ class TestSearchNotesByText:
         search_notes_by_text(text="query", path_filter=".\\2026\\02*")
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 10, where=None, offset=0, path_filter="2026/02"
+            "query", ANY, 10, where=None, offset=0, path_filter=["2026/02"]
         )
 
     def test_blank_path_filter_sent_as_none(self, mock_db):  # pylint: disable=redefined-outer-name
         """Blank path_filter is passed as None so the DB ignores it."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", path_filter="")
+        result = search_notes_by_text(text="query", path_filter="")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=None
         )
+        assert result.structured_content["warnings"] == []
 
     def test_passes_comma_separated_path_filters(self, mock_db):  # pylint: disable=redefined-outer-name
-        """Comma-separated path_filter values are each normalised then joined."""
+        """Comma-separated path_filter values are each normalised into a list."""
         mock_db.query_by_text.return_value = make_notes()
 
         search_notes_by_text(text="query", path_filter="2026/02,folder")
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 10, where=None, offset=0, path_filter="2026/02,folder"
+            "query", ANY, 10, where=None, offset=0, path_filter=["2026/02", "folder"]
         )
 
     def test_trims_and_normalises_comma_separated_path_filters(self, mock_db):  # pylint: disable=redefined-outer-name
@@ -105,8 +106,35 @@ class TestSearchNotesByText:
         search_notes_by_text(text="query", path_filter=" .\\2026\\02* , ./folder* ")
 
         mock_db.query_by_text.assert_called_once_with(
-            "query", ANY, 10, where=None, offset=0, path_filter="2026/02,folder"
+            "query",
+            ANY,
+            10,
+            where=None,
+            offset=0,
+            path_filter=["2026/02", "folder"],
         )
+
+    def test_empty_path_filter_segments_returned_as_warnings(self, mock_db):  # pylint: disable=redefined-outer-name
+        """Empty path_filter segments are omitted and listed in warnings."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        result = search_notes_by_text(text="query", path_filter="keep/,, drop/")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter=["keep/", "drop/"]
+        )
+        assert result.structured_content["warnings"]
+
+    def test_only_empty_path_filters_sent_as_none_with_warning(self, mock_db):  # pylint: disable=redefined-outer-name
+        """A path_filter of only empty segments is passed as None and warned about."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        result = search_notes_by_text(text="query", path_filter=" , , ")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter=None
+        )
+        assert result.structured_content["warnings"]
 
     def test_passes_parsed_frontmatter_as_where(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text parses frontmatter YAML into the where filter."""
@@ -133,6 +161,27 @@ class TestSearchNotesByText:
             offset=0,
             path_filter=None,
         )
+
+    def test_unknown_frontmatter_fields_returned_as_warnings(self, mock_db):  # pylint: disable=redefined-outer-name
+        """Unknown frontmatter keys are omitted from where and listed in warnings."""
+        mock_db.query_by_text.return_value = make_notes()
+        column_types = {"status": "str"}
+
+        with patch("src.backend.main.init_column_types", return_value=column_types):
+            result = search_notes_by_text(
+                text="query",
+                frontmatter="status: draft\nunknown_field: ignore-me",
+            )
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query",
+            column_types,
+            10,
+            where={"status": "draft"},
+            offset=0,
+            path_filter=None,
+        )
+        assert result.structured_content["warnings"]
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text wraps ValueError in an error response."""

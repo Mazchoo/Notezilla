@@ -18,6 +18,7 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     let state = AppState::new();
+    components::toast::bind_warning_toast(state.warning_toast);
     provide_context(state.clone());
 
     let session_id = state.session_id;

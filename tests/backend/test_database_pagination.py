@@ -175,13 +175,13 @@ class TestQueryByTextPagination:
         _upsert_notes(temp_db, notes)
 
         results = temp_db.query_by_text(
-            "cats feline", COLUMN_TYPES, n_results=10, path_filter="keep/"
+            "cats feline", COLUMN_TYPES, n_results=10, path_filter=["keep/"]
         )
 
         assert {n.filename for n in results} == {"keep/a.md", "keep/nested/c.md"}
 
     def test_comma_separated_path_filter_matches_any_prefix(self, temp_db):
-        """A comma-separated path_filter keeps notes matching any prefix."""
+        """A path_filter list keeps notes matching any prefix."""
         notes = [
             NoteData(
                 filename="keep/a.md",
@@ -205,17 +205,17 @@ class TestQueryByTextPagination:
             "cats feline",
             COLUMN_TYPES,
             n_results=10,
-            path_filter=" keep/ , other/ ",
+            path_filter=["keep/", "other/"],
         )
 
         assert {n.filename for n in results} == {"keep/a.md", "other/c.md"}
 
     def test_blank_path_filter_ignored(self, temp_db):
-        """Blank or None path_filter does not restrict results."""
+        """Empty or None path_filter does not restrict results."""
         _upsert_notes(temp_db, _semantic_notes(5))
         unrestricted = temp_db.query_by_text("cats feline", COLUMN_TYPES, n_results=5)
         blank = temp_db.query_by_text(
-            "cats feline", COLUMN_TYPES, n_results=5, path_filter=""
+            "cats feline", COLUMN_TYPES, n_results=5, path_filter=[]
         )
         none_filter = temp_db.query_by_text(
             "cats feline", COLUMN_TYPES, n_results=5, path_filter=None

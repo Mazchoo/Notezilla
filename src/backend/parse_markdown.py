@@ -15,19 +15,23 @@ from src.backend.file_io import (
     write_file_content,
     get_normalised_path,
     ensure_md_extension,
+    normalise_filter,
 )
 from src.field_enums import ColumnTypes, ReservedFields
 
 
 def parse_frontmatter(
-    frontmatter: str, column_types: ColumnTypes
+    frontmatter: str, column_types: ColumnTypes, warnings: list[str]
 ) -> Optional[dict[str, Any]]:
     """Parse a YAML front matter string into a Chroma ``where`` filter.
 
-    Unknown columns (absent from ``column_types``) are ignored. List fields
-    expand to ``field\\titem: True`` metadata keys (see
+    Unknown columns (absent from ``column_types``) and the reserved text
+    field are omitted from the filter and appended to ``warnings``. List
+    fields expand to ``field\\titem: True`` metadata keys (see
     ``NoteDatabase.query_field_contains``). Returns ``None`` when there are
     no usable filter conditions.
+
+    warnings appended in place when invalid data is encountered.
     """
     text = frontmatter.strip()
     if not text:
@@ -41,6 +45,7 @@ def parse_frontmatter(
         try:
             loaded = yaml.safe_load(text)
         except yaml.YAMLError:
+            warnings.append("Frontmatter is not valid YAML")
             return None
         fields = loaded if isinstance(loaded, dict) else {}
 
@@ -49,13 +54,13 @@ def parse_frontmatter(
 
     conditions: list[dict[str, Any]] = []
     for key, val in fields.items():
-        if key == ReservedFields.TEXT:
-            continue
-        target_type = column_types.get(key)
+        target_type = None if key == ReservedFields.TEXT else column_types.get(key)
         if target_type is None:
+            warnings.append(f"Invalid frontmatter field '{key}'")
             continue
         for meta_key, meta_val in cast_value(key, val, target_type).items():
             if meta_val is None:
+                warnings.append(f"Empty frontmatter condition for '{meta_key}'")
                 continue
             conditions.append({meta_key: meta_val})
 
@@ -64,6 +69,27 @@ def parse_frontmatter(
     if len(conditions) == 1:
         return conditions[0]
     return {"$and": conditions}
+
+
+def clean_path_filter(path_filter: Optional[str], warnings: list[str]) -> list[str]:
+    """Split and normalise a comma-separated path prefix filter.
+
+    Each segment is trimmed and passed through ``normalise_filter``.
+    Empty segments are omitted and appended to ``warnings``. Returns an
+    empty list when there are no usable prefixes. Blank or None input
+    yields an empty list with no warning.
+    """
+    if not path_filter:
+        return []
+
+    cleaned_parts = []
+    for part in path_filter.split(","):
+        normalised = normalise_filter(part.strip())
+        if normalised:
+            cleaned_parts.append(normalised)
+        else:
+            warnings.append(f"Empty path filter '{part.strip()}'")
+    return cleaned_parts
 
 
 @dataclass
