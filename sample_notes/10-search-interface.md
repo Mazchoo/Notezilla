@@ -25,7 +25,7 @@ Build the UI for both keyword and semantic (vector) search queries. Searching is
 - [x] Keyword search returns notes matching by title, tag, or content.
 - [x] Semantic search returns notes ranked by vector similarity with visible relevance scores.
 - [x] Results can searched by frontmatter
-- [ ] Results can be filtered by comma separated path start
+- [x] Results can be filtered by comma separated path start
 - [x] Clicking a result opens the note in the editor.
 - [ ] Empty or no-match states display a helpful message for requesting missing field.
 - [ ] Searching without text (purely on tags or path) works

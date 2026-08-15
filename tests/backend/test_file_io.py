@@ -16,6 +16,7 @@ from src.backend.file_io import (
     move_file_or_folder,
     normalise_filter,
     read_file_content,
+    split_path_filters,
     rename_basename,
     write_file_content,
 )
@@ -82,6 +83,46 @@ class TestExtractYamlFromFileContents:
 
         assert fields == {}
         assert text == content
+
+
+# ---------------------------------------------------------------------------
+# split_path_filters
+# ---------------------------------------------------------------------------
+
+
+class TestSplitPathFilters:
+    """Split a comma-separated path filter and trim surrounding spaces."""
+
+    def test_none_returns_empty_list(self):
+        """None input yields an empty list."""
+        assert split_path_filters(None) == []
+
+    def test_blank_returns_empty_list(self):
+        """Blank input yields an empty list."""
+        assert split_path_filters("") == []
+
+    def test_single_path_unchanged(self):
+        """A single path with no commas is returned as a one-item list."""
+        assert split_path_filters("2026/02") == ["2026/02"]
+
+    def test_splits_on_commas(self):
+        """Comma-separated paths are returned as separate items."""
+        assert split_path_filters("2026/02,folder") == ["2026/02", "folder"]
+
+    def test_trims_spaces_around_paths(self):
+        """Leading and trailing spaces on each path are removed."""
+        assert split_path_filters(" 2026/02 , folder/sub ") == [
+            "2026/02",
+            "folder/sub",
+        ]
+
+    def test_omits_empty_segments(self):
+        """Empty segments after trimming are omitted."""
+        assert split_path_filters("keep/,, drop/") == ["keep/", "drop/"]
+
+    def test_only_commas_and_spaces_returns_empty_list(self):
+        """A filter of only commas and spaces yields an empty list."""
+        assert split_path_filters("  ,  , ") == []
 
 
 # ---------------------------------------------------------------------------

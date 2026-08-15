@@ -126,7 +126,7 @@ if __name__ == "__main__":
                 "text": "python async",
                 "n_results": 5,
                 "frontmatter": "tags: [paragraph]",
-                "path_filter": "2025"
+                "path_filter": "2025, 2024"
             },
         )
     )

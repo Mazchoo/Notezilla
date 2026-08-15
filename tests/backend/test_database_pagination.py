@@ -180,6 +180,36 @@ class TestQueryByTextPagination:
 
         assert {n.filename for n in results} == {"keep/a.md", "keep/nested/c.md"}
 
+    def test_comma_separated_path_filter_matches_any_prefix(self, temp_db):
+        """A comma-separated path_filter keeps notes matching any prefix."""
+        notes = [
+            NoteData(
+                filename="keep/a.md",
+                text="Cats and feline companions in keep",
+                fields={},
+            ),
+            NoteData(
+                filename="drop/b.md",
+                text="Cats and feline companions in drop",
+                fields={},
+            ),
+            NoteData(
+                filename="other/c.md",
+                text="Cats and feline companions in other",
+                fields={},
+            ),
+        ]
+        _upsert_notes(temp_db, notes)
+
+        results = temp_db.query_by_text(
+            "cats feline",
+            COLUMN_TYPES,
+            n_results=10,
+            path_filter=" keep/ , other/ ",
+        )
+
+        assert {n.filename for n in results} == {"keep/a.md", "other/c.md"}
+
     def test_blank_path_filter_ignored(self, temp_db):
         """Blank or None path_filter does not restrict results."""
         _upsert_notes(temp_db, _semantic_notes(5))

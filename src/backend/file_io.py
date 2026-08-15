@@ -50,6 +50,17 @@ def get_normalised_path(path: Union[str, Path]) -> Optional[str]:
     return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
 
 
+def split_path_filters(path_filter: Optional[str]) -> list[str]:
+    """Split a comma-separated path filter and trim surrounding spaces.
+
+    Blank or None yields an empty list. Empty segments after trimming
+    are omitted.
+    """
+    if not path_filter:
+        return []
+    return [part.strip() for part in path_filter.split(",") if part.strip()]
+
+
 def normalise_filter(path_filter: Optional[str]) -> str:
     """Normalise a path prefix filter for note filename matching.
 

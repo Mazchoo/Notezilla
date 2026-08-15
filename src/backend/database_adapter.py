@@ -9,7 +9,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
 from src.field_enums import ColumnTypes, ReservedFields
 from src.backend.chroma_parsing import notes_from_chroma
-from src.backend.file_io import delete_all_old_index_folders
+from src.backend.file_io import delete_all_old_index_folders, split_path_filters
 from src.backend.note import NoteData
 
 
@@ -142,14 +142,14 @@ class NoteDatabase:
     def _filter_by_path_prefix(
         documents: List[str],
         metadatas: List[Dict[str, Any]],
-        path_filter: str,
+        path_filters: List[str],
     ) -> tuple[List[str], List[Dict[str, Any]]]:
-        """Keep only documents whose filename metadata starts with path_filter."""
+        """Keep documents whose filename metadata starts with any path prefix."""
         filtered_docs: List[str] = []
         filtered_metas: List[Dict[str, Any]] = []
         for doc, meta in zip(documents, metadatas):
             filename = str(meta.get(ReservedFields.FILENAME, ""))
-            if filename.startswith(path_filter):
+            if any(filename.startswith(prefix) for prefix in path_filters):
                 filtered_docs.append(doc)
                 filtered_metas.append(meta)
         return filtered_docs, filtered_metas
@@ -168,11 +168,14 @@ class NoteDatabase:
         Pagination: ``offset`` skips that many ranked matches before applying
         ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
 
-        When ``path_filter`` is non-empty, only notes whose filenames start
-        with that prefix are kept (applied before pagination).
+        When ``path_filter`` is non-empty, it is treated as a comma-separated
+        list of prefixes (spaces around each path are trimmed). Only notes
+        whose filenames start with any listed prefix are kept (applied
+        before pagination).
         """
+        path_filters = split_path_filters(path_filter)
         fetch_count = n_results + offset
-        if path_filter:
+        if path_filters:
             fetch_count = max(fetch_count, len(self))
         if fetch_count < 1:
             return []
@@ -186,9 +189,9 @@ class NoteDatabase:
         documents = results["documents"][0] if results["documents"] else []
         metadatas = results["metadatas"][0] if results["metadatas"] else []
 
-        if path_filter:
+        if path_filters:
             documents, metadatas = self._filter_by_path_prefix(
-                documents, cast(List[Dict[str, Any]], metadatas), path_filter
+                documents, cast(List[Dict[str, Any]], metadatas), path_filters
             )
 
         end = offset + n_results

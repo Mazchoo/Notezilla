@@ -18,6 +18,7 @@ from src.backend.file_io import (
     normalise_filter,
     rename_basename,
     resolve_note_path,
+    split_path_filters,
 )
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.parse_markdown import IMarkdownFile, parse_frontmatter
@@ -350,9 +351,11 @@ def search_notes_by_text(
         str,
         Field(
             description=(
-                "Optional path prefix filter. Only notes whose filenames start "
-                'with this path are returned (e.g. "2026/02" or "./folder*").'
-                "Do not introduce by default, adds overhead to the search."
+                "Optional comma-separated path prefix filter. Only notes whose "
+                "filenames start with any listed path are returned "
+                '(e.g. "2026/02, folder" or "./folder*"). Spaces around each '
+                "path are trimmed. Do not introduce by default, adds overhead "
+                "to the search."
             )
         ),
     ] = "",
@@ -374,14 +377,19 @@ def search_notes_by_text(
     Args:
         text: Natural language query to search for
         frontmatter: Optional YAML front matter used as a metadata filter
-        path_filter: Optional path prefix; only matching filenames are returned
+        path_filter: Optional comma-separated path prefixes; matching filenames are returned
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
     try:
         column_types = init_column_types()
         where = parse_frontmatter(frontmatter, column_types)
-        cleaned_filter = normalise_filter(path_filter)
+        cleaned_parts = []
+        for part in split_path_filters(path_filter):
+            normalised = normalise_filter(part)
+            if normalised:
+                cleaned_parts.append(normalised)
+        cleaned_filter = ",".join(cleaned_parts)
         notes = init_db().query_by_text(
             text,
             column_types,

@@ -88,6 +88,26 @@ class TestSearchNotesByText:
             "query", ANY, 10, where=None, offset=0, path_filter=None
         )
 
+    def test_passes_comma_separated_path_filters(self, mock_db):  # pylint: disable=redefined-outer-name
+        """Comma-separated path_filter values are each normalised then joined."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", path_filter="2026/02,folder")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter="2026/02,folder"
+        )
+
+    def test_trims_and_normalises_comma_separated_path_filters(self, mock_db):  # pylint: disable=redefined-outer-name
+        """Spaces around comma-separated paths are trimmed before normalisation."""
+        mock_db.query_by_text.return_value = make_notes()
+
+        search_notes_by_text(text="query", path_filter=" .\\2026\\02* , ./folder* ")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "query", ANY, 10, where=None, offset=0, path_filter="2026/02,folder"
+        )
+
     def test_passes_parsed_frontmatter_as_where(self, mock_db):  # pylint: disable=redefined-outer-name
         """search_notes_by_text parses frontmatter YAML into the where filter."""
         mock_db.query_by_text.return_value = make_notes()
