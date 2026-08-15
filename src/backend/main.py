@@ -19,7 +19,11 @@ from src.backend.file_io import (
     resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
-from src.backend.parse_markdown import IMarkdownFile, clean_path_filter, parse_frontmatter
+from src.backend.parse_markdown import (
+    IMarkdownFile,
+    clean_path_filter,
+    parse_frontmatter,
+)
 from src.backend.logger import LOGGER
 from src.backend.mcp_interface import init_db, init_column_types, McpResponse
 from src.backend.output_schema import (
