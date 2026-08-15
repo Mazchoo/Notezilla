@@ -29,10 +29,13 @@ class TestParseFrontmatter:
     """parse_frontmatter builds Chroma where filters from YAML strings."""
 
     def test_empty_string_returns_none(self):
-        """Empty or whitespace-only input yields no filter."""
+        """Empty input yields no filter."""
         result, warnings = _parse("")
         assert result is None
         assert warnings == []
+
+    def test_whitespace_only_returns_none(self):
+        """Whitespace-only input yields no filter."""
         result, warnings = _parse("   \n  ")
         assert result is None
         assert warnings == []
@@ -97,14 +100,23 @@ class TestParseFrontmatter:
         assert result is None
         assert warnings
 
-    def test_non_mapping_yaml_returns_none(self):
-        """A YAML list or scalar root is not a valid front matter filter."""
+    def test_yaml_list_root_returns_none(self):
+        """A YAML list root is not a valid front matter filter."""
         result, warnings = _parse("- just\n- a\n- list")
         assert result is None
-        assert warnings == []
+        assert warnings
+
+    def test_yaml_scalar_root_returns_none(self):
+        """A YAML scalar root is not a valid front matter filter."""
         result, warnings = _parse("plain string")
         assert result is None
-        assert warnings == []
+        assert warnings
+
+    def test_non_mapping_semicolon_yaml_returns_none(self):
+        """A semicolon scalar is not a YAML mapping of filter fields."""
+        result, warnings = _parse("togs; []")
+        assert result is None
+        assert warnings
 
     def test_text_reserved_field_ignored(self):
         """Reserved text field is never used as a metadata where key."""
@@ -117,6 +129,9 @@ class TestParseFrontmatter:
         result, warnings = _parse("status:")
         assert result is None
         assert warnings
+
+    def test_empty_field_value_omitted_keeps_other_conditions(self):
+        """A null field is dropped while remaining known fields still filter."""
         result, warnings = _parse("status:\nphase: 2")
         assert result == {"phase": 2}
         assert warnings
@@ -178,6 +193,9 @@ class TestCleanPathFilter:
         result, warnings = _clean("*")
         assert result == []
         assert warnings
+
+    def test_mixed_empty_segment_omitted_with_warning(self):
+        """A segment that normalises to empty is dropped; usable prefixes remain."""
         result, warnings = _clean("folder, ./")
         assert result == ["folder"]
         assert warnings

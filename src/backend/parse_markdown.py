@@ -26,8 +26,9 @@ def parse_frontmatter(
     """Parse a YAML front matter string into a Chroma ``where`` filter.
 
     Unknown columns (absent from ``column_types``) and the reserved text
-    field are omitted from the filter and appended to ``warnings``. List
-    fields expand to ``field\\titem: True`` metadata keys (see
+    field are omitted from the filter and appended to ``warnings``. A
+    non-mapping or empty YAML root is also warned about. List fields
+    expand to ``field\\titem: True`` metadata keys (see
     ``NoteDatabase.query_field_contains``). Returns ``None`` when there are
     no usable filter conditions.
 
@@ -50,6 +51,7 @@ def parse_frontmatter(
         fields = loaded if isinstance(loaded, dict) else {}
 
     if not fields:
+        warnings.append("Frontmatter has no filter fields")
         return None
 
     conditions: list[dict[str, Any]] = []
