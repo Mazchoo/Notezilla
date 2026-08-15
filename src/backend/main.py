@@ -27,7 +27,6 @@ from src.backend.mcp_interface import init_db, init_column_types, McpResponse
 from src.backend.output_schema import (
     DIRECTORY_OUTPUT_SCHEMA,
     EMPTY_OUTPUT_SCHEMA,
-    EmptyResponse,
     NOTES_OUTPUT_SCHEMA,
     UPSERT_OUTPUT_SCHEMA,
 )
@@ -72,11 +71,12 @@ def upsert_note(
         contents: The markdown body of the note
         fields: Dictionary of metadata fields to convert into a YAML header
     """
+    warnings: list[str] = []
     result = IMarkdownFile.construct_from_data(path, contents, fields)
     if result:
         _, new_file_created = result
-        return McpResponse.upsert(new_file_created)
-    return McpResponse.upsert_error(f"Failed to upsert note at '{path}'.")
+        return McpResponse.upsert(new_file_created, warnings)
+    return McpResponse.upsert_error(f"Failed to upsert note at '{path}'.", warnings)
 
 
 @MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
@@ -93,12 +93,13 @@ def delete_note(
     Args:
         path: Relative path of the note to delete e.g. "folder/filename.md"
     """
+    warnings: list[str] = []
     resolved = resolve_note_path(path)
     if resolved and delete_note_file(resolved):
-        return McpResponse.success(EmptyResponse())
-    return McpResponse.error(
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
         f"Failed to delete note at '{path}'. Ensure the path is valid.",
-        EmptyResponse(),
+        warnings,
     )
 
 
@@ -119,12 +120,13 @@ def new_dir(
     Args:
         path: Relative path of the folder to create e.g. "folder" or "folder/subfolder"
     """
+    warnings: list[str] = []
     if create_new_folder(path):
-        return McpResponse.success(EmptyResponse())
-    return McpResponse.error(
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
         f"Failed to create folder at '{path}'. "
         "Ensure the path is inside the note folder and does not already exist.",
-        EmptyResponse(),
+        warnings,
     )
 
 
@@ -142,12 +144,13 @@ def delete_folder(
     Args:
         path: Relative path of the folder to delete e.g. "folder" or "folder/subfolder"
     """
+    warnings: list[str] = []
     if delete_notes_folder(path):
-        return McpResponse.success(EmptyResponse())
-    return McpResponse.error(
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
         f"Failed to delete folder at '{path}'. "
         "Ensure the path is a valid directory inside the note folder.",
-        EmptyResponse(),
+        warnings,
     )
 
 
@@ -172,13 +175,14 @@ def move_dir(
         src: Relative path of the file or folder to move e.g. "folder" or "folder/note.md"
         dst: Relative path of the destination directory e.g. "archive" or ""
     """
+    warnings: list[str] = []
     if move_file_or_folder(src, dst):
-        return McpResponse.success(EmptyResponse())
-    return McpResponse.error(
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
         f"Failed to move '{src}' into '{dst}'. "
         "Ensure src exists, dst is a directory inside the note folder, "
         "and dst is not inside src.",
-        EmptyResponse(),
+        warnings,
     )
 
 
@@ -209,13 +213,14 @@ def rename_dir(
         path: Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"
         new_name: New basename for the file or folder e.g. "renamed" or "renamed.md"
     """
+    warnings: list[str] = []
     if rename_basename(path, new_name):
-        return McpResponse.success(EmptyResponse())
-    return McpResponse.error(
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
         f"Failed to rename '{path}' to '{new_name}'. "
         "Ensure the path exists, the destination does not already exist, "
         "and both stay inside the note folder.",
-        EmptyResponse(),
+        warnings,
     )
 
 
@@ -231,10 +236,11 @@ def get_dir_contents(
     Args:
         path: Relative path of the directory to list e.g. "folder".
     """
+    warnings: list[str] = []
     folders, files, error = get_dirs_and_md_files(path)
     if error:
-        return McpResponse.directory_error(error, folders, files)
-    return McpResponse.directory(folders, files)
+        return McpResponse.directory_error(error, folders, files, warnings)
+    return McpResponse.directory(folders, files, warnings)
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
@@ -252,10 +258,11 @@ def get_note(
     Args:
         path: Relative path of the note e.g. "folder/filename.md"
     """
+    warnings: list[str] = []
     note = IMarkdownFile.construct_from_path(path)
     if note is None:
-        return McpResponse.notes_error(f"Note not found at '{path}'")
-    return McpResponse.notes([note])
+        return McpResponse.notes_error(f"Note not found at '{path}'", warnings)
+    return McpResponse.notes([note], warnings)
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
@@ -285,16 +292,17 @@ def search_notes_by_field(
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
+    warnings: list[str] = []
     try:
         notes = init_db().query_by_field(
             field, value, init_column_types(), n_results, offset
         )
-        return McpResponse.notes(notes)
+        return McpResponse.notes(notes, warnings)
     except ValueError as e:
-        return McpResponse.notes_error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}", warnings)
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_field")
-        return McpResponse.notes_error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}", warnings)
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
@@ -322,16 +330,17 @@ def search_notes_by_tag(
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
+    warnings: list[str] = []
     try:
         notes = init_db().query_field_contains(
             field, value, init_column_types(), n_results, offset
         )
-        return McpResponse.notes(notes)
+        return McpResponse.notes(notes, warnings)
     except ValueError as e:
-        return McpResponse.notes_error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}", warnings)
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_tag")
-        return McpResponse.notes_error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}", warnings)
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
@@ -381,6 +390,7 @@ def search_notes_by_text(
         n_results: Maximum number of results to return
         offset: Pagination offset; skip this many matches before returning
     """
+    warnings: list[str] = []
     try:
         column_types = init_column_types()
         where = parse_frontmatter(frontmatter, column_types)
@@ -398,12 +408,12 @@ def search_notes_by_text(
             offset=offset,
             path_filter=cleaned_filter or None,
         )
-        return McpResponse.notes(notes)
+        return McpResponse.notes(notes, warnings)
     except ValueError as e:
-        return McpResponse.notes_error(f"Type error: {e}")
+        return McpResponse.notes_error(f"Type error: {e}", warnings)
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes_by_text")
-        return McpResponse.notes_error(f"DB error: {e}")
+        return McpResponse.notes_error(f"DB error: {e}", warnings)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from src.backend.file_io import get_db_column_types
 from src.backend.note import NoteData
 from src.backend.output_schema import (
     DirectoryResponse,
+    EmptyResponse,
     NotesResponse,
     UpsertResponse,
 )
@@ -77,35 +78,54 @@ class McpResponse:
         )
 
     @staticmethod
-    def notes(items: List[NoteData]) -> ToolResult:
+    def notes(items: List[NoteData], warnings: List[str]) -> ToolResult:
         """Return note file data as MCP structured content."""
-        return McpResponse.success(NotesResponse.from_notes(items))
+        return McpResponse.success(NotesResponse.from_notes(items, warnings))
 
     @staticmethod
-    def notes_error(message: str) -> ToolResult:
+    def notes_error(message: str, warnings: List[str]) -> ToolResult:
         """Return a notes-shaped error payload."""
-        return McpResponse.error(message, NotesResponse(notes=[]))
+        return McpResponse.error(message, NotesResponse(notes=[], warnings=warnings))
 
     @staticmethod
-    def directory(folders: List[str], files: List[str]) -> ToolResult:
-        """Return immediate child folders and markdown file names."""
-        return McpResponse.success(DirectoryResponse(folders=folders, files=files))
-
-    @staticmethod
-    def directory_error(
-        message: str, folders: List[str], files: List[str]
+    def directory(
+        folders: List[str], files: List[str], warnings: List[str]
     ) -> ToolResult:
-        """Return a directory-shaped error payload."""
-        return McpResponse.error(
-            message, DirectoryResponse(folders=folders, files=files)
+        """Return immediate child folders and markdown file names."""
+        return McpResponse.success(
+            DirectoryResponse(folders=folders, files=files, warnings=warnings)
         )
 
     @staticmethod
-    def upsert(new_file_created: bool) -> ToolResult:
-        """Return upsert result structured content."""
-        return McpResponse.success(UpsertResponse(new_file_created=new_file_created))
+    def directory_error(
+        message: str, folders: List[str], files: List[str], warnings: List[str]
+    ) -> ToolResult:
+        """Return a directory-shaped error payload."""
+        return McpResponse.error(
+            message,
+            DirectoryResponse(folders=folders, files=files, warnings=warnings),
+        )
 
     @staticmethod
-    def upsert_error(message: str) -> ToolResult:
+    def upsert(new_file_created: bool, warnings: List[str]) -> ToolResult:
+        """Return upsert result structured content."""
+        return McpResponse.success(
+            UpsertResponse(new_file_created=new_file_created, warnings=warnings)
+        )
+
+    @staticmethod
+    def upsert_error(message: str, warnings: List[str]) -> ToolResult:
         """Return an upsert-shaped error payload."""
-        return McpResponse.error(message, UpsertResponse(new_file_created=False))
+        return McpResponse.error(
+            message, UpsertResponse(new_file_created=False, warnings=warnings)
+        )
+
+    @staticmethod
+    def empty(warnings: List[str]) -> ToolResult:
+        """Return a success result with no payload fields."""
+        return McpResponse.success(EmptyResponse(warnings=warnings))
+
+    @staticmethod
+    def empty_error(message: str, warnings: List[str]) -> ToolResult:
+        """Return a failed result with no payload fields."""
+        return McpResponse.error(message, EmptyResponse(warnings=warnings))

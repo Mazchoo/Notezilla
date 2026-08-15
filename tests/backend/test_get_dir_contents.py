@@ -16,6 +16,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["folder"],
             "files": ["example.md"],
+            "warnings": [],
         }
 
     def test_subdirectory_lists_children(self, mock_notes_folder):
@@ -26,6 +27,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["sub_folder"],
             "files": ["another_example.md"],
+            "warnings": [],
         }
 
     def test_subdirectory_with_no_md_files(self, mock_notes_folder):
@@ -33,7 +35,11 @@ class TestGetDirContents:
         result = get_dir_contents(path="folder/sub_folder")
 
         assert result.content[0].text == "Success"
-        assert result.structured_content == {"folders": [], "files": []}
+        assert result.structured_content == {
+            "folders": [],
+            "files": [],
+            "warnings": [],
+        }
 
     def test_invalid_path_outside_note_folder(self, mock_notes_folder):
         """Paths outside the note folder are rejected with an error message."""
@@ -59,6 +65,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["folder"],
             "files": ["example.md"],
+            "warnings": [],
         }
 
     def test_dot_root_lists_folders_and_md_files(self, mock_notes_folder):
@@ -69,6 +76,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["folder"],
             "files": ["example.md"],
+            "warnings": [],
         }
 
     def test_star_root_lists_folders_and_md_files(self, mock_notes_folder):
@@ -79,6 +87,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["folder"],
             "files": ["example.md"],
+            "warnings": [],
         }
 
     def test_relative_dir_root_lists_folders_and_md_files(self, mock_notes_folder):
@@ -89,6 +98,7 @@ class TestGetDirContents:
         assert result.structured_content == {
             "folders": ["folder"],
             "files": ["example.md"],
+            "warnings": [],
         }
 
 

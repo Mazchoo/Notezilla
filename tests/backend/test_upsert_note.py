@@ -23,7 +23,10 @@ class TestUpsertNote:
             )
 
             assert result.content[0].text == "Success"
-            assert result.structured_content == {"newFileCreated": True}
+            assert result.structured_content == {
+                "newFileCreated": True,
+                "warnings": [],
+            }
             assert note_path.is_file()
 
     def test_upsert_note_existing_file_reports_not_created(self, mock_notes_folder):
@@ -43,7 +46,10 @@ class TestUpsertNote:
             )
 
             assert result.content[0].text == "Success"
-            assert result.structured_content == {"newFileCreated": False}
+            assert result.structured_content == {
+                "newFileCreated": False,
+                "warnings": [],
+            }
             assert note_path.read_text(encoding="utf-8").endswith("Updated body")
 
     def test_upsert_note_failure_returns_error(self, mock_notes_folder):
@@ -73,7 +79,10 @@ class TestUpsertNote:
             )
 
             assert result.content[0].text == "Success"
-            assert result.structured_content == {"newFileCreated": True}
+            assert result.structured_content == {
+                "newFileCreated": True,
+                "warnings": [],
+            }
             assert note_path.is_file()
             assert not (mock_notes_folder / "folder" / "note.txt").exists()
 

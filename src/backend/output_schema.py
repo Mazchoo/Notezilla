@@ -24,25 +24,36 @@ class NoteFile(BaseModel):
         return cls(filename=item.filename, text=item.text, metadata=item.fields)
 
 
-class NotesResponse(BaseModel):
+class SuccessResponse(BaseModel):
+    """Shared fields for MCP tool success payloads."""
+
+    warnings: list[str] = Field(
+        description="Non-fatal issues encountered while handling the request"
+    )
+
+
+class NotesResponse(SuccessResponse):
     """Structured content for tools that return notes."""
 
     notes: list[NoteFile] = Field(description="Matching notes")
 
     @classmethod
-    def from_notes(cls, items: List[NoteData]) -> "NotesResponse":
+    def from_notes(cls, items: List[NoteData], warnings: List[str]) -> "NotesResponse":
         """Build from NoteData instances."""
-        return cls(notes=[NoteFile.from_note(item) for item in items])
+        return cls(
+            notes=[NoteFile.from_note(item) for item in items],
+            warnings=warnings,
+        )
 
 
-class DirectoryResponse(BaseModel):
+class DirectoryResponse(SuccessResponse):
     """Structured content for directory listings."""
 
     folders: list[str] = Field(description="Immediate child folder names")
     files: list[str] = Field(description="Immediate child markdown file names")
 
 
-class UpsertResponse(BaseModel):
+class UpsertResponse(SuccessResponse):
     """Structured content for upsert_note."""
 
     model_config = ConfigDict(populate_by_name=True)
@@ -53,8 +64,8 @@ class UpsertResponse(BaseModel):
     )
 
 
-class EmptyResponse(BaseModel):
-    """Structured content with no fields (e.g. delete_note success)."""
+class EmptyResponse(SuccessResponse):
+    """Structured content with no payload fields (e.g. delete_note success)."""
 
 
 def output_schema(model: type[BaseModel]) -> dict[str, Any]:

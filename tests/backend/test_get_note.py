@@ -64,14 +64,14 @@ class TestGetNote:
         result = get_note(path="../../../etc/passwd")
 
         assert result.content[0].text.startswith("Error")
-        assert result.structured_content == {"notes": []}
+        assert result.structured_content == {"notes": [], "warnings": []}
 
     def test_not_found_returns_error(self, mock_notes_folder):  # pylint: disable=redefined-outer-name
         """get_note returns an error when the note file does not exist."""
         result = get_note(path="missing/note.md")
 
         assert result.content[0].text.startswith("Error")
-        assert result.structured_content == {"notes": []}
+        assert result.structured_content == {"notes": [], "warnings": []}
 
     def test_reads_latest_content_after_write(self, mock_notes_folder):  # pylint: disable=redefined-outer-name
         """Save then get_note must return the overwritten file contents."""
