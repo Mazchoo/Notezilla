@@ -30,3 +30,4 @@ Build the UI for both keyword and semantic (vector) search queries. Searching is
 - [ ] Empty or no-match states display a helpful message for requesting missing field.
 - [ ] Searching without text (purely on tags or path) works
 - [ ] Totally empty query will return everything paginated
+- [ ] (Extra) at an abstract interface for the database adatper to BE
