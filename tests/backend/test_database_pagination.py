@@ -7,7 +7,7 @@ import pytest
 from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.note import NoteData
-from src.field_enums import ColumnTypes
+from src.field_enums import ColumnTypes, FieldTypes
 
 
 COLUMN_TYPES: ColumnTypes = {}
@@ -182,6 +182,113 @@ class TestQueryByTextPagination:
 
         assert results == []
         spy.assert_not_called()
+
+
+class TestQueryByTextBlankQuery:
+    """Blank query returns notes without a similarity search."""
+
+    def test_blank_query_returns_notes_without_query(self, temp_db):
+        """A blank query returns stored notes and does not call query()."""
+        notes = [
+            NoteData(filename="a.md", text="alpha", fields={}),
+            NoteData(filename="b.md", text="beta", fields={}),
+        ]
+        _upsert_notes(temp_db, notes)
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text("", COLUMN_TYPES, n_results=10)
+
+        spy.assert_not_called()
+        assert {n.filename for n in results} == {"a.md", "b.md"}
+
+    def test_whitespace_query_treated_as_blank(self, temp_db):
+        """Whitespace-only text is treated as a blank query."""
+        _upsert_notes(
+            temp_db, [NoteData(filename="a.md", text="alpha", fields={})]
+        )
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text("   ", COLUMN_TYPES, n_results=10)
+
+        spy.assert_not_called()
+        assert [n.filename for n in results] == ["a.md"]
+
+    def test_blank_query_with_path_filter(self, temp_db):
+        """A blank query still keeps notes whose filenames match path_filter."""
+        notes = [
+            NoteData(filename="keep/a.md", text="in keep", fields={}),
+            NoteData(filename="drop/b.md", text="in drop", fields={}),
+            NoteData(filename="keep/nested/c.md", text="nested keep", fields={}),
+        ]
+        _upsert_notes(temp_db, notes)
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text(
+                "", COLUMN_TYPES, n_results=10, path_filter=["keep/"]
+            )
+
+        spy.assert_not_called()
+        assert {n.filename for n in results} == {"keep/a.md", "keep/nested/c.md"}
+
+    def test_blank_query_with_where_filter(self, temp_db):
+        """A blank query still applies the metadata where filter."""
+        column_types: ColumnTypes = {"status": FieldTypes.STRING}
+        notes = [
+            NoteData(
+                filename="draft.md", text="draft note", fields={"status": "draft"}
+            ),
+            NoteData(
+                filename="pub.md",
+                text="published note",
+                fields={"status": "published"},
+            ),
+        ]
+        temp_db.upsert_batch(
+            [prepate_database_row(note, column_types) for note in notes]
+        )
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text(
+                "",
+                column_types,
+                n_results=10,
+                where={"status": "draft"},
+            )
+
+        spy.assert_not_called()
+        assert [n.filename for n in results] == ["draft.md"]
+
+    def test_blank_query_paginates(self, temp_db):
+        """offset and n_results page blank-query results without query()."""
+        notes = [
+            NoteData(filename=f"note-{i:02d}.md", text=f"body {i}", fields={})
+            for i in range(15)
+        ]
+        _upsert_notes(temp_db, notes)
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            first = temp_db.query_by_text("", COLUMN_TYPES, n_results=10, offset=0)
+            second = temp_db.query_by_text(
+                "", COLUMN_TYPES, n_results=10, offset=10
+            )
+
+        spy.assert_not_called()
+        assert len(first) == 10
+        assert len(second) == 5
+        assert {n.filename for n in first}.isdisjoint({n.filename for n in second})
+        assert {n.filename for n in first + second} == {
+            f"note-{i:02d}.md" for i in range(15)
+        }
 
 
 if __name__ == "__main__":

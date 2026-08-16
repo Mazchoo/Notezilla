@@ -123,6 +123,31 @@ class NoteDatabase:
                 break
         return matching
 
+    def _search_with_no_text_query(
+        self,
+        column_types: ColumnTypes,
+        n_results: int,
+        offset: int,
+        where: Optional[dict],
+        query_ids: Optional[List[str]],
+    ) -> List[NoteData]:
+        """Return notes by metadata and path filters, without a similarity query."""
+        get_kwargs: Dict[str, Any] = {
+            "limit": n_results,
+            "offset": offset,
+            "include": ["documents", "metadatas"],
+        }
+        if where is not None:
+            get_kwargs["where"] = where
+        if query_ids is not None:
+            get_kwargs["ids"] = query_ids
+        results = self._collection.get(**get_kwargs)
+        return notes_from_chroma(
+            results["documents"] or [],
+            cast(List[Dict[str, Any]], results["metadatas"] or []),
+            column_types,
+        )
+
     def query_by_text(
         self,
         text: str,
@@ -132,14 +157,17 @@ class NoteDatabase:
         offset: int = 0,
         path_filter: Optional[List[str]] = None,
     ) -> List[NoteData]:
-        """Semantic search — returns matching notes.
+        """Return notes matching filters, with optional semantic ranking.
 
-        Pagination: ``offset`` skips that many ranked matches before applying
+        Pagination: ``offset`` skips that many matches before applying
         ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
 
         When ``path_filter`` is non-empty, the index is restricted to ids
         whose filenames start with any listed prefix before the similarity
         query and pagination.
+
+        When ``text`` is blank, notes are returned without a similarity
+        query. Path and metadata filters still apply.
         """
         fetch_count = n_results + offset
         if fetch_count < 1:
@@ -151,6 +179,11 @@ class NoteDatabase:
             if not query_ids:
                 return []
             fetch_count = min(fetch_count, len(query_ids))
+
+        if not text.strip():
+            return self._search_with_no_text_query(
+                column_types, n_results, offset, where, query_ids
+            )
 
         query_kwargs: Dict[str, Any] = {
             "query_texts": [text],

@@ -269,7 +269,16 @@ def get_note(
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes(
-    text: Annotated[str, Field(description="Natural language query to search for")],
+    text: Annotated[
+        str,
+        Field(
+            description=(
+                "Natural language query to search for. A blank query returns "
+                "notes without a text search, applying only path and front "
+                "matter filters if given."
+            )
+        ),
+    ],
     frontmatter: Annotated[
         str,
         Field(
@@ -307,10 +316,11 @@ def search_notes(
         ),
     ] = 0,
 ) -> ToolResult:
-    """Semantically search notes by their content.
+    """Search notes by content. A blank query skips text search and returns
+    notes matching the optional path and front matter filters.
 
     Args:
-        text: Natural language query to search for
+        text: Natural language query to search for; blank skips text search
         frontmatter: Optional YAML front matter used as a metadata filter
         path_filter: Optional comma-separated path prefixes; matching filenames are returned
         n_results: Maximum number of results to return

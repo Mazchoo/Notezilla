@@ -219,6 +219,63 @@ class TestSearchNotes:
 
         assert len(result.structured_content["notes"]) == 3
 
+    def test_blank_query_returns_results(self, mock_db):  # pylint: disable=redefined-outer-name
+        """A blank query returns notes without a text search."""
+        mock_db.query_by_text.return_value = make_notes(
+            docs=["note body"], metas=[{"filename": "a.md"}]
+        )
+
+        result = search_notes(text="")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "", ANY, 10, where=None, offset=0, path_filter=None
+        )
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            NoteData(filename="a.md", text="note body", fields={}).to_dict()
+        ]
+
+    def test_blank_query_with_path_filter(self, mock_db):  # pylint: disable=redefined-outer-name
+        """A blank query still applies path_filter."""
+        mock_db.query_by_text.return_value = make_notes(
+            docs=["in keep"], metas=[{"filename": "keep/a.md"}]
+        )
+
+        result = search_notes(text="", path_filter="keep/")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "", ANY, 10, where=None, offset=0, path_filter=["keep/"]
+        )
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            NoteData(filename="keep/a.md", text="in keep", fields={}).to_dict()
+        ]
+
+    def test_blank_query_with_frontmatter(self, mock_db):  # pylint: disable=redefined-outer-name
+        """A blank query still applies the frontmatter where filter."""
+        mock_db.query_by_text.return_value = make_notes(
+            docs=["draft note"], metas=[{"filename": "draft.md", "status": "draft"}]
+        )
+        column_types = {"status": "str"}
+
+        with patch("src.backend.main.init_column_types", return_value=column_types):
+            result = search_notes(text="", frontmatter="status: draft")
+
+        mock_db.query_by_text.assert_called_once_with(
+            "",
+            column_types,
+            10,
+            where={"status": "draft"},
+            offset=0,
+            path_filter=None,
+        )
+        assert result.content[0].text == "Success"
+        assert result.structured_content["notes"] == [
+            NoteData(
+                filename="draft.md", text="draft note", fields={"status": "draft"}
+            ).to_dict()
+        ]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-x", "--verbose"])

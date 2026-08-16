@@ -19,9 +19,6 @@ fn run_search(
     warn_no_session: bool,
 ) {
     let q = query.get_untracked();
-    if q.trim().is_empty() {
-        return;
-    }
     let sid = match session.get_untracked() {
         Some(s) => s,
         None => {
