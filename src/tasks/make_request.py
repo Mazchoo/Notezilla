@@ -131,18 +131,6 @@ if __name__ == "__main__":
         )
     )
 
-    print("\n=== search_notes_by_field ===")
-    print(
-        call_tool(
-            session, "search_notes_by_field", {"field": "date", "value": "2020-02-09"}
-        )
-    )
-
-    print("\n=== search_notes_by_tag ===")
-    print(
-        call_tool(session, "search_notes_by_tag", {"field": "tags", "value": "journal"})
-    )
-
     print("\n=== upsert_note ===")
     print(
         call_tool(

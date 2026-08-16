@@ -43,8 +43,6 @@ def mock_db():
     with patch("src.backend.mcp_interface.NoteDatabase") as mock_cls:
         db = mock_cls.return_value
         db.query_by_id = MagicMock()
-        db.query_by_field = MagicMock()
-        db.query_field_contains = MagicMock()
         db.query_by_text = MagicMock()
         yield db
     init_db.cache_clear()

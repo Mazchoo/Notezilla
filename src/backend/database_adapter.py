@@ -1,7 +1,7 @@
 """Handles all database interactions for note storage and retrieval"""
 
 import os
-from typing import Any, Dict, List, Optional, cast, Union
+from typing import Any, Dict, List, Optional, cast
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -14,8 +14,6 @@ from src.backend.note import NoteData
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
-
-VALID_QUERY_TYPES = (str, int, float, bool)
 
 
 class NoteDatabase:
@@ -89,54 +87,6 @@ class NoteDatabase:
         """Load note text and decoded front matter for a path key."""
         notes = self.query_by_id(path_key, column_types)
         return notes[0] if notes else None
-
-    def query_by_field(
-        self,
-        field: str,
-        value: Union[str, bool, int, float],
-        column_types: ColumnTypes,
-        n_results: int = 10,
-        offset: int = 0,
-    ) -> List[NoteData]:
-        """Return notes where a metadata field equals the given value.
-
-        Pagination: ``offset`` skips that many matches before applying
-        ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
-        """
-        if not isinstance(value, VALID_QUERY_TYPES):
-            raise ValueError(
-                f"{value}: {type(value)} not in valid query types {VALID_QUERY_TYPES}"
-            )
-
-        results = self._collection.get(
-            where={field: value},
-            limit=n_results,
-            offset=offset,
-            include=["documents", "metadatas"],
-        )
-        return notes_from_chroma(
-            results["documents"] or [],
-            cast(List[Dict[str, Any]], results["metadatas"] or []),
-            column_types,
-        )
-
-    def query_field_contains(
-        self,
-        field: str,
-        value: str,
-        column_types: ColumnTypes,
-        n_results: int = 10,
-        offset: int = 0,
-    ) -> List[NoteData]:
-        """Return notes where a list field contains a value.
-
-        List values are stored as ``field.value: True`` metadata keys.
-        Pagination: ``offset`` skips that many matches before applying
-        ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
-        """
-        return self.query_by_field(
-            f"{field}\t{value}", True, column_types, n_results, offset
-        )
 
     @staticmethod
     def _filter_by_path_prefix(
