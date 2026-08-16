@@ -1,5 +1,7 @@
 """Pagination tests for NoteDatabase query methods."""
 
+from unittest.mock import patch
+
 import pytest
 
 from src.backend.database_adapter import NoteDatabase
@@ -131,6 +133,55 @@ class TestQueryByTextPagination:
 
         assert [n.filename for n in blank] == [n.filename for n in unrestricted]
         assert [n.filename for n in none_filter] == [n.filename for n in unrestricted]
+
+    def test_path_filter_restricts_query_ids_and_n_results(self, temp_db):
+        """path_filter passes only matching ids and a page-sized n_results."""
+        notes = _semantic_notes(8)
+        notes.extend(
+            [
+                NoteData(
+                    filename="keep/a.md",
+                    text="Cats and feline companions in keep a",
+                    fields={},
+                ),
+                NoteData(
+                    filename="keep/b.md",
+                    text="Cats and feline companions in keep b",
+                    fields={},
+                ),
+            ]
+        )
+        _upsert_notes(temp_db, notes)
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text(
+                "cats feline", COLUMN_TYPES, n_results=2, path_filter=["keep/"]
+            )
+
+        spy.assert_called_once()
+        kwargs = spy.call_args.kwargs
+        assert kwargs["n_results"] == 2
+        assert set(kwargs["ids"]) == {"keep/a.md", "keep/b.md"}
+        assert {n.filename for n in results} == {"keep/a.md", "keep/b.md"}
+
+    def test_path_filter_with_no_matching_ids_returns_empty(self, temp_db):
+        """A prefix that matches no ids returns [] without querying."""
+        _upsert_notes(temp_db, _semantic_notes(3))
+
+        with patch.object(
+            temp_db._collection, "query", wraps=temp_db._collection.query
+        ) as spy:
+            results = temp_db.query_by_text(
+                "cats feline",
+                COLUMN_TYPES,
+                n_results=5,
+                path_filter=["missing/"],
+            )
+
+        assert results == []
+        spy.assert_not_called()
 
 
 if __name__ == "__main__":

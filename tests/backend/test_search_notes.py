@@ -1,27 +1,27 @@
-"""Tests for the search_notes_by_text MCP tool."""
+"""Tests for the search_notes MCP tool."""
 
 from unittest.mock import ANY, patch
 
 import pytest
 
 from tests.backend.helpers import make_notes
-from src.backend.main import search_notes_by_text
+from src.backend.main import search_notes
 from src.backend.note import NoteData
 
 
-class TestSearchNotesByText:
-    """Tests for the search_notes_by_text MCP tool.
+class TestSearchNotes:
+    """Tests for the search_notes MCP tool.
 
     The NoteDatabase.query_by_text method is mocked directly on the instance.
     """
 
     def test_returns_matching_documents(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text returns documents from the database."""
+        """search_notes returns documents from the database."""
         mock_db.query_by_text.return_value = make_notes(
             docs=["semantic match"], metas=[{"filename": "result.md"}]
         )
 
-        result = search_notes_by_text(text="find something")
+        result = search_notes(text="find something")
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == [
@@ -29,50 +29,50 @@ class TestSearchNotesByText:
         ]
 
     def test_calls_db_with_correct_args(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text passes text, n_results, and offset to the DB."""
+        """search_notes passes text, n_results, and offset to the DB."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="hello world", n_results=7, offset=10)
+        search_notes(text="hello world", n_results=7, offset=10)
 
         mock_db.query_by_text.assert_called_once_with(
             "hello world", ANY, 7, where=None, offset=10, path_filter=None
         )
 
     def test_default_n_results_is_10(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text uses n_results=10 by default."""
+        """search_notes uses n_results=10 by default."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query")
+        search_notes(text="query")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=None
         )
 
     def test_default_offset_is_zero(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text uses offset=0 by default for pagination."""
+        """search_notes uses offset=0 by default for pagination."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", n_results=7)
+        search_notes(text="query", n_results=7)
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 7, where=None, offset=0, path_filter=None
         )
 
     def test_passes_pagination_offset(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text forwards pagination offset to the DB."""
+        """search_notes forwards pagination offset to the DB."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", n_results=10, offset=10)
+        search_notes(text="query", n_results=10, offset=10)
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=10, path_filter=None
         )
 
     def test_passes_normalised_path_filter(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text normalises path_filter before calling the DB."""
+        """search_notes normalises path_filter before calling the DB."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", path_filter=".\\2026\\02*")
+        search_notes(text="query", path_filter=".\\2026\\02*")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=["2026/02"]
@@ -82,7 +82,7 @@ class TestSearchNotesByText:
         """Blank path_filter is passed as None so the DB ignores it."""
         mock_db.query_by_text.return_value = make_notes()
 
-        result = search_notes_by_text(text="query", path_filter="")
+        result = search_notes(text="query", path_filter="")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=None
@@ -93,7 +93,7 @@ class TestSearchNotesByText:
         """Comma-separated path_filter values are each normalised into a list."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", path_filter="2026/02,folder")
+        search_notes(text="query", path_filter="2026/02,folder")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=["2026/02", "folder"]
@@ -103,7 +103,7 @@ class TestSearchNotesByText:
         """Spaces around comma-separated paths are trimmed before normalisation."""
         mock_db.query_by_text.return_value = make_notes()
 
-        search_notes_by_text(text="query", path_filter=" .\\2026\\02* , ./folder* ")
+        search_notes(text="query", path_filter=" .\\2026\\02* , ./folder* ")
 
         mock_db.query_by_text.assert_called_once_with(
             "query",
@@ -118,7 +118,7 @@ class TestSearchNotesByText:
         """Empty path_filter segments are omitted and listed in warnings."""
         mock_db.query_by_text.return_value = make_notes()
 
-        result = search_notes_by_text(text="query", path_filter="keep/,, drop/")
+        result = search_notes(text="query", path_filter="keep/,, drop/")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=["keep/", "drop/"]
@@ -129,7 +129,7 @@ class TestSearchNotesByText:
         """A path_filter of only empty segments is passed as None and warned about."""
         mock_db.query_by_text.return_value = make_notes()
 
-        result = search_notes_by_text(text="query", path_filter=" , , ")
+        result = search_notes(text="query", path_filter=" , , ")
 
         mock_db.query_by_text.assert_called_once_with(
             "query", ANY, 10, where=None, offset=0, path_filter=None
@@ -137,12 +137,12 @@ class TestSearchNotesByText:
         assert result.structured_content["warnings"]
 
     def test_passes_parsed_frontmatter_as_where(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text parses frontmatter YAML into the where filter."""
+        """search_notes parses frontmatter YAML into the where filter."""
         mock_db.query_by_text.return_value = make_notes()
         column_types = {"status": "str", "tags": "list"}
 
         with patch("src.backend.main.init_column_types", return_value=column_types):
-            search_notes_by_text(
+            search_notes(
                 text="query",
                 frontmatter='status: draft\ntags: ["cheese", "bread"]',
             )
@@ -168,7 +168,7 @@ class TestSearchNotesByText:
         column_types = {"status": "str"}
 
         with patch("src.backend.main.init_column_types", return_value=column_types):
-            result = search_notes_by_text(
+            result = search_notes(
                 text="query",
                 frontmatter="status: draft\nunknown_field: ignore-me",
             )
@@ -184,38 +184,38 @@ class TestSearchNotesByText:
         assert result.structured_content["warnings"]
 
     def test_value_error_returns_type_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text wraps ValueError in an error response."""
+        """search_notes wraps ValueError in an error response."""
         mock_db.query_by_text.side_effect = ValueError("invalid text")
 
-        result = search_notes_by_text(text="query")
+        result = search_notes(text="query")
 
         assert result.content[0].text.startswith("Error")
 
     def test_generic_exception_returns_db_error_message(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text wraps unexpected exceptions in an error response."""
+        """search_notes wraps unexpected exceptions in an error response."""
         mock_db.query_by_text.side_effect = Exception("embedding failure")
 
-        result = search_notes_by_text(text="query")
+        result = search_notes(text="query")
 
         assert result.content[0].text.startswith("Error")
 
     def test_empty_result_from_db(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text handles an empty result set gracefully."""
+        """search_notes handles an empty result set gracefully."""
         mock_db.query_by_text.return_value = []
 
-        result = search_notes_by_text(text="nothing matches")
+        result = search_notes(text="nothing matches")
 
         assert result.content[0].text == "Success"
         assert result.structured_content["notes"] == []
 
     def test_multiple_results_returned(self, mock_db):  # pylint: disable=redefined-outer-name
-        """search_notes_by_text returns all documents from the DB result."""
+        """search_notes returns all documents from the DB result."""
         mock_db.query_by_text.return_value = make_notes(
             docs=["doc A", "doc B", "doc C"],
             metas=[{"filename": "a.md"}, {"filename": "b.md"}, {"filename": "c.md"}],
         )
 
-        result = search_notes_by_text(text="broad query", n_results=3)
+        result = search_notes(text="broad query", n_results=3)
 
         assert len(result.structured_content["notes"]) == 3
 

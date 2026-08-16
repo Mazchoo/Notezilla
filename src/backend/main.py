@@ -268,7 +268,7 @@ def get_note(
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
-def search_notes_by_text(
+def search_notes(
     text: Annotated[str, Field(description="Natural language query to search for")],
     frontmatter: Annotated[
         str,
@@ -333,7 +333,7 @@ def search_notes_by_text(
     except ValueError as e:
         return McpResponse.notes_error(f"Type error: {e}", warnings)
     except Exception as e:  # pylint: disable=broad-except
-        LOGGER.exception("DB error in search_notes_by_text")
+        LOGGER.exception("DB error in search_notes")
         return McpResponse.notes_error(f"DB error: {e}", warnings)
 
 

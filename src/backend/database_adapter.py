@@ -6,7 +6,13 @@ from typing import Any, Dict, List, Optional, cast
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from src.config import DATABASE_FOLDER, COLLECTION_NAME, EMBEDDING_MODEL
+from src.config import (
+    BATCH_SIZE,
+    COLLECTION_NAME,
+    DATABASE_FOLDER,
+    EMBEDDING_MODEL,
+    MAX_DB_ITERATION,
+)
 from src.field_enums import ColumnTypes, ReservedFields
 from src.backend.chroma_parsing import notes_from_chroma
 from src.backend.file_io import delete_all_old_index_folders
@@ -88,21 +94,34 @@ class NoteDatabase:
         notes = self.query_by_id(path_key, column_types)
         return notes[0] if notes else None
 
-    @staticmethod
-    def _filter_by_path_prefix(
-        documents: List[str],
-        metadatas: List[Dict[str, Any]],
-        path_filters: List[str],
-    ) -> tuple[List[str], List[Dict[str, Any]]]:
-        """Keep documents whose filename metadata starts with any path prefix."""
-        filtered_docs: List[str] = []
-        filtered_metas: List[Dict[str, Any]] = []
-        for doc, meta in zip(documents, metadatas):
-            filename = str(meta.get(ReservedFields.FILENAME, ""))
-            if any(filename.startswith(prefix) for prefix in path_filters):
-                filtered_docs.append(doc)
-                filtered_metas.append(meta)
-        return filtered_docs, filtered_metas
+    def _ids_matching_path_prefix(self, path_filters: List[str]) -> List[str]:
+        """Return collection ids whose path starts with any listed prefix.
+
+        IDs are the note filenames. Scans the index in BATCH_SIZE pages so a
+        single get() does not load the full id list. Stops after
+        MAX_ID_SCAN_BATCHES pages.
+        """
+        if not path_filters:
+            return []
+
+        matching: List[str] = []
+        for batch_index in range(MAX_DB_ITERATION):
+            batch = self._collection.get(
+                include=[],
+                limit=BATCH_SIZE,
+                offset=batch_index * BATCH_SIZE,
+            )
+            ids = batch.get("ids") or []
+            if not ids:
+                break
+            matching.extend(
+                doc_id
+                for doc_id in ids
+                if any(doc_id.startswith(prefix) for prefix in path_filters)
+            )
+            if len(ids) < BATCH_SIZE:
+                break
+        return matching
 
     def query_by_text(
         self,
@@ -118,28 +137,33 @@ class NoteDatabase:
         Pagination: ``offset`` skips that many ranked matches before applying
         ``n_results`` (e.g. offset=10, n_results=10 yields results[10:20]).
 
-        When ``path_filter`` is non-empty, only notes whose filenames start
-        with any listed prefix are kept (applied before pagination).
+        When ``path_filter`` is non-empty, the index is restricted to ids
+        whose filenames start with any listed prefix before the similarity
+        query and pagination.
         """
         fetch_count = n_results + offset
-        if path_filter:
-            fetch_count = max(fetch_count, len(self))
         if fetch_count < 1:
             return []
 
-        results = self._collection.query(
-            query_texts=[text],
-            n_results=fetch_count,
-            where=where,
-            include=["documents", "metadatas"],
-        )
+        query_ids: Optional[List[str]] = None
+        if path_filter:
+            query_ids = self._ids_matching_path_prefix(path_filter)
+            if not query_ids:
+                return []
+            fetch_count = min(fetch_count, len(query_ids))
+
+        query_kwargs: Dict[str, Any] = {
+            "query_texts": [text],
+            "n_results": fetch_count,
+            "where": where,
+            "include": ["documents", "metadatas"],
+        }
+        if query_ids is not None:
+            query_kwargs["ids"] = query_ids
+
+        results = self._collection.query(**query_kwargs)
         documents = results["documents"][0] if results["documents"] else []
         metadatas = results["metadatas"][0] if results["metadatas"] else []
-
-        if path_filter:
-            documents, metadatas = self._filter_by_path_prefix(
-                documents, cast(List[Dict[str, Any]], metadatas), path_filter
-            )
 
         end = offset + n_results
         return notes_from_chroma(

@@ -25,7 +25,7 @@ pub async fn search_by_text(
 ) -> Result<Vec<NoteFile>, String> {
     let val = call_tool(
         session_id,
-        "search_notes_by_text",
+        "search_notes",
         json!({
             "text": text,
             "frontmatter": frontmatter,

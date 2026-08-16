@@ -5,7 +5,7 @@
 			"url": "http://localhost:8020/mcp",
 			"disabled": false,
 			"alwaysAllow": [
-				"search_notes_by_text"
+				"search_notes"
 			]
 		}
 	}
