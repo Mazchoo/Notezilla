@@ -28,7 +28,7 @@ Build the UI for both keyword and semantic (vector) search queries. Searching is
 - [x] Results can be filtered by comma separated path start
 - [x] Clicking a result opens the note in the editor.
 - [x] Empty or no-match states display a helpful message for requesting missing field.
-- [ ] Ensure that open ended path queries chunk from the database with a parameter instead of reading everything
+- [x] Ensure that open ended path queries chunk from the database with a parameter instead of reading everything
 - [ ] Searching without text (purely on tags or path) works
 - [ ] Totally empty query will return everything paginated
 - [ ] (Extra) at an abstract interface for the database adatper to BE
