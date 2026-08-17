@@ -8,6 +8,7 @@ from mcp.types import CallToolResult
 from pydantic import BaseModel, PrivateAttr
 
 from src.backend.database_adapter import NoteDatabase
+from src.backend.database_interface import INoteDatabase
 from src.backend.file_io import get_db_column_types
 from src.backend.note import NoteData
 from src.backend.output_schema import (
@@ -20,7 +21,7 @@ from src.field_enums import ColumnTypes
 
 
 @cache
-def init_db() -> NoteDatabase:
+def init_db() -> INoteDatabase:
     """Lazily initialize the database"""
     return NoteDatabase()
 

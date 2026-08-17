@@ -15,6 +15,7 @@ from src.config import (
 )
 from src.field_enums import ColumnTypes, ReservedFields
 from src.backend.chroma_parsing import notes_from_chroma
+from src.backend.database_interface import INoteDatabase
 from src.backend.file_io import delete_all_old_index_folders
 from src.backend.note import NoteData
 
@@ -22,7 +23,7 @@ from src.backend.note import NoteData
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 
-class NoteDatabase:
+class NoteDatabase(INoteDatabase):
     """Manages a ChromaDB collection for markdown notes"""
 
     def __init__(self, path: str = DATABASE_FOLDER):

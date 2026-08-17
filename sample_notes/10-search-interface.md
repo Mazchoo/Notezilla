@@ -31,4 +31,4 @@ Build the UI for both keyword and semantic (vector) search queries. Searching is
 - [x] Ensure that open ended path queries chunk from the database with a parameter instead of reading everything
 - [x] Searching without text (purely on tags or path) works
 - [x] Totally empty query will return everything paginated
-- [ ] (Extra) at an abstract interface for the database adatper to BE
+- [x] (Extra) at an abstract interface for the database adatper to BE
