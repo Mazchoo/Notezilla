@@ -24,6 +24,7 @@ A dedicated view to select a template, trigger Ollama, and review the generated 
 
 ## Acceptance Criteria
 
+- [ ] Add button to close all open markdowns, there will be warning modal if changes were made
 - [ ] A dedicated generation view is accessible from the sidebar or top navigation.
 - [ ] Available templates are listed with name and description; selecting one shows its required inputs.
 - [ ] The user can provide context or placeholder values before generating.
