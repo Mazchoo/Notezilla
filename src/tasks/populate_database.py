@@ -13,6 +13,7 @@ from src.backend.file_io import (
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
+from src.backend.resolved_folders import ResolvedFolder
 
 
 def get_field_type(value) -> FieldTypes:  # pylint: disable=too-many-return-statements
@@ -75,8 +76,8 @@ def put_all_markdowns_note_folder_into_database():
     """Freshly parse all markdown files and add them to chroma db index"""
     column_types = get_default_column_types()
 
-    for path in iterate_all_markdowns():
-        if markdown := IMarkdownFile.construct_from_path(path):
+    for path in iterate_all_markdowns(ResolvedFolder.NOTES):
+        if markdown := IMarkdownFile.construct_from_path(path, ResolvedFolder.NOTES):
             column_types = discover_field_schemas(markdown, column_types)
 
     print(f"Schema: {column_types}")
@@ -85,8 +86,8 @@ def put_all_markdowns_note_folder_into_database():
     db.reset_collection()
 
     batch = []
-    for path in iterate_all_markdowns():
-        if markdown := IMarkdownFile.construct_from_path(path):
+    for path in iterate_all_markdowns(ResolvedFolder.NOTES):
+        if markdown := IMarkdownFile.construct_from_path(path, ResolvedFolder.NOTES):
             batch.append(prepate_database_row(markdown, column_types))
             if len(batch) >= BATCH_SIZE:
                 db.upsert_batch(batch)

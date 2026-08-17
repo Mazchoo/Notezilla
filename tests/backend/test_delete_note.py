@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from src.backend.main import delete_note
+from src.backend.resolved_folders import ResolvedFolder
 from src.config import NOTE_FOLDER
 
 
@@ -38,7 +39,8 @@ class TestDeleteNote:
             delete_note(path="some/path/note.md")
 
         mock_delete.assert_called_once_with(
-            str(Path(NOTE_FOLDER).resolve() / "some" / "path" / "note.md")
+            str(Path(NOTE_FOLDER).resolve() / "some" / "path" / "note.md"),
+            ResolvedFolder.NOTES,
         )
 
     def test_delete_note_does_not_touch_real_filesystem(self):

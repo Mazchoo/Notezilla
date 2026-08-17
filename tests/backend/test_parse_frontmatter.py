@@ -4,7 +4,11 @@ from typing import Any, Optional
 
 import pytest
 
-from src.backend.parse_markdown import clean_path_filter, parse_frontmatter
+from src.backend.parse_markdown import (
+    clean_path_filter,
+    normalise_filter,
+    parse_frontmatter,
+)
 from src.field_enums import ColumnTypes, FieldTypes, ReservedFields
 
 
@@ -147,6 +151,42 @@ def _clean(path_filter: Optional[str]) -> tuple[list[str], list[str]]:
     warnings: list[str] = []
     result = clean_path_filter(path_filter, warnings)
     return result, warnings
+
+
+class TestNormaliseFilter:
+    """Strip and normalise path prefix filters for filename startswith checks."""
+
+    def test_converts_backslashes_to_forward_slashes(self):
+        """Backslashes become forward slashes."""
+        assert normalise_filter("folder\\sub\\note.md") == "folder/sub/note.md"
+
+    def test_removes_trailing_star(self):
+        """A trailing glob star is stripped."""
+        assert normalise_filter("folder/sub*") == "folder/sub"
+
+    def test_removes_leading_dot_slash(self):
+        """A leading ./ prefix is removed."""
+        assert normalise_filter("./folder/sub") == "folder/sub"
+
+    def test_removes_leading_slash(self):
+        """A leading / prefix is removed."""
+        assert normalise_filter("/folder/sub") == "folder/sub"
+
+    def test_combined_cleanup(self):
+        """Backslashes, trailing *, and leading ./ are all normalised."""
+        assert normalise_filter(".\\folder\\sub*") == "folder/sub"
+
+    def test_blank_returns_empty(self):
+        """Blank input yields an empty string."""
+        assert normalise_filter("") == ""
+
+    def test_none_returns_empty(self):
+        """None input yields an empty string."""
+        assert normalise_filter(None) == ""
+
+    def test_unchanged_relative_prefix(self):
+        """A clean relative prefix is returned unchanged."""
+        assert normalise_filter("2026/02") == "2026/02"
 
 
 class TestCleanPathFilter:

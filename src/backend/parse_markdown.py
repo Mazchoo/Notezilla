@@ -15,9 +15,29 @@ from src.backend.file_io import (
     write_file_content,
     get_normalised_path,
     ensure_md_extension,
-    normalise_filter,
 )
+from src.backend.resolved_folders import ResolvedFolder
 from src.field_enums import ColumnTypes, ReservedFields
+
+
+def normalise_filter(path_filter: Optional[str]) -> str:
+    """Normalise a path prefix filter for note filename matching.
+
+    Converts backslashes to forward slashes, strips a trailing ``*``,
+    and removes a leading ``./`` or ``/`` when present. Blank or None
+    yields an empty string.
+    """
+    if not path_filter:
+        return ""
+
+    normalised = path_filter.replace("\\", "/")
+    if normalised.endswith("*"):
+        normalised = normalised[:-1]
+    if normalised.startswith("./"):
+        normalised = normalised[2:]
+    elif normalised.startswith("/"):
+        normalised = normalised[1:]
+    return normalised
 
 
 def parse_frontmatter(
@@ -100,19 +120,26 @@ class IMarkdownFile(NoteData):
     """
 
     @staticmethod
-    def construct_from_path(path: str) -> Optional["IMarkdownFile"]:
-        """Construct note data from existing file."""
-        if not (normed_path := get_normalised_path(path)):
+    def construct_from_path(
+        path: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+    ) -> Optional["IMarkdownFile"]:
+        """Construct note data from existing file in the given folder."""
+        if not (normed_path := get_normalised_path(path, folder)):
             return None
 
-        if not (content := read_file_content(str(absolute_note_path(normed_path)))):
+        if not (
+            content := read_file_content(str(absolute_note_path(normed_path, folder)))
+        ):
             return None
 
         return IMarkdownFile.from_payload(content, normed_path)
 
     @staticmethod
     def construct_from_data(
-        path: str, body: str, fields: dict
+        path: str,
+        body: str,
+        fields: dict,
+        folder: ResolvedFolder = ResolvedFolder.NOTES,
     ) -> Optional[tuple["IMarkdownFile", bool]]:
         """
         Construct note from data and return it if it was successfully created.
@@ -124,14 +151,15 @@ class IMarkdownFile(NoteData):
         """
         path = ensure_md_extension(path)
 
-        if not (normed_path := get_normalised_path(path)):
+        if not (normed_path := get_normalised_path(path, folder)):
             return None
 
         note = IMarkdownFile(fields=fields, text=body, filename=normed_path)
-        if not ensure_note_parent_dirs(str(note.project_path)):
+        target = absolute_note_path(normed_path, folder)
+        if not ensure_note_parent_dirs(str(target), folder):
             return None
-        new_file_created = not note.project_path.exists()
-        if not write_file_content(str(note.project_path), note.to_file_string()):
+        new_file_created = not target.exists()
+        if not write_file_content(str(target), note.to_file_string(), folder):
             return None
 
         return (note, new_file_created)

@@ -3,6 +3,7 @@
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
+from src.backend.resolved_folders import ResolvedFolder
 from src.tasks.check_path_sync import check_path_sync
 
 
@@ -21,7 +22,7 @@ def restore_missing_files_from_db() -> list[str]:
     saved: list[str] = []
 
     for path in sorted(db_only):
-        path_key = get_normalised_path(path)
+        path_key = get_normalised_path(path, ResolvedFolder.NOTES)
         if path_key is None:
             continue
         note = db.get_note_from_path_key(path_key, column_types)

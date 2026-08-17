@@ -18,6 +18,7 @@ from src.backend.parse_markdown import IMarkdownFile
 from src.backend.database_update import prepate_database_row
 from src.backend.file_io import get_normalised_path
 from src.backend.logger import LOGGER
+from src.backend.resolved_folders import ResolvedFolder
 from src.field_enums import ColumnTypes
 
 
@@ -76,7 +77,9 @@ class PyFileHandler(FileSystemEventHandler):
         for update in queue:
             if update.event_type in ["created", "modified"]:
                 resolved_path = Path(str(update.src_path)).resolve()
-                if markdown := IMarkdownFile.construct_from_path(resolved_path):
+                if markdown := IMarkdownFile.construct_from_path(
+                    str(resolved_path), ResolvedFolder.NOTES
+                ):
                     upsert_batch.append(
                         prepate_database_row(markdown, self.column_types)
                     )
@@ -84,7 +87,7 @@ class PyFileHandler(FileSystemEventHandler):
 
             if update.event_type == "deleted":
                 resolved_path = Path(str(update.src_path)).resolve()
-                if path_key := get_normalised_path(resolved_path):
+                if path_key := get_normalised_path(resolved_path, ResolvedFolder.NOTES):
                     delete_batch.append(path_key)
                     total_removed += 1
 

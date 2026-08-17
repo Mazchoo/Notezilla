@@ -1,6 +1,7 @@
 """Delete note files on disk that have no corresponding database entry."""
 
 from src.backend.file_io import delete_note_file
+from src.backend.resolved_folders import ResolvedFolder
 from src.tasks.check_path_sync import check_path_sync
 
 
@@ -16,7 +17,7 @@ def delete_only_in_dir() -> list[str]:
 
     deleted: list[str] = []
     for path in sorted(dir_only):
-        if delete_note_file(path):
+        if delete_note_file(path, ResolvedFolder.NOTES):
             deleted.append(path)
 
     return deleted

@@ -2,6 +2,7 @@
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_normalised_path
+from src.backend.resolved_folders import ResolvedFolder
 from src.tasks.check_path_sync import check_path_sync
 
 
@@ -17,7 +18,7 @@ def delete_only_in_db() -> list[str]:
 
     delete_ids: list[str] = []
     for path in sorted(db_only):
-        if path_key := get_normalised_path(path):
+        if path_key := get_normalised_path(path, ResolvedFolder.NOTES):
             delete_ids.append(path_key)
 
     if delete_ids:

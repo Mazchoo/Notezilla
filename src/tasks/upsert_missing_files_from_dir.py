@@ -4,6 +4,7 @@ from src.backend.database_adapter import NoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
+from src.backend.resolved_folders import ResolvedFolder
 from src.tasks.check_path_sync import check_path_sync
 
 
@@ -24,7 +25,7 @@ def upsert_missing_files_from_dir() -> tuple[list[str], list[str]]:
     rows: list[dict] = []
 
     for path in sorted(dir_only):
-        if get_normalised_path(path) is None:
+        if get_normalised_path(path, ResolvedFolder.NOTES) is None:
             failures.append(path)
             continue
 

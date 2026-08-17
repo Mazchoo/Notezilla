@@ -9,6 +9,7 @@ from src.backend.file_io import (
     construct_yaml_header,
     extract_yaml_from_file_contents,
 )
+from src.backend.resolved_folders import ResolvedFolder
 
 
 @dataclass
@@ -42,7 +43,7 @@ class NoteData:
     @property
     def project_path(self) -> Path:
         """Absolute path to this note under the note folder."""
-        return file_io.absolute_note_path(self.filename)
+        return file_io.absolute_note_path(self.filename, ResolvedFolder.NOTES)
 
     def to_file_string(self) -> str:
         """Serialise to markdown file contents with YAML front matter."""

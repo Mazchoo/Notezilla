@@ -7,6 +7,9 @@ from typing import Dict, Iterable, Iterator, List, Mapping, Optional
 from src.backend.note import NoteData
 
 MOCK_NOTES_FOLDER = (Path(__file__).resolve().parent.parent / "mock_notes").resolve()
+MOCK_TEMPLATES_FOLDER = (
+    Path(__file__).resolve().parent.parent / "mock_templates"
+).resolve()
 
 
 def make_notes(docs=None, metas=None) -> List[NoteData]:

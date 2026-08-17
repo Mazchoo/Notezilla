@@ -7,13 +7,14 @@ from src.backend.file_io import (
     iterate_all_markdowns,
     resolve_note_path,
 )
+from src.backend.resolved_folders import ResolvedFolder
 
 
 def get_database_paths(db: NoteDatabase) -> set[str]:
     """Return all normalised note paths stored in the database."""
     paths = set()
     for key in db._collection.get(include=[]).get("ids", []):
-        if path := resolve_note_path(key):
+        if path := resolve_note_path(key, ResolvedFolder.NOTES):
             paths.add(path)
     return paths
 
@@ -21,8 +22,8 @@ def get_database_paths(db: NoteDatabase) -> set[str]:
 def get_directory_paths() -> set[str]:
     """Return all normalised note paths found under the notes folder."""
     paths: set[str] = set()
-    for path in iterate_all_markdowns():
-        paths.add(resolve_note_path(Path(path).resolve()))
+    for path in iterate_all_markdowns(ResolvedFolder.NOTES):
+        paths.add(resolve_note_path(Path(path).resolve(), ResolvedFolder.NOTES))
     return paths
 
 

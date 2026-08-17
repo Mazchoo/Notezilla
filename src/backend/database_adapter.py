@@ -11,7 +11,7 @@ from src.config import (
     COLLECTION_NAME,
     DATABASE_FOLDER,
     EMBEDDING_MODEL,
-    MAX_DB_ITERATION,
+    MAX_DB_BATCH_ITERATION,
 )
 from src.field_enums import ColumnTypes, ReservedFields
 from src.backend.chroma_parsing import notes_from_chroma
@@ -106,7 +106,7 @@ class NoteDatabase(INoteDatabase):
             return []
 
         matching: List[str] = []
-        for batch_index in range(MAX_DB_ITERATION):
+        for batch_index in range(MAX_DB_BATCH_ITERATION):
             batch = self._collection.get(
                 include=[],
                 limit=BATCH_SIZE,

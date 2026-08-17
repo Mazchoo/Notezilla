@@ -9,10 +9,9 @@ import json
 
 import yaml
 
-from src.config import NOTE_FOLDER, DATABASE_FOLDER
+from src.config import DATABASE_FOLDER
+from src.backend.resolved_folders import ResolvedFolder
 from src.field_enums import ReservedFields, ColumnTypes
-
-RESOLVED_NOTE_FOLDER = Path(NOTE_FOLDER).resolve()
 
 
 def read_file_content(path: str) -> Optional[str]:
@@ -24,14 +23,16 @@ def read_file_content(path: str) -> Optional[str]:
         return None
 
 
-def get_normalised_path(path: Union[str, Path]) -> Optional[str]:
+def get_normalised_path(
+    path: Union[str, Path], folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> Optional[str]:
     """
     Get standardized path with forward slashes to make path a unique identifier.
-    This key is the relative path in the repo to the note folder and defintitive key.
-    Trailing . and * will be removed.
+    This key is the relative path in the repo to the given folder and
+    definitive key. Trailing . and * will be removed.
 
-    Relative paths are resolved against the note folder. Absolute paths must
-    already lie inside the note folder.
+    Relative paths are resolved against the given folder. Absolute paths must
+    already lie inside that folder.
     """
     if isinstance(path, Path):
         path = str(path)
@@ -39,15 +40,16 @@ def get_normalised_path(path: Union[str, Path]) -> Optional[str]:
     if len(path) > 0 and path[-1] in [".", "*"]:
         path = path[:-1]
 
+    root = folder.value
     candidate = Path(path)
     if candidate.is_absolute():
         resolved_path = candidate.resolve()
     else:
-        resolved_path = (RESOLVED_NOTE_FOLDER / candidate).resolve()
+        resolved_path = (root / candidate).resolve()
 
-    if not resolved_path.is_relative_to(RESOLVED_NOTE_FOLDER):
+    if not resolved_path.is_relative_to(root):
         return None
-    return "/".join(resolved_path.relative_to(RESOLVED_NOTE_FOLDER).parts)
+    return "/".join(resolved_path.relative_to(root).parts)
 
 
 def split_path_filters(path_filter: Optional[str]) -> list[str]:
@@ -61,43 +63,27 @@ def split_path_filters(path_filter: Optional[str]) -> list[str]:
     return [part.strip() for part in path_filter.split(",") if part.strip()]
 
 
-def normalise_filter(path_filter: Optional[str]) -> str:
-    """Normalise a path prefix filter for note filename matching.
-
-    Converts backslashes to forward slashes, strips a trailing ``*``,
-    and removes a leading ``./`` or ``/`` when present. Blank or None
-    yields an empty string.
-    """
-    if not path_filter:
-        return ""
-
-    normalised = path_filter.replace("\\", "/")
-    if normalised.endswith("*"):
-        normalised = normalised[:-1]
-    if normalised.startswith("./"):
-        normalised = normalised[2:]
-    elif normalised.startswith("/"):
-        normalised = normalised[1:]
-    return normalised
-
-
-def absolute_note_path(path_key: str) -> Path:
-    """Absolute Path for a normalised (note-folder-relative) path."""
+def absolute_note_path(
+    path_key: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> Path:
+    """Absolute Path for a normalised (folder-relative) path."""
     if not path_key:
-        return RESOLVED_NOTE_FOLDER
-    return RESOLVED_NOTE_FOLDER.joinpath(*Path(path_key).parts)
+        return folder.value
+    return folder.value.joinpath(*Path(path_key).parts)
 
 
-def resolve_note_path(path: str) -> Optional[str]:
+def resolve_note_path(
+    path: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> Optional[str]:
     """
-    Resolve a note path to an absolute filesystem path string.
+    Resolve a path to an absolute filesystem path string.
 
-    Accepts note-folder-relative or absolute paths. Returns None when the path
-    is outside the note folder.
+    Accepts folder-relative or absolute paths. Returns None when the path
+    is outside the given folder.
     """
-    if (normed_path := get_normalised_path(path)) is None:
+    if (normed_path := get_normalised_path(path, folder)) is None:
         return None
-    return str(absolute_note_path(normed_path))
+    return str(absolute_note_path(normed_path, folder))
 
 
 def ensure_md_extension(path: str) -> str:
@@ -121,18 +107,23 @@ def ensure_md_extension(path: str) -> str:
 
 def get_dirs_and_md_files(
     target_dir: str,
+    folder: ResolvedFolder = ResolvedFolder.NOTES,
 ) -> Tuple[list[str], list[str], Optional[str]]:
     """
-    List immediate child folders and file names under a note-folder path.
+    List immediate child folders and file names under a folder-relative path.
     An error message will return if any error is thrown
     """
-    normed_path = get_normalised_path(target_dir)
+    normed_path = get_normalised_path(target_dir, folder)
     if normed_path is None:
-        return [], [], f"Path not recognised in note folder {target_dir}"
+        return (
+            [],
+            [],
+            f"Path not recognised in {folder.name.lower()} folder {target_dir}",
+        )
 
     folders: list[str] = []
     files: list[str] = []
-    path = absolute_note_path(normed_path)
+    path = absolute_note_path(normed_path, folder)
 
     try:
         with os.scandir(path) as entries:
@@ -149,16 +140,18 @@ def get_dirs_and_md_files(
     return folders, files, None
 
 
-def ensure_note_parent_dirs(path: str) -> bool:
+def ensure_note_parent_dirs(
+    path: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> bool:
     """
-    Create parent directories for a note path within the note folder.
-    Returns True on success, False if path is outside note folder or on error.
+    Create parent directories for a path within the given folder.
+    Returns True on success, False if path is outside the folder or on error.
     """
-    if not (normed_path := get_normalised_path(path)):
+    if not (normed_path := get_normalised_path(path, folder)):
         return False
 
-    parent = absolute_note_path(normed_path).parent
-    if parent == RESOLVED_NOTE_FOLDER:
+    parent = absolute_note_path(normed_path, folder).parent
+    if parent == folder.value:
         return True
 
     try:
@@ -168,54 +161,58 @@ def ensure_note_parent_dirs(path: str) -> bool:
     return True
 
 
-def write_file_content(path: str, contents: str) -> bool:
+def write_file_content(
+    path: str, contents: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> bool:
     """
     Write file contents to relative path and return True on success
-    Will only write to note folder
-    NB: writing .md files to NOTE_FOLDER has side effect of updating database
+    Will only write inside the given folder
+    NB: writing .md files to NOTES has side effect of updating database
     """
-    if not (normed_path := get_normalised_path(path)):
+    if not (normed_path := get_normalised_path(path, folder)):
         return False
 
     try:
-        with open(str(absolute_note_path(normed_path)), "w", encoding="utf-8") as f:
+        with open(
+            str(absolute_note_path(normed_path, folder)), "w", encoding="utf-8"
+        ) as f:
             f.write(contents)
     except OSError:
         return False
     return True
 
 
-def delete_note_file(path: str) -> bool:
+def delete_note_file(path: str, folder: ResolvedFolder = ResolvedFolder.NOTES) -> bool:
     """
     Delete relative path and return True on success
-    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    NB: modifying .md files in NOTES has side effect of updating database
     """
-    if not (normed_path := get_normalised_path(path)):
+    if not (normed_path := get_normalised_path(path, folder)):
         return False
 
     try:
-        absolute_note_path(normed_path).unlink()
+        absolute_note_path(normed_path, folder).unlink()
     except OSError:
         return False
     return True
 
 
-def create_new_folder(path: str) -> bool:
+def create_new_folder(path: str, folder: ResolvedFolder = ResolvedFolder.NOTES) -> bool:
     """
-    Create a folder within the note folder.
+    Create a folder within the given folder.
     Returns True on success.
 
     Creates missing parent directories. False if:
-    - path is outside note folder
-    - path is the note folder itself
+    - path is outside the given folder
+    - path is the given folder itself
     - path already exists
     - OS returns an error
     """
-    normed_path = get_normalised_path(path)
+    normed_path = get_normalised_path(path, folder)
     if not normed_path:
         return False
 
-    target = absolute_note_path(normed_path)
+    target = absolute_note_path(normed_path, folder)
     if target.exists():
         return False
 
@@ -226,23 +223,25 @@ def create_new_folder(path: str) -> bool:
     return True
 
 
-def delete_notes_folder(path: str) -> bool:
+def delete_notes_folder(
+    path: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> bool:
     """
-    Recursively delete a folder (and its contents) within the note folder.
+    Recursively delete a folder (and its contents) within the given folder.
     Returns True on success
 
     False if:
-    - path is outside note folder
+    - path is outside the given folder
     - not a directory
-    - the note folder itself
+    - the given folder itself
     - OS returns an error
-    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    NB: modifying .md files in NOTES has side effect of updating database
     """
-    normed_path = get_normalised_path(path)
+    normed_path = get_normalised_path(path, folder)
     if not normed_path:
         return False
 
-    target = absolute_note_path(normed_path)
+    target = absolute_note_path(normed_path, folder)
     if not target.is_dir():
         return False
 
@@ -253,27 +252,29 @@ def delete_notes_folder(path: str) -> bool:
     return True
 
 
-def move_file_or_folder(src: str, dst: str) -> bool:
+def move_file_or_folder(
+    src: str, dst: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> bool:
     """
-    Move a file or directory into a destination folder within the note folder.
+    Move a file or directory into a destination folder within the given folder.
     Returns True on success.
 
     False if:
-    - src or dst is outside note folder
-    - src is the note folder itself
+    - src or dst is outside the given folder
+    - src is the given folder itself
     - src does not exist
     - dst is not an existing directory
     - dst is inside src (when src is a directory)
     - OS returns an error
-    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    NB: modifying .md files in NOTES has side effect of updating database
     """
-    src_normed = get_normalised_path(src)
-    dst_normed = get_normalised_path(dst)
+    src_normed = get_normalised_path(src, folder)
+    dst_normed = get_normalised_path(dst, folder)
     if not src_normed or dst_normed is None:
         return False
 
-    src_path = absolute_note_path(src_normed)
-    dst_path = absolute_note_path(dst_normed)
+    src_path = absolute_note_path(src_normed, folder)
+    dst_path = absolute_note_path(dst_normed, folder)
 
     if not src_path.exists() or not dst_path.is_dir():
         return False
@@ -288,9 +289,11 @@ def move_file_or_folder(src: str, dst: str) -> bool:
     return True
 
 
-def rename_basename(path: str, new_name: str) -> bool:
+def rename_basename(
+    path: str, new_name: str, folder: ResolvedFolder = ResolvedFolder.NOTES
+) -> bool:
     """
-    Rename a file or directory within the note folder.
+    Rename a file or directory within the given folder.
     Returns True on success.
 
     When renaming a file, if new_name has no extension the source file
@@ -298,29 +301,29 @@ def rename_basename(path: str, new_name: str) -> bool:
     Directory renames leave new_name unchanged.
 
     False if:
-    - path or resulting destination is outside note folder
-    - path is the note folder itself
+    - path or resulting destination is outside the given folder
+    - path is the given folder itself
     - path does not exist
     - destination already exists
     - OS returns an error
-    NB: modifying .md files in NOTE_FOLDER has side effect of updating database
+    NB: modifying .md files in NOTES has side effect of updating database
     """
-    normed_path = get_normalised_path(path)
+    normed_path = get_normalised_path(path, folder)
     if not normed_path:
         return False
 
-    src_path = absolute_note_path(normed_path)
+    src_path = absolute_note_path(normed_path, folder)
     if not src_path.exists():
         return False
 
     if src_path.is_file() and src_path.suffix and not Path(new_name).suffix:
         new_name = f"{new_name}{src_path.suffix}"
 
-    dst_normed = get_normalised_path(str(src_path.parent / new_name))
+    dst_normed = get_normalised_path(str(src_path.parent / new_name), folder)
     if not dst_normed:
         return False
 
-    dst_path = absolute_note_path(dst_normed)
+    dst_path = absolute_note_path(dst_normed, folder)
 
     if dst_path.exists():
         return False
@@ -387,9 +390,11 @@ def construct_yaml_header(data: dict) -> str:
     return f"---\n{yaml_block}---\n"
 
 
-def iterate_all_markdowns() -> Iterable[str]:
-    """Iterate through notes folder and return all markdown paths"""
-    for root, _, files in os.walk(NOTE_FOLDER):
+def iterate_all_markdowns(
+    folder: ResolvedFolder = ResolvedFolder.NOTES,
+) -> Iterable[str]:
+    """Iterate through the given folder and return all markdown paths"""
+    for root, _, files in os.walk(folder.value):
         for file in files:
             if file.endswith(".md"):
                 yield os.path.join(root, file)

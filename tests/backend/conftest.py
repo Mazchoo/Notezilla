@@ -6,7 +6,8 @@ import pytest
 
 from src.backend.database_adapter import NoteDatabase
 from src.backend.mcp_interface import init_db
-from tests.backend.helpers import MOCK_NOTES_FOLDER
+from src.backend.resolved_folders import ResolvedFolder
+from tests.backend.helpers import MOCK_NOTES_FOLDER, MOCK_TEMPLATES_FOLDER
 
 
 @pytest.fixture(autouse=True)
@@ -19,12 +20,16 @@ def clear_init_db_cache():
 
 @pytest.fixture()
 def mock_notes_folder():
-    """Point NOTE_FOLDER at tests/mock_notes for filesystem-backed tests."""
-    with (
-        patch("src.backend.file_io.NOTE_FOLDER", str(MOCK_NOTES_FOLDER)),
-        patch("src.backend.file_io.RESOLVED_NOTE_FOLDER", MOCK_NOTES_FOLDER),
-    ):
+    """Point ResolvedFolder.NOTES at tests/mock_notes for filesystem-backed tests."""
+    with patch.object(ResolvedFolder.NOTES, "_value_", MOCK_NOTES_FOLDER):
         yield MOCK_NOTES_FOLDER
+
+
+@pytest.fixture()
+def mock_templates_folder():
+    """Point ResolvedFolder.TEMPLATES at tests/mock_templates."""
+    with patch.object(ResolvedFolder.TEMPLATES, "_value_", MOCK_TEMPLATES_FOLDER):
+        yield MOCK_TEMPLATES_FOLDER
 
 
 @pytest.fixture()

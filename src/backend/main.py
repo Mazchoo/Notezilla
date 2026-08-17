@@ -32,6 +32,7 @@ from src.backend.output_schema import (
     NOTES_OUTPUT_SCHEMA,
     UPSERT_OUTPUT_SCHEMA,
 )
+from src.backend.resolved_folders import ResolvedFolder
 
 MCP = FastMCP("Notezilla")
 
@@ -74,7 +75,9 @@ def upsert_note(
         fields: Dictionary of metadata fields to convert into a YAML header
     """
     warnings: list[str] = []
-    result = IMarkdownFile.construct_from_data(path, contents, fields)
+    result = IMarkdownFile.construct_from_data(
+        path, contents, fields, ResolvedFolder.NOTES
+    )
     if result:
         _, new_file_created = result
         return McpResponse.upsert(new_file_created, warnings)
@@ -96,8 +99,8 @@ def delete_note(
         path: Relative path of the note to delete e.g. "folder/filename.md"
     """
     warnings: list[str] = []
-    resolved = resolve_note_path(path)
-    if resolved and delete_note_file(resolved):
+    resolved = resolve_note_path(path, ResolvedFolder.NOTES)
+    if resolved and delete_note_file(resolved, ResolvedFolder.NOTES):
         return McpResponse.empty(warnings)
     return McpResponse.empty_error(
         f"Failed to delete note at '{path}'. Ensure the path is valid.",
@@ -123,7 +126,7 @@ def new_dir(
         path: Relative path of the folder to create e.g. "folder" or "folder/subfolder"
     """
     warnings: list[str] = []
-    if create_new_folder(path):
+    if create_new_folder(path, ResolvedFolder.NOTES):
         return McpResponse.empty(warnings)
     return McpResponse.empty_error(
         f"Failed to create folder at '{path}'. "
@@ -147,7 +150,7 @@ def delete_folder(
         path: Relative path of the folder to delete e.g. "folder" or "folder/subfolder"
     """
     warnings: list[str] = []
-    if delete_notes_folder(path):
+    if delete_notes_folder(path, ResolvedFolder.NOTES):
         return McpResponse.empty(warnings)
     return McpResponse.empty_error(
         f"Failed to delete folder at '{path}'. "
@@ -178,7 +181,7 @@ def move_dir(
         dst: Relative path of the destination directory e.g. "archive" or ""
     """
     warnings: list[str] = []
-    if move_file_or_folder(src, dst):
+    if move_file_or_folder(src, dst, ResolvedFolder.NOTES):
         return McpResponse.empty(warnings)
     return McpResponse.empty_error(
         f"Failed to move '{src}' into '{dst}'. "
@@ -216,7 +219,7 @@ def rename_dir(
         new_name: New basename for the file or folder e.g. "renamed" or "renamed.md"
     """
     warnings: list[str] = []
-    if rename_basename(path, new_name):
+    if rename_basename(path, new_name, ResolvedFolder.NOTES):
         return McpResponse.empty(warnings)
     return McpResponse.empty_error(
         f"Failed to rename '{path}' to '{new_name}'. "
@@ -239,7 +242,7 @@ def get_dir_contents(
         path: Relative path of the directory to list e.g. "folder".
     """
     warnings: list[str] = []
-    folders, files, error = get_dirs_and_md_files(path)
+    folders, files, error = get_dirs_and_md_files(path, ResolvedFolder.NOTES)
     if error:
         return McpResponse.directory_error(error, folders, files, warnings)
     return McpResponse.directory(folders, files, warnings)
@@ -261,10 +264,48 @@ def get_note(
         path: Relative path of the note e.g. "folder/filename.md"
     """
     warnings: list[str] = []
-    note = IMarkdownFile.construct_from_path(path)
+    note = IMarkdownFile.construct_from_path(path, ResolvedFolder.NOTES)
     if note is None:
         return McpResponse.notes_error(f"Note not found at '{path}'", warnings)
     return McpResponse.notes([note], warnings)
+
+
+@MCP.tool(output_schema=DIRECTORY_OUTPUT_SCHEMA)
+def get_template_dir_contents(
+    path: Annotated[
+        str,
+        Field(description='Relative path of the directory to list e.g. "folder" or ""'),
+    ] = "",
+) -> ToolResult:
+    """List immediate child folders and file names under a directory in the template folder.
+
+    Args:
+        path: Relative path of the directory to list e.g. "folder".
+    """
+    warnings: list[str] = []
+    folders, files, error = get_dirs_and_md_files(path, ResolvedFolder.TEMPLATES)
+    if error:
+        return McpResponse.directory_error(error, folders, files, warnings)
+    return McpResponse.directory(folders, files, warnings)
+
+
+@MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
+def get_template(
+    path: Annotated[
+        str,
+        Field(description='Relative path of the template e.g. "animal_facts.md"'),
+    ],
+) -> ToolResult:
+    """Get a single template by its file path.
+
+    Args:
+        path: Relative path of the template e.g. "animal_facts.md"
+    """
+    warnings: list[str] = []
+    template = IMarkdownFile.construct_from_path(path, ResolvedFolder.TEMPLATES)
+    if template is None:
+        return McpResponse.notes_error(f"Template not found at '{path}'", warnings)
+    return McpResponse.notes([template], warnings)
 
 
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)

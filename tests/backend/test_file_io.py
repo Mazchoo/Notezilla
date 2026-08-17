@@ -14,12 +14,12 @@ from src.backend.file_io import (
     extract_yaml_from_file_contents,
     get_normalised_path,
     move_file_or_folder,
-    normalise_filter,
     read_file_content,
     split_path_filters,
     rename_basename,
     write_file_content,
 )
+from src.backend.resolved_folders import ResolvedFolder
 from tests.backend.helpers import MOCK_NOTES_FOLDER, temporary_notes
 
 
@@ -126,47 +126,6 @@ class TestSplitPathFilters:
 
 
 # ---------------------------------------------------------------------------
-# normalise_filter
-# ---------------------------------------------------------------------------
-
-
-class TestNormaliseFilter:
-    """Strip and normalise path prefix filters for filename startswith checks."""
-
-    def test_converts_backslashes_to_forward_slashes(self):
-        """Backslashes become forward slashes."""
-        assert normalise_filter("folder\\sub\\note.md") == "folder/sub/note.md"
-
-    def test_removes_trailing_star(self):
-        """A trailing glob star is stripped."""
-        assert normalise_filter("folder/sub*") == "folder/sub"
-
-    def test_removes_leading_dot_slash(self):
-        """A leading ./ prefix is removed."""
-        assert normalise_filter("./folder/sub") == "folder/sub"
-
-    def test_removes_leading_slash(self):
-        """A leading / prefix is removed."""
-        assert normalise_filter("/folder/sub") == "folder/sub"
-
-    def test_combined_cleanup(self):
-        """Backslashes, trailing *, and leading ./ are all normalised."""
-        assert normalise_filter(".\\folder\\sub*") == "folder/sub"
-
-    def test_blank_returns_empty(self):
-        """Blank input yields an empty string."""
-        assert normalise_filter("") == ""
-
-    def test_none_returns_empty(self):
-        """None input yields an empty string."""
-        assert normalise_filter(None) == ""
-
-    def test_unchanged_relative_prefix(self):
-        """A clean relative prefix is returned unchanged."""
-        assert normalise_filter("2026/02") == "2026/02"
-
-
-# ---------------------------------------------------------------------------
 # get_normalised_path
 # ---------------------------------------------------------------------------
 
@@ -220,6 +179,33 @@ class TestGetNormalisedPath:
             once = get_normalised_path(path)
             assert once is not None
             assert get_normalised_path(once) == once
+
+    def test_relative_path_resolved_against_template_folder(
+        self, mock_templates_folder
+    ):
+        assert (
+            get_normalised_path("animal_facts.md", ResolvedFolder.TEMPLATES)
+            == "animal_facts.md"
+        )
+
+    def test_absolute_path_inside_template_folder(self, mock_templates_folder):
+        assert (
+            get_normalised_path(
+                str(mock_templates_folder / "animal_facts.md"),
+                ResolvedFolder.TEMPLATES,
+            )
+            == "animal_facts.md"
+        )
+
+    def test_note_path_rejected_for_template_folder(
+        self, mock_notes_folder, mock_templates_folder
+    ):
+        assert (
+            get_normalised_path(
+                str(mock_notes_folder / "example.md"), ResolvedFolder.TEMPLATES
+            )
+            is None
+        )
 
 
 # ---------------------------------------------------------------------------
