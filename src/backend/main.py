@@ -308,6 +308,63 @@ def get_template(
     return McpResponse.notes([template], warnings)
 
 
+@MCP.tool(output_schema=UPSERT_OUTPUT_SCHEMA)
+def upsert_template(
+    path: Annotated[
+        str,
+        Field(description='Relative path for the template e.g. "folder/filename.md"'),
+    ],
+    contents: Annotated[str, Field(description="The markdown body of the template")],
+    fields: Annotated[
+        dict,
+        Field(
+            description="Dictionary of metadata fields to convert into a YAML header"
+        ),
+    ],
+) -> ToolResult:
+    """Create or update a template file with a YAML frontmatter header.
+
+    Args:
+        path: Relative path for the template e.g. "folder/filename.md"
+        contents: The markdown body of the template
+        fields: Dictionary of metadata fields to convert into a YAML header
+    """
+    warnings: list[str] = []
+    result = IMarkdownFile.construct_from_data(
+        path, contents, fields, ResolvedFolder.TEMPLATES
+    )
+    if result:
+        _, new_file_created = result
+        return McpResponse.upsert(new_file_created, warnings)
+    return McpResponse.upsert_error(
+        f"Failed to upsert template at '{path}'.", warnings
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_template(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the template to delete e.g. "animal_facts.md"'
+        ),
+    ],
+) -> ToolResult:
+    """Delete a template file.
+
+    Args:
+        path: Relative path of the template to delete e.g. "animal_facts.md"
+    """
+    warnings: list[str] = []
+    resolved = resolve_note_path(path, ResolvedFolder.TEMPLATES)
+    if resolved and delete_note_file(resolved, ResolvedFolder.TEMPLATES):
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
+        f"Failed to delete template at '{path}'. Ensure the path is valid.",
+        warnings,
+    )
+
+
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes(
     text: Annotated[

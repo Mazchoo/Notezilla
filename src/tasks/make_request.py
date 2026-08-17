@@ -170,3 +170,27 @@ if __name__ == "__main__":
 
     print("\n=== delete_folder ===")
     print(call_tool(session, "delete_folder", {"path": "some-random-folder"}))
+
+    print("\n=== get_template ===")
+    print(call_tool(session, "get_template", {"path": "animal_facts.md"}))
+
+    print("\n=== get_template_dir_contents ===")
+    print(call_tool(session, "get_template_dir_contents", {"path": ""}))
+
+    print("\n=== upsert_template ===")
+    print(
+        call_tool(
+            session,
+            "upsert_template",
+            {
+                "path": "my-template.md",
+                "contents": "Make a report",
+                "fields": {"tags": ["graph"]},
+            },
+        )
+    )
+
+    print("\n=== delete_template ===")
+    print(
+        call_tool(session, "delete_template", {"path": "my-template.md"})
+    )
