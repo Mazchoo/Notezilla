@@ -100,7 +100,7 @@ class NoteDatabase(INoteDatabase):
 
         IDs are the note filenames. Scans the index in BATCH_SIZE pages so a
         single get() does not load the full id list. Stops after
-        MAX_ID_SCAN_BATCHES pages.
+        MAX_DB_BATCH_ITERATION pages.
         """
         if not path_filters:
             return []
