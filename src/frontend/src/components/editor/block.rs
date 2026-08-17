@@ -2,7 +2,7 @@ use crate::components::editor::actions::{add_front_matter, delete_entry, delete_
 use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };
-use crate::models::block::{FrontMatterBlock, MarkdownBlock, TitleBlock};
+use crate::models::block::{EditorEntry, FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
 use icondata as id;
 use leptos::either::Either;
@@ -10,9 +10,34 @@ use leptos::html::{Input, Textarea};
 use leptos::prelude::*;
 use leptos_icons::Icon;
 
+/// Renders one editor entry: divider, file-path title, optional front matter, and markdown.
+/// The title row includes a disclosure control that collapses the front matter and markdown.
+#[component]
+pub fn EditorEntryComponent(entry: EditorEntry) -> impl IntoView {
+    let entry_id = entry.title.id;
+    let front_matter_signal = entry.front_matter;
+    view! {
+        <hr class="entry-divider"/>
+        <TitleBlockComponent title=entry.title entry_id=entry_id front_matter=front_matter_signal/>
+        <div class=move || {
+            if entry.title.collapsed.get() {
+                "editor-entry-body is-hidden"
+            } else {
+                "editor-entry-body"
+            }
+        }>
+            {move || front_matter_signal.get().map(|fm| view! {
+                <FrontMatterBlockComponent block=fm entry_id=entry_id/>
+            })}
+            <BlockComponent block=entry.content/>
+        </div>
+    }
+}
+
 /// Renders the file-path title for an editor entry.
 /// Displays the path as a styled label; click to edit inline, blur to confirm.
 /// Always one line — distinct from markdown `#` headings.
+/// A chevron on the left toggles [`TitleBlock::collapsed`].
 #[component]
 pub fn TitleBlockComponent(
     title: TitleBlock,
@@ -58,8 +83,35 @@ pub fn TitleBlockComponent(
     let state_add = state.clone();
     let state_del = state.clone();
 
+    let on_toggle_collapse = move |ev: web_sys::MouseEvent| {
+        ev.stop_propagation();
+        title.collapsed.update(|collapsed| *collapsed = !*collapsed);
+    };
+
     view! {
         <div class="editor-block-row title-block-row">
+            <button
+                type="button"
+                class=move || {
+                    if title.collapsed.get() {
+                        "entry-collapse-btn collapsed"
+                    } else {
+                        "entry-collapse-btn"
+                    }
+                }
+                title=move || {
+                    if title.collapsed.get() {
+                        "Expand section"
+                    } else {
+                        "Collapse section"
+                    }
+                }
+                aria-expanded=move || (!title.collapsed.get()).to_string()
+                on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                on:click=on_toggle_collapse
+            >
+                <Icon icon=id::LuChevronDown/>
+            </button>
             <div class="editor-block">
                 {move || if title.focused.try_get().unwrap_or(false) {
                     Either::Left(view! {

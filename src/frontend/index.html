@@ -256,6 +256,34 @@
       border: none;
       margin: 2rem 0 1rem 0;
     }
+    .title-block-row {
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+    .entry-collapse-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: none;
+      color: var(--text-muted);
+      transition: color 0.1s, background 0.1s;
+      padding: 0;
+    }
+    .entry-collapse-btn:hover { color: var(--text); background: var(--bg-3); }
+    .entry-collapse-btn svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.15s ease;
+    }
+    .entry-collapse-btn.collapsed svg {
+      transform: rotate(-90deg);
+    }
     .entry-title {
       display: block;
       font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
@@ -267,7 +295,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0.25rem 0.75rem;
-      margin: 0 0 0.75rem 0;
+      margin: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -286,7 +314,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0.25rem 0.75rem;
-      margin: 0 0 0.75rem 0;
+      margin: 0;
       line-height: 1.8;
       outline: none;
       box-sizing: border-box;

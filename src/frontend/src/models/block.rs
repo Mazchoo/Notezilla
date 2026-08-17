@@ -65,11 +65,13 @@ impl FrontMatterBlock {
 /// A title block that displays the file path of the associated markdown content.
 /// Rendered as a styled label (distinct from markdown `#` titles).
 /// One line; click to edit the path inline.
+/// `collapsed` hides the entry's front matter and markdown when true.
 #[derive(Clone, Copy, Debug)]
 pub struct TitleBlock {
     pub id: u64,
     pub path: RwSignal<String>,
     pub focused: RwSignal<bool>,
+    pub collapsed: RwSignal<bool>,
 }
 
 impl TitleBlock {
@@ -78,6 +80,7 @@ impl TitleBlock {
             id: next_id(),
             path: RwSignal::new(path.into()),
             focused: RwSignal::new(false),
+            collapsed: RwSignal::new(false),
         }
     }
 }

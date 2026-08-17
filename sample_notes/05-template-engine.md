@@ -24,7 +24,7 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 
 ## Acceptance Criteria
 
-- [ ] Ensure that all rendered notes are collapsible
+- [x] Ensure that all rendered notes are collapsible
 - [ ] Templates are stored as `.md` files in a dedicated templates directory.
 - [ ] At least 4 built-in starter templates are provided.
 - [ ] Backend api call is available to get, delete and update templates
