@@ -2,7 +2,7 @@
 phase: 1
 title: Vector Database Integration
 tags: [core, chromadb, vector, python]
-status: todo
+status: done
 ---
 
 # 02 - Vector Database Integration

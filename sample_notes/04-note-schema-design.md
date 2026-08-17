@@ -2,7 +2,7 @@
 phase: 1
 title: Note Schema Design
 tags: [core, schema, design, python]
-status: todo
+status: done
 ---
 
 # 04 - Note Schema Design

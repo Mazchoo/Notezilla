@@ -2,7 +2,7 @@
 phase: 1
 title: File Watcher & Parser
 tags: [core, filesystem, parser, python]
-status: todo
+status: done
 ---
 
 # 01 - File Watcher & Parser

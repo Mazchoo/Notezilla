@@ -30,7 +30,7 @@ Each note has:
 
 ```
 +-----------------------+
-|       Blazor GUI      |      +---------------------------------+  
+|       Leptos GUI      |      +---------------------------------+  
 |                       |      | Rust WASM markdown render       |
 | Markdown Editor       |----->| Mermaid and code highlighting   |
 | Search UI             |      +---------------------------------+
