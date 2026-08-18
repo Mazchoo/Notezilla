@@ -1,40 +1,13 @@
 """Shared helpers for backend MCP tool tests."""
 
-import shutil
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Mapping, Optional
 
 from src.backend.note import NoteData
 
-MOCK_NOTES_FOLDER = (Path(__file__).resolve().parent.parent / "mock_notes").resolve()
-MOCK_TEMPLATES_FOLDER = (
-    Path(__file__).resolve().parent.parent / "mock_templates"
-).resolve()
-
-TEMPLATE_TEST_ARTIFACTS = (
-    "tmp_create",
-    "tmp_del",
-    "tmp_move_dst",
-    "tmp_rename",
-    "folder",
-    "tmp_del.md",
-    "overwrite-me.md",
-    "isolated.md",
-    "tmp_move_note.md",
-)
-
-
-def clean_template_test_artifacts(
-    folder: Path = MOCK_TEMPLATES_FOLDER,
-) -> None:
-    """Remove paths created by template MCP tool tests under *folder*."""
-    for name in TEMPLATE_TEST_ARTIFACTS:
-        path = folder / name
-        if path.is_dir():
-            shutil.rmtree(path)
-        elif path.is_file():
-            path.unlink()
+MOCK_NOTES_FOLDER = Path("./tests/mock_notes").resolve()
+MOCK_TEMPLATES_FOLDER = Path("./tests/mock_templates").resolve()
 
 
 def make_notes(docs=None, metas=None) -> List[NoteData]:
@@ -49,33 +22,62 @@ def make_notes(docs=None, metas=None) -> List[NoteData]:
     return notes
 
 
-def _vault_path(folder: Path, relative: str) -> Path:
-    """Resolve a vault-relative path to an absolute Path under *folder*."""
-    return folder.joinpath(*Path(relative).parts)
+def _path_under_folder(folder: Path, relative_path: str) -> Path:
+    """Join *relative_path* onto *folder* as an absolute Path."""
+    return folder.joinpath(*Path(relative_path).parts)
 
 
-def _remove_empty_parents(path: Path, folder: Path) -> None:
-    """Remove *path* and empty ancestors under *folder* (does not remove *folder*)."""
-    current = path
-    while current != folder and current.exists():
-        try:
-            current.rmdir()
-        except OSError:
-            break
-        current = current.parent
+def _remove_empty_directories(directories: Iterable[Path], stop_at: Path) -> None:
+    """Remove each directory and empty ancestors, stopping at *stop_at*."""
+    deepest_first = sorted(directories, key=lambda path: len(path.parts), reverse=True)
+    for directory in deepest_first:
+        current = directory
+        while current != stop_at and current.exists():
+            try:
+                current.rmdir()
+            except OSError:
+                break
+            current = current.parent
+
+
+def _create_directories(
+    folder: Path, relative_paths: Iterable[str]
+) -> Dict[str, Path]:
+    created: Dict[str, Path] = {}
+    for relative_path in relative_paths:
+        directory = _path_under_folder(folder, relative_path)
+        directory.mkdir(parents=True, exist_ok=True)
+        created[relative_path] = directory
+    return created
+
+
+def _create_files(folder: Path, files: Mapping[str, str]) -> Dict[str, Path]:
+    created: Dict[str, Path] = {}
+    for relative_path, contents in files.items():
+        file_path = _path_under_folder(folder, relative_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(contents, encoding="utf-8")
+        created[relative_path] = file_path
+    return created
+
+
+def _delete_files(created_files: Mapping[str, Path]) -> None:
+    for file_path in created_files.values():
+        if file_path.is_file():
+            file_path.unlink()
 
 
 @contextmanager
 def clean_up_file_if_created(
-    note_path: Path, *, folder: Path = MOCK_NOTES_FOLDER
+    file_path: Path, *, folder: Path = MOCK_NOTES_FOLDER
 ) -> Iterator[Path]:
-    """Yield *note_path*, then remove the file and any empty parents under *folder*."""
+    """Yield *file_path*, then delete the file and any empty parents under *folder*."""
     try:
-        yield note_path
+        yield file_path
     finally:
-        if note_path.is_file():
-            note_path.unlink()
-        _remove_empty_parents(note_path.parent, folder)
+        if file_path.is_file():
+            file_path.unlink()
+        _remove_empty_directories([file_path.parent], folder)
 
 
 @contextmanager
@@ -86,37 +88,21 @@ def temporary_notes(
     folder: Path = MOCK_NOTES_FOLDER,
 ) -> Iterator[Dict[str, Path]]:
     """
-    Create temporary files and directories under the mock notes folder.
+    Create temporary files and directories under *folder*.
 
-    *files* maps vault-relative paths to contents.
-    *dirs* lists vault-relative directories to create (including empty ones).
-    Yields a mapping of relative path -> absolute Path. On exit, removes any
+    *files* maps relative paths to contents.
+    *dirs* lists relative directories to create (including empty ones).
+    Yields a mapping of relative path -> absolute Path. On exit, deletes
     remaining created files and then empty parent directories under *folder*.
     """
-    created_files: Dict[str, Path] = {}
-    created_dirs: Dict[str, Path] = {}
+    created_directories = _create_directories(folder, dirs)
+    created_files = _create_files(folder, files or {})
     try:
-        for rel in dirs:
-            path = _vault_path(folder, rel)
-            path.mkdir(parents=True, exist_ok=True)
-            created_dirs[rel] = path
-
-        for rel, content in (files or {}).items():
-            path = _vault_path(folder, rel)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
-            created_files[rel] = path
-
-        yield {**created_dirs, **created_files}
+        yield {**created_directories, **created_files}
     finally:
-        for path in created_files.values():
-            if path.is_file():
-                path.unlink()
-
-        cleanup_dirs = sorted(
-            set(created_dirs.values()) | {p.parent for p in created_files.values()},
-            key=lambda p: len(p.parts),
-            reverse=True,
+        _delete_files(created_files)
+        _remove_empty_directories(
+            set(created_directories.values())
+            | {file_path.parent for file_path in created_files.values()},
+            folder,
         )
-        for directory in cleanup_dirs:
-            _remove_empty_parents(directory, folder)

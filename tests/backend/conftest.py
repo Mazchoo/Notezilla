@@ -7,11 +7,7 @@ import pytest
 from src.backend.database_adapter import NoteDatabase
 from src.backend.mcp_interface import init_db
 from src.backend.resolved_folders import ResolvedFolder
-from tests.backend.helpers import (
-    MOCK_NOTES_FOLDER,
-    MOCK_TEMPLATES_FOLDER,
-    clean_template_test_artifacts,
-)
+from tests.backend.helpers import MOCK_NOTES_FOLDER, MOCK_TEMPLATES_FOLDER
 
 
 @pytest.fixture(autouse=True)
@@ -32,10 +28,8 @@ def mock_notes_folder():
 @pytest.fixture()
 def mock_templates_folder():
     """Point ResolvedFolder.TEMPLATES at tests/mock_templates."""
-    clean_template_test_artifacts()
     with patch.object(ResolvedFolder.TEMPLATES, "_value_", MOCK_TEMPLATES_FOLDER):
         yield MOCK_TEMPLATES_FOLDER
-    clean_template_test_artifacts()
 
 
 @pytest.fixture()
