@@ -13,13 +13,7 @@ pub fn open_note_at_path(
     entries: RwSignal<Vec<EditorEntry>>,
     session: RwSignal<Option<String>>,
 ) {
-    open_file_at_path(
-        path,
-        current_path,
-        entries,
-        session,
-        FileTreeBackend::Notes,
-    );
+    open_file_at_path(path, current_path, entries, session, FileTreeBackend::Notes);
 }
 
 /// Fetch a markdown file via `backend` and open it in the editor.

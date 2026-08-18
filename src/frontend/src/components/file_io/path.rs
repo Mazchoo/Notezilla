@@ -24,6 +24,10 @@ pub(crate) fn path_to_html_filename(path: &str) -> String {
     format!("{}.html", strip_md_ext(basename(path)))
 }
 
+pub(crate) fn path_to_pdf_filename(path: &str) -> String {
+    format!("{}.pdf", strip_md_ext(basename(path)))
+}
+
 pub(crate) fn html_page_title(path: &str) -> String {
     strip_md_ext(basename(path)).to_string()
 }
@@ -102,4 +106,17 @@ pub(crate) fn rewrite_path_after_rename(
     let prefix = format!("{src}/");
     path.strip_prefix(&prefix)
         .map(|rest| format!("{new_root}/{rest}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn path_to_pdf_filename_strips_md_and_uses_basename() {
+        assert_eq!(path_to_pdf_filename("notes/hello.md"), "hello.pdf");
+        assert_eq!(path_to_pdf_filename("notes/hello.markdown"), "hello.pdf");
+        assert_eq!(path_to_pdf_filename("notes\\windows.md"), "windows.pdf");
+        assert_eq!(path_to_pdf_filename("no-ext"), "no-ext.pdf");
+    }
 }

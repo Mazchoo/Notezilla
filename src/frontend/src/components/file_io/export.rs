@@ -1,12 +1,15 @@
-use super::path::{html_page_title, path_to_html_filename, path_to_markdown_filename};
+use super::path::{
+    html_page_title, path_to_html_filename, path_to_markdown_filename, path_to_pdf_filename,
+};
 use crate::models::block::EditorEntry;
-use crate::rendering::{escape_html, render_markdown};
+use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown};
 use leptos::prelude::GetUntracked;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, BlobPropertyBag, HtmlAnchorElement};
 
 const EXPORT_TEMPLATE: &str = include_str!("../../../templates/export.html");
+const EXPORT_PDF_TEMPLATE: &str = include_str!("../../../templates/export-pdf.html");
 
 /// Prompts the browser to save each editor entry as a standalone HTML file.
 pub fn export_entries_as_html(entries: &[EditorEntry]) {
@@ -15,7 +18,7 @@ pub fn export_entries_as_html(entries: &[EditorEntry]) {
         let filename = path_to_html_filename(&path);
         let page_title = html_page_title(&path);
         let body_html = entry_to_html_body(*entry);
-        let document = build_html_document(&page_title, &body_html);
+        let document = build_html_document(EXPORT_TEMPLATE, &page_title, &body_html);
 
         if let Err(err) = download_text_file(&filename, &document, "text/html;charset=utf-8") {
             web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
@@ -34,6 +37,35 @@ pub fn export_entries_as_markdown(entries: &[EditorEntry]) {
             web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
         }
     }
+}
+
+/// Converts each editor entry's markdown to HTML, then HTML to PDF, and downloads the files.
+/// Returns one error string per failed entry.
+pub fn export_entries_as_pdf(entries: &[EditorEntry]) -> Vec<String> {
+    let mut errors = Vec::new();
+    for entry in entries {
+        let path = entry.title.path.get_untracked();
+        let filename = path_to_pdf_filename(&path);
+        let page_title = html_page_title(&path);
+        let body_html = entry_to_html_body(*entry);
+        let document = build_html_document(EXPORT_PDF_TEMPLATE, &page_title, &body_html);
+
+        match html_to_pdf_bytes(&document) {
+            Ok(bytes) => {
+                if let Err(err) = download_bytes_file(&filename, &bytes, "application/pdf") {
+                    let msg = format!("PDF export failed for {filename}: {err:?}");
+                    web_sys::console::error_1(&msg.clone().into());
+                    errors.push(msg);
+                }
+            }
+            Err(e) => {
+                let msg = format!("PDF conversion failed for {filename}: {e}");
+                web_sys::console::error_1(&msg.clone().into());
+                errors.push(msg);
+            }
+        }
+    }
+    errors
 }
 
 fn entry_to_markdown(entry: EditorEntry) -> String {
@@ -68,16 +100,13 @@ fn entry_to_html_body(entry: EditorEntry) -> String {
     body
 }
 
-fn build_html_document(title: &str, body_html: &str) -> String {
-    EXPORT_TEMPLATE
+fn build_html_document(template: &str, title: &str, body_html: &str) -> String {
+    template
         .replace("{{TITLE}}", &escape_html(title))
         .replace("{{BODY}}", body_html)
 }
 
 fn download_text_file(filename: &str, content: &str, mime_type: &str) -> Result<(), JsValue> {
-    let window = web_sys::window().ok_or(JsValue::NULL)?;
-    let document = window.document().ok_or(JsValue::NULL)?;
-
     let parts = js_sys::Array::new();
     parts.push(&JsValue::from_str(content));
 
@@ -85,7 +114,26 @@ fn download_text_file(filename: &str, content: &str, mime_type: &str) -> Result<
     props.set_type(mime_type);
 
     let blob = Blob::new_with_str_sequence_and_options(&parts, &props)?;
-    let url = web_sys::Url::create_object_url_with_blob(&blob)?;
+    download_blob(filename, &blob)
+}
+
+fn download_bytes_file(filename: &str, bytes: &[u8], mime_type: &str) -> Result<(), JsValue> {
+    let uint8 = js_sys::Uint8Array::from(bytes);
+    let parts = js_sys::Array::new();
+    parts.push(&uint8);
+
+    let props = BlobPropertyBag::new();
+    props.set_type(mime_type);
+
+    let blob = Blob::new_with_u8_array_sequence_and_options(&parts, &props)?;
+    download_blob(filename, &blob)
+}
+
+fn download_blob(filename: &str, blob: &Blob) -> Result<(), JsValue> {
+    let window = web_sys::window().ok_or(JsValue::NULL)?;
+    let document = window.document().ok_or(JsValue::NULL)?;
+
+    let url = web_sys::Url::create_object_url_with_blob(blob)?;
 
     let anchor = document
         .create_element("a")?

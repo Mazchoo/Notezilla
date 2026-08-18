@@ -1,5 +1,6 @@
 use crate::components::file_io::{
-    entry_save_params, export_entries_as_html, export_entries_as_markdown, load_markdown_file,
+    entry_save_params, export_entries_as_html, export_entries_as_markdown, export_entries_as_pdf,
+    load_markdown_file,
 };
 use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::toast::{show_error_toast, show_toast};
@@ -110,6 +111,14 @@ pub fn export_all_as_html(state: &AppState) {
     export_entries_as_html(&state.entries.get_untracked());
 }
 
+/// Convert each open entry's markdown to HTML, then to PDF, and download the files.
+pub fn export_all_as_pdf(state: &AppState) {
+    let errors = export_entries_as_pdf(&state.entries.get_untracked());
+    if !errors.is_empty() {
+        show_error_toast(state.error_toast, errors.join("\n"));
+    }
+}
+
 /// Toggle whether main markdown blocks can enter edit mode.
 pub fn toggle_markdown_editing(state: &AppState) {
     state
@@ -147,6 +156,11 @@ pub fn TopBar() -> impl IntoView {
     let state_export = state.clone();
     let on_export_html = move |_| {
         export_all_as_html(&state_export);
+    };
+
+    let state_export_pdf = state.clone();
+    let on_export_pdf = move |_| {
+        export_all_as_pdf(&state_export_pdf);
     };
 
     let on_export_markdown = {
@@ -199,6 +213,10 @@ pub fn TopBar() -> impl IntoView {
                 on:click=on_export_html
             >
                 <Icon icon=id::LuDownload/>
+            </button>
+            // Export — markdown → HTML (including SVG drawings) → PDF.
+            <button class="activity-btn" title="Export as PDF" on:click=on_export_pdf>
+                <Icon icon=id::LuFileDown/>
             </button>
             // Export — save each entry as a markdown file.
             <button class="activity-btn" title="Export as Markdown" on:click=on_export_markdown>

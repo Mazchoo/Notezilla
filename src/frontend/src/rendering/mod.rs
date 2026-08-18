@@ -3,6 +3,7 @@ mod graphviz;
 mod image;
 mod math;
 mod mermaid;
+mod pdf;
 mod utils;
 
 use code::highlight_code;
@@ -10,6 +11,7 @@ use graphviz::render_dot;
 use image::missing_image_html;
 use math::substitute_math;
 use mermaid::render_mermaid;
+pub(crate) use pdf::html_to_pdf_bytes;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use std::collections::VecDeque;
 pub(crate) use utils::escape_html;
