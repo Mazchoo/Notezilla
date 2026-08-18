@@ -4,12 +4,13 @@ mod image;
 mod math;
 mod mermaid;
 mod pdf;
+mod pdf_colors;
 mod utils;
 
 use code::highlight_code;
 use graphviz::render_dot;
 use image::missing_image_html;
-use math::substitute_math;
+use math::{substitute_math, substitute_math_for_pdf};
 use mermaid::render_mermaid;
 pub(crate) use pdf::html_to_pdf_bytes;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
@@ -20,6 +21,11 @@ enum BlockKind {
     Graphviz,
     Mermaid,
     Code(String), // language token
+}
+
+enum PdfListKind {
+    Ul,
+    Ol { next: u64 },
 }
 
 /// Streams parser events through code-block / image interception without
@@ -33,10 +39,14 @@ struct InterceptedMarkdown<'a> {
     buf: String,
     depth: i32,
     last_top_end: usize,
+    /// Ironpress `<li>` skips `data-math` spans, so PDF export lays lists out
+    /// as flex rows whose body is a block that typesets inline math.
+    pdf_lists: bool,
+    pdf_list_stack: Vec<PdfListKind>,
 }
 
 impl<'a> InterceptedMarkdown<'a> {
-    fn new(src: &'a str, opts: Options) -> Self {
+    fn new(src: &'a str, opts: Options, pdf_lists: bool) -> Self {
         Self {
             parser: Parser::new_ext(src, opts).into_offset_iter(),
             src,
@@ -46,6 +56,8 @@ impl<'a> InterceptedMarkdown<'a> {
             buf: String::new(),
             depth: 0,
             last_top_end: 0,
+            pdf_lists,
+            pdf_list_stack: Vec::new(),
         }
     }
 
@@ -121,6 +133,48 @@ impl<'a> InterceptedMarkdown<'a> {
                 self.buf.clear();
                 None
             }
+            other => self.rewrite_pdf_list(other),
+        }
+    }
+
+    /// Replace `<ul>/<ol>/<li>` so `$…$` can typeset on the same row as the marker.
+    ///
+    /// The extra inner `<div>` is a block child so the flex item uses
+    /// `flatten_element` (which typesets `data-math`) instead of inline text
+    /// collection (which skips math spans).
+    fn rewrite_pdf_list(&mut self, event: Event<'a>) -> Option<Event<'a>> {
+        if !self.pdf_lists {
+            return Some(event);
+        }
+        match event {
+            Event::Start(Tag::List(start)) => {
+                self.pdf_list_stack.push(match start {
+                    Some(n) => PdfListKind::Ol { next: n },
+                    None => PdfListKind::Ul,
+                });
+                Some(Event::Html(r#"<div class="pdf-list">"#.into()))
+            }
+            Event::Start(Tag::Item) => {
+                let mark = match self.pdf_list_stack.last_mut() {
+                    Some(PdfListKind::Ol { next }) => {
+                        let n = *next;
+                        *next += 1;
+                        format!("{n}.")
+                    }
+                    _ => "•".to_string(),
+                };
+                Some(Event::Html(
+                    format!(
+                        r#"<div class="pdf-li" style="display:flex;align-items:center"><div class="pdf-li-mark" style="flex:0 0 18pt">{mark} </div><div class="pdf-li-body"><div>"#
+                    )
+                    .into(),
+                ))
+            }
+            Event::End(TagEnd::Item) => Some(Event::Html("</div></div></div>".into())),
+            Event::End(TagEnd::List(_)) => {
+                self.pdf_list_stack.pop();
+                Some(Event::Html("</div>".into()))
+            }
             other => Some(other),
         }
     }
@@ -167,17 +221,31 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
 }
 
 pub fn render_markdown(src: &str) -> String {
+    render_markdown_with(src, substitute_math, false)
+}
+
+/// Markdown → HTML for PDF export: mermaid/graphviz/code as usual, LaTeX as
+/// ironpress `data-math` elements instead of MathML. Lists are flex rows so
+/// `$…$` typesets beside the marker (ironpress `<li>` drops math spans).
+pub fn render_markdown_for_pdf(src: &str) -> String {
+    render_markdown_with(src, substitute_math_for_pdf, true)
+}
+
+fn render_markdown_with(src: &str, math: fn(&str) -> String, pdf_lists: bool) -> String {
     let opts = Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TABLES
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_FOOTNOTES;
 
-    // Convert `$…$` / `$$…$$` to MathML before markdown parsing so `_` / `*`
-    // inside equations are not treated as emphasis, and so display math can
-    // become a block-level HTML element.
-    let with_math = substitute_math(src);
+    // Convert `$…$` / `$$…$$` before markdown parsing so `_` / `*` inside
+    // equations are not treated as emphasis, and so display math can become a
+    // block-level HTML element.
+    let with_math = math(src);
 
     let mut out = String::with_capacity(with_math.len() * 2);
-    html::push_html(&mut out, InterceptedMarkdown::new(&with_math, opts));
+    html::push_html(
+        &mut out,
+        InterceptedMarkdown::new(&with_math, opts, pdf_lists),
+    );
     out
 }

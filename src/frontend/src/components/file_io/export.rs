@@ -2,7 +2,7 @@ use super::path::{
     html_page_title, path_to_html_filename, path_to_markdown_filename, path_to_pdf_filename,
 };
 use crate::models::block::EditorEntry;
-use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown};
+use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
 use leptos::prelude::GetUntracked;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -47,7 +47,7 @@ pub fn export_entries_as_pdf(entries: &[EditorEntry]) -> Vec<String> {
         let path = entry.title.path.get_untracked();
         let filename = path_to_pdf_filename(&path);
         let page_title = html_page_title(&path);
-        let body_html = entry_to_html_body(*entry);
+        let body_html = entry_to_pdf_body(*entry);
         let document = build_html_document(EXPORT_PDF_TEMPLATE, &page_title, &body_html);
 
         match html_to_pdf_bytes(&document) {
@@ -84,6 +84,14 @@ fn entry_to_markdown(entry: EditorEntry) -> String {
 }
 
 fn entry_to_html_body(entry: EditorEntry) -> String {
+    entry_body_html(entry, render_markdown)
+}
+
+fn entry_to_pdf_body(entry: EditorEntry) -> String {
+    entry_body_html(entry, render_markdown_for_pdf)
+}
+
+fn entry_body_html(entry: EditorEntry, render: fn(&str) -> String) -> String {
     let mut body = String::new();
 
     if let Some(fm) = entry.front_matter.get_untracked() {
@@ -95,8 +103,7 @@ fn entry_to_html_body(entry: EditorEntry) -> String {
         }
     }
 
-    let markdown_html = render_markdown(&entry.content.text.get_untracked());
-    body.push_str(&markdown_html);
+    body.push_str(&render(&entry.content.text.get_untracked()));
     body
 }
 

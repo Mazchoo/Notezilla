@@ -212,7 +212,7 @@ pub fn TopBar() -> impl IntoView {
                 title=move || format!("Export as HTML ({})", format_ctrl_hotkey(&export_hotkey_key.get()))
                 on:click=on_export_html
             >
-                <Icon icon=id::LuDownload/>
+                <Icon icon=id::LuFileCode/>
             </button>
             // Export — markdown → HTML (including SVG drawings) → PDF.
             <button class="activity-btn" title="Export as PDF" on:click=on_export_pdf>
