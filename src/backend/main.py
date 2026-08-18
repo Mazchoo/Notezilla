@@ -365,6 +365,127 @@ def delete_template(
     )
 
 
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def new_template_dir(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the folder to create e.g. "folder" or "folder/subfolder"'
+        ),
+    ],
+) -> ToolResult:
+    """Create a new folder within the template folder.
+
+    Creates missing parent directories. Fails if the path already exists
+    or is outside the template folder.
+
+    Args:
+        path: Relative path of the folder to create e.g. "folder" or "folder/subfolder"
+    """
+    warnings: list[str] = []
+    if create_new_folder(path, ResolvedFolder.TEMPLATES):
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
+        f"Failed to create folder at '{path}'. "
+        "Ensure the path is inside the template folder and does not already exist.",
+        warnings,
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_template_folder(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the folder to delete e.g. "folder" or "folder/subfolder"'
+        ),
+    ],
+) -> ToolResult:
+    """Recursively delete a folder and its contents within the template folder.
+
+    Args:
+        path: Relative path of the folder to delete e.g. "folder" or "folder/subfolder"
+    """
+    warnings: list[str] = []
+    if delete_notes_folder(path, ResolvedFolder.TEMPLATES):
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
+        f"Failed to delete folder at '{path}'. "
+        "Ensure the path is a valid directory inside the template folder.",
+        warnings,
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def move_template_dir(
+    src: Annotated[
+        str,
+        Field(
+            description='Relative path of the file or folder to move e.g. "folder" or "folder/note.md"'
+        ),
+    ],
+    dst: Annotated[
+        str,
+        Field(
+            description='Relative path of the destination directory e.g. "archive" or ""'
+        ),
+    ],
+) -> ToolResult:
+    """Move a file or directory into a destination folder within the template folder.
+
+    Args:
+        src: Relative path of the file or folder to move e.g. "folder" or "folder/note.md"
+        dst: Relative path of the destination directory e.g. "archive" or ""
+    """
+    warnings: list[str] = []
+    if move_file_or_folder(src, dst, ResolvedFolder.TEMPLATES):
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
+        f"Failed to move '{src}' into '{dst}'. "
+        "Ensure src exists, dst is a directory inside the template folder, "
+        "and dst is not inside src.",
+        warnings,
+    )
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def rename_template_dir(
+    path: Annotated[
+        str,
+        Field(
+            description='Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"'
+        ),
+    ],
+    new_name: Annotated[
+        str,
+        Field(
+            description=(
+                'New basename for the file or folder e.g. "renamed" or "renamed.md". '
+                "For files, omitting the extension keeps the source extension."
+            )
+        ),
+    ],
+) -> ToolResult:
+    """Rename a file or directory within the template folder.
+
+    When renaming a file, if new_name has no extension the source extension
+    is preserved (e.g. note.md renamed to "renamed" becomes renamed.md).
+
+    Args:
+        path: Relative path of the file or folder to rename e.g. "folder" or "folder/note.md"
+        new_name: New basename for the file or folder e.g. "renamed" or "renamed.md"
+    """
+    warnings: list[str] = []
+    if rename_basename(path, new_name, ResolvedFolder.TEMPLATES):
+        return McpResponse.empty(warnings)
+    return McpResponse.empty_error(
+        f"Failed to rename '{path}' to '{new_name}'. "
+        "Ensure the path exists, the destination does not already exist, "
+        "and both stay inside the template folder.",
+        warnings,
+    )
+
+
 @MCP.tool(output_schema=NOTES_OUTPUT_SCHEMA)
 def search_notes(
     text: Annotated[

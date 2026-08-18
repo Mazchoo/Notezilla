@@ -2,10 +2,6 @@ use crate::mcp::tools;
 use crate::models::note::{DirectoryContents, NoteFile};
 
 /// Which MCP folder a file tree operates on.
-///
-/// Template folder create/delete, move, and rename still need
-/// `new_template_dir`, `delete_template_folder`, `move_template_dir`, and
-/// `rename_template_dir` on the backend.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FileTreeBackend {
     Notes,

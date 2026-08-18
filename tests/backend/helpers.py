@@ -1,5 +1,6 @@
 """Shared helpers for backend MCP tool tests."""
 
+import shutil
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Mapping, Optional
@@ -10,6 +11,30 @@ MOCK_NOTES_FOLDER = (Path(__file__).resolve().parent.parent / "mock_notes").reso
 MOCK_TEMPLATES_FOLDER = (
     Path(__file__).resolve().parent.parent / "mock_templates"
 ).resolve()
+
+TEMPLATE_TEST_ARTIFACTS = (
+    "tmp_create",
+    "tmp_del",
+    "tmp_move_dst",
+    "tmp_rename",
+    "folder",
+    "tmp_del.md",
+    "overwrite-me.md",
+    "isolated.md",
+    "tmp_move_note.md",
+)
+
+
+def clean_template_test_artifacts(
+    folder: Path = MOCK_TEMPLATES_FOLDER,
+) -> None:
+    """Remove paths created by template MCP tool tests under *folder*."""
+    for name in TEMPLATE_TEST_ARTIFACTS:
+        path = folder / name
+        if path.is_dir():
+            shutil.rmtree(path)
+        elif path.is_file():
+            path.unlink()
 
 
 def make_notes(docs=None, metas=None) -> List[NoteData]:

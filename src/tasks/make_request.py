@@ -190,7 +190,38 @@ if __name__ == "__main__":
         )
     )
 
+    print("\n=== new_template_dir ===")
+    print(call_tool(session, "new_template_dir", {"path": "some-template-folder"}))
+
+    print("\n=== move_template_dir ===")
+    print(
+        call_tool(
+            session,
+            "move_template_dir",
+            {"src": "my-template.md", "dst": "some-template-folder"},
+        )
+    )
+
+    print("\n=== rename_template_dir ===")
+    print(
+        call_tool(
+            session,
+            "rename_template_dir",
+            {
+                "path": "./some-template-folder/my-template.md",
+                "new_name": "some-template",
+            },
+        )
+    )
+
     print("\n=== delete_template ===")
     print(
-        call_tool(session, "delete_template", {"path": "my-template.md"})
+        call_tool(
+            session,
+            "delete_template",
+            {"path": "./some-template-folder/some-template.md"},
+        )
     )
+
+    print("\n=== delete_template_folder ===")
+    print(call_tool(session, "delete_template_folder", {"path": "some-template-folder"}))

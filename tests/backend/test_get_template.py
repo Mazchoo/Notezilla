@@ -1,16 +1,25 @@
 """Tests for template MCP tools."""
 
+import shutil
 from unittest.mock import patch
 
 import pytest
 
 from src.backend.main import (
     delete_template,
+    delete_template_folder,
     get_template,
     get_template_dir_contents,
+    move_template_dir,
+    new_template_dir,
+    rename_template_dir,
     upsert_template,
 )
-from tests.backend.helpers import MOCK_TEMPLATES_FOLDER, clean_up_file_if_created
+from tests.backend.helpers import (
+    MOCK_TEMPLATES_FOLDER,
+    clean_up_file_if_created,
+    temporary_notes,
+)
 
 
 class TestGetTemplate:
@@ -292,6 +301,247 @@ class TestDeleteTemplate:
 
         assert result.content[0].text.startswith("Error")
         assert note_path.is_file()
+
+
+class TestNewTemplateDir:
+    """Tests for the new_template_dir MCP tool using tests/mock_templates."""
+
+    def test_creates_folder(self, mock_templates_folder):
+        """new_template_dir creates a folder under the template folder."""
+        with temporary_notes(
+            dirs=["tmp_create"], folder=MOCK_TEMPLATES_FOLDER
+        ) as paths:
+            target = paths["tmp_create"] / "new_folder"
+            result = new_template_dir(path="tmp_create/new_folder")
+
+            assert result.content[0].text == "Success"
+            assert result.structured_content == {"warnings": []}
+            assert target.is_dir()
+            target.rmdir()
+
+    def test_creates_nested_folder_with_parents(self, mock_templates_folder):
+        """new_template_dir creates missing parent directories."""
+        target = mock_templates_folder / "tmp_create" / "deep" / "nested"
+        try:
+            result = new_template_dir(path="tmp_create/deep/nested")
+
+            assert result.content[0].text == "Success"
+            assert target.is_dir()
+        finally:
+            created = mock_templates_folder / "tmp_create"
+            if created.exists():
+                shutil.rmtree(created)
+
+    def test_already_exists_returns_error(self, mock_templates_folder):
+        """new_template_dir fails when the path already exists."""
+        with temporary_notes(
+            dirs=["tmp_create/existing"], folder=MOCK_TEMPLATES_FOLDER
+        ):
+            result = new_template_dir(path="tmp_create/existing")
+
+            assert result.content[0].text.startswith("Error")
+            assert result.structured_content == {"warnings": []}
+
+    def test_invalid_path_returns_error(self, mock_templates_folder):
+        """new_template_dir rejects paths outside the template folder."""
+        result = new_template_dir(path="../../../etc/passwd")
+
+        assert result.content[0].text.startswith("Error")
+        assert result.structured_content == {"warnings": []}
+
+    def test_does_not_create_in_note_folder(
+        self, mock_notes_folder, mock_templates_folder
+    ):
+        """new_template_dir writes under the template folder, not the note folder."""
+        with temporary_notes(
+            dirs=["tmp_create"], folder=MOCK_TEMPLATES_FOLDER
+        ) as paths:
+            result = new_template_dir(path="tmp_create/isolated")
+
+            assert result.content[0].text == "Success"
+            assert (paths["tmp_create"] / "isolated").is_dir()
+            assert not (mock_notes_folder / "tmp_create" / "isolated").exists()
+            (paths["tmp_create"] / "isolated").rmdir()
+
+
+class TestDeleteTemplateFolder:
+    """Tests for the delete_template_folder MCP tool using tests/mock_templates."""
+
+    def test_deletes_folder_recursively(self, mock_templates_folder):
+        """delete_template_folder removes the directory and its contents."""
+        with temporary_notes(
+            {
+                "tmp_del/a/one.md": "one",
+                "tmp_del/a/b/two.md": "two",
+            },
+            folder=MOCK_TEMPLATES_FOLDER,
+        ) as paths:
+            result = delete_template_folder(path="tmp_del/a")
+
+            assert result.content[0].text == "Success"
+            assert result.structured_content == {"warnings": []}
+            assert not (mock_templates_folder / "tmp_del" / "a").exists()
+            assert not paths["tmp_del/a/one.md"].exists()
+            assert not paths["tmp_del/a/b/two.md"].exists()
+
+    def test_missing_folder_returns_error(self, mock_templates_folder):
+        """delete_template_folder returns an error when the directory does not exist."""
+        result = delete_template_folder(path="tmp_del/missing")
+
+        assert result.content[0].text.startswith("Error")
+        assert result.structured_content == {"warnings": []}
+
+    def test_file_path_returns_error(self, mock_templates_folder):
+        """delete_template_folder does not delete a file path."""
+        with temporary_notes(
+            {"tmp_del/solo.md": "x"}, folder=MOCK_TEMPLATES_FOLDER
+        ) as paths:
+            result = delete_template_folder(path="tmp_del/solo.md")
+
+            assert result.content[0].text.startswith("Error")
+            assert paths["tmp_del/solo.md"].is_file()
+
+    def test_invalid_path_returns_error(self, mock_templates_folder):
+        """delete_template_folder rejects paths outside the template folder."""
+        result = delete_template_folder(path="../../../etc/passwd")
+
+        assert result.content[0].text.startswith("Error")
+        assert result.structured_content == {"warnings": []}
+
+    def test_does_not_delete_note_folder(
+        self, mock_notes_folder, mock_templates_folder
+    ):
+        """A path inside the note folder is not deleted as a template folder."""
+        note_folder = mock_notes_folder / "folder"
+        assert note_folder.is_dir()
+
+        result = delete_template_folder(path=str(note_folder))
+
+        assert result.content[0].text.startswith("Error")
+        assert note_folder.is_dir()
+
+
+class TestMoveTemplateDir:
+    """Tests for the move_template_dir MCP tool using tests/mock_templates."""
+
+    def test_moves_upserted_template_into_folder(self, mock_templates_folder):
+        """upsert then move with relative paths under the template folder."""
+        with temporary_notes(
+            dirs=["tmp_move_dst"], folder=MOCK_TEMPLATES_FOLDER
+        ) as paths:
+            with clean_up_file_if_created(
+                mock_templates_folder / "tmp_move_note.md",
+                folder=MOCK_TEMPLATES_FOLDER,
+            ) as src_path:
+                upsert = upsert_template(
+                    path="tmp_move_note.md",
+                    contents="Hello template",
+                    fields={"title": "My Template"},
+                )
+                assert upsert.content[0].text == "Success"
+                assert src_path.is_file()
+
+                result = move_template_dir(
+                    src="tmp_move_note.md", dst="tmp_move_dst"
+                )
+
+                assert result.content[0].text == "Success"
+                assert not src_path.exists()
+                moved = paths["tmp_move_dst"] / "tmp_move_note.md"
+                assert moved.is_file()
+                assert "Hello template" in moved.read_text(encoding="utf-8")
+                moved.unlink()
+
+    def test_move_failure_sets_is_error(self, mock_templates_folder):
+        """Failed moves must surface isError=True on the MCP wire result."""
+        result = move_template_dir(src="missing.md", dst="also-missing")
+
+        assert result.content[0].text.startswith("Error")
+        wire = result.to_mcp_result()
+        assert wire.isError is True
+
+    def test_does_not_move_note(
+        self, mock_notes_folder, mock_templates_folder
+    ):
+        """A path inside the note folder is not moved as a template."""
+        with temporary_notes(
+            dirs=["tmp_move_dst"], folder=MOCK_TEMPLATES_FOLDER
+        ):
+            note_path = mock_notes_folder / "example.md"
+            assert note_path.is_file()
+
+            result = move_template_dir(
+                src=str(note_path), dst="tmp_move_dst"
+            )
+
+            assert result.content[0].text.startswith("Error")
+            assert note_path.is_file()
+            assert not (mock_templates_folder / "tmp_move_dst" / "example.md").exists()
+
+
+class TestRenameTemplateDir:
+    """Tests for the rename_template_dir MCP tool using tests/mock_templates."""
+
+    def test_renames_file_preserving_extension(self, mock_templates_folder):
+        """Renaming my-template.md to 'renamed' must yield renamed.md."""
+        with temporary_notes(
+            {"tmp_rename/my-template.md": "hello"},
+            folder=MOCK_TEMPLATES_FOLDER,
+        ) as paths:
+            result = rename_template_dir(
+                path="tmp_rename/my-template.md", new_name="renamed"
+            )
+
+            src = paths["tmp_rename/my-template.md"]
+            dst = mock_templates_folder / "tmp_rename" / "renamed.md"
+            assert result.content[0].text == "Success"
+            assert not src.exists()
+            assert not (mock_templates_folder / "tmp_rename" / "renamed").exists()
+            assert dst.is_file()
+            assert dst.read_text(encoding="utf-8") == "hello"
+            dst.unlink()
+
+    def test_renames_directory(self, mock_templates_folder):
+        """rename_template_dir renames a directory and keeps its contents."""
+        with temporary_notes(
+            {
+                "tmp_rename/old-dir/a.md": "a",
+                "tmp_rename/old-dir/b.md": "b",
+            },
+            folder=MOCK_TEMPLATES_FOLDER,
+        ):
+            result = rename_template_dir(
+                path="tmp_rename/old-dir", new_name="new-dir"
+            )
+
+            src = mock_templates_folder / "tmp_rename" / "old-dir"
+            dst = mock_templates_folder / "tmp_rename" / "new-dir"
+            assert result.content[0].text == "Success"
+            assert not src.exists()
+            assert (dst / "a.md").read_text(encoding="utf-8") == "a"
+            assert (dst / "b.md").read_text(encoding="utf-8") == "b"
+            shutil.rmtree(dst)
+
+    def test_missing_path_returns_error(self, mock_templates_folder):
+        """rename_template_dir returns an error when the path does not exist."""
+        result = rename_template_dir(path="tmp_rename/missing.md", new_name="new.md")
+
+        assert result.content[0].text.startswith("Error")
+        assert result.structured_content == {"warnings": []}
+
+    def test_does_not_rename_note(
+        self, mock_notes_folder, mock_templates_folder
+    ):
+        """A path inside the note folder is not renamed as a template."""
+        note_path = mock_notes_folder / "example.md"
+        assert note_path.is_file()
+
+        result = rename_template_dir(path=str(note_path), new_name="renamed.md")
+
+        assert result.content[0].text.startswith("Error")
+        assert note_path.is_file()
+        assert not (mock_templates_folder / "renamed.md").exists()
+        assert not (mock_notes_folder / "renamed.md").exists()
 
 
 if __name__ == "__main__":
