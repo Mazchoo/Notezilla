@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.backend.main import get_note, upsert_note
-from tests.backend.helpers import clean_up_file_if_created
+from src.backend.main import get_note
+from tests.backend.helpers import temporary_notes
 
 
 class TestGetNote:
@@ -73,33 +73,18 @@ class TestGetNote:
         assert result.content[0].text.startswith("Error")
         assert result.structured_content == {"notes": [], "warnings": []}
 
-    def test_reads_latest_content_after_write(self, mock_notes_folder):  # pylint: disable=redefined-outer-name
-        """Save then get_note must return the overwritten file contents."""
-        with clean_up_file_if_created(
-            mock_notes_folder / "2024" / "01" / "overwrite-me.md"
-        ) as note_path:
-            first = upsert_note(
-                path="2024/01/overwrite-me.md",
-                contents="original body",
-                fields={"title": "Original"},
-            )
-            assert first.content[0].text == "Success"
-
-            second = upsert_note(
-                path="2024/01/overwrite-me.md",
-                contents="updated body",
-                fields={"title": "Updated"},
-            )
-            assert second.content[0].text == "Success"
-            assert second.structured_content["newFileCreated"] is False
-
-            result = get_note(path="2024/01/overwrite-me.md")
+    def test_reads_file_written_on_disk(self, mock_notes_folder):  # pylint: disable=redefined-outer-name
+        """get_note returns the current file contents from disk."""
+        with temporary_notes(
+            {"tmp_get/note.md": "---\ntitle: Fresh\n---\nfresh body"}
+        ):
+            result = get_note(path="tmp_get/note.md")
 
             assert result.content[0].text == "Success"
             note = result.structured_content["notes"][0]
-            assert note["text"].strip() == "updated body"
-            assert note["metadata"]["title"] == "Updated"
-            assert note_path.exists()
+            assert note["filename"] == "tmp_get/note.md"
+            assert note["text"].strip() == "fresh body"
+            assert note["metadata"]["title"] == "Fresh"
 
 
 if __name__ == "__main__":

@@ -20,7 +20,6 @@ class TestNewTemplateDir:
             assert result.content[0].text == "Success"
             assert result.structured_content == {"warnings": []}
             assert target.is_dir()
-            target.rmdir()
 
     def test_creates_nested_folder_with_parents(self, mock_templates_folder):
         """new_template_dir creates missing parent directories."""
@@ -30,8 +29,6 @@ class TestNewTemplateDir:
 
             assert result.content[0].text == "Success"
             assert target.is_dir()
-            target.rmdir()
-            target.parent.rmdir()
 
     def test_already_exists_returns_error(self, mock_templates_folder):
         """new_template_dir fails when the path already exists."""
@@ -62,7 +59,6 @@ class TestNewTemplateDir:
             assert result.content[0].text == "Success"
             assert (paths["tmp_create"] / "isolated").is_dir()
             assert not (mock_notes_folder / "tmp_create" / "isolated").exists()
-            (paths["tmp_create"] / "isolated").rmdir()
 
 
 if __name__ == "__main__":

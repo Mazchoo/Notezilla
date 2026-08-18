@@ -5,7 +5,11 @@ from unittest.mock import patch
 import pytest
 
 from src.backend.main import upsert_template
-from tests.backend.helpers import MOCK_TEMPLATES_FOLDER, clean_up_file_if_created
+from tests.backend.helpers import (
+    MOCK_TEMPLATES_FOLDER,
+    clean_up_file_if_created,
+    temporary_notes,
+)
 
 
 class TestUpsertTemplate:
@@ -34,17 +38,12 @@ class TestUpsertTemplate:
         self, mock_templates_folder
     ):
         """upsert_template reports newFileCreated=False when the file already exists."""
-        with clean_up_file_if_created(
-            mock_templates_folder / "folder" / "my-template.md",
+        with temporary_notes(
+            {"tmp_upsert/my-template.md": "First body"},
             folder=MOCK_TEMPLATES_FOLDER,
-        ) as template_path:
-            upsert_template(
-                path="folder/my-template.md",
-                contents="First body",
-                fields={"title": "My Template"},
-            )
+        ) as paths:
             result = upsert_template(
-                path="folder/my-template.md",
+                path="tmp_upsert/my-template.md",
                 contents="Updated body",
                 fields={"title": "My Template"},
             )
@@ -54,7 +53,9 @@ class TestUpsertTemplate:
                 "newFileCreated": False,
                 "warnings": [],
             }
-            assert template_path.read_text(encoding="utf-8").endswith("Updated body")
+            assert paths["tmp_upsert/my-template.md"].read_text(
+                encoding="utf-8"
+            ).endswith("Updated body")
 
     def test_upsert_template_failure_returns_error(self, mock_templates_folder):
         """upsert_template returns an error message when open() raises OSError."""

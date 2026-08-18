@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from src.backend.main import upsert_note
-from tests.backend.helpers import clean_up_file_if_created
+from tests.backend.helpers import clean_up_file_if_created, temporary_notes
 
 
 class TestUpsertNote:
@@ -31,16 +31,9 @@ class TestUpsertNote:
 
     def test_upsert_note_existing_file_reports_not_created(self, mock_notes_folder):
         """upsert_note reports newFileCreated=False when the file already exists."""
-        with clean_up_file_if_created(
-            mock_notes_folder / "2024" / "01" / "my-note.md"
-        ) as note_path:
-            upsert_note(
-                path="2024/01/my-note.md",
-                contents="First body",
-                fields={"title": "My Note"},
-            )
+        with temporary_notes({"tmp_upsert/my-note.md": "First body"}) as paths:
             result = upsert_note(
-                path="2024/01/my-note.md",
+                path="tmp_upsert/my-note.md",
                 contents="Updated body",
                 fields={"title": "My Note"},
             )
@@ -50,7 +43,9 @@ class TestUpsertNote:
                 "newFileCreated": False,
                 "warnings": [],
             }
-            assert note_path.read_text(encoding="utf-8").endswith("Updated body")
+            assert paths["tmp_upsert/my-note.md"].read_text(encoding="utf-8").endswith(
+                "Updated body"
+            )
 
     def test_upsert_note_failure_returns_error(self, mock_notes_folder):
         """upsert_note returns an error message when open() raises OSError."""

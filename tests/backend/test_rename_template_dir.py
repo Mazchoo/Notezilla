@@ -1,7 +1,5 @@
 """Tests for the rename_template_dir MCP tool."""
 
-import shutil
-
 import pytest
 
 from src.backend.main import rename_template_dir
@@ -28,7 +26,6 @@ class TestRenameTemplateDir:
             assert not (mock_templates_folder / "tmp_rename" / "renamed").exists()
             assert dst.is_file()
             assert dst.read_text(encoding="utf-8") == "hello"
-            dst.unlink()
 
     def test_renames_directory(self, mock_templates_folder):
         """rename_template_dir renames a directory and keeps its contents."""
@@ -49,7 +46,6 @@ class TestRenameTemplateDir:
             assert not src.exists()
             assert (dst / "a.md").read_text(encoding="utf-8") == "a"
             assert (dst / "b.md").read_text(encoding="utf-8") == "b"
-            shutil.rmtree(dst)
 
     def test_missing_path_returns_error(self, mock_templates_folder):
         """rename_template_dir returns an error when the path does not exist."""

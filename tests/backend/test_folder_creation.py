@@ -7,7 +7,7 @@ import pytest
 
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.file_io import ensure_note_parent_dirs
-from tests.backend.helpers import clean_up_file_if_created
+from tests.backend.helpers import clean_up_file_if_created, temporary_notes
 
 
 class TestEnsureNoteParentDirs:
@@ -64,17 +64,8 @@ class TestConstructFromDataCreatesDirs:
         get_normalised_path strips a trailing '.', so Path(path).exists() would
         be False while the real note under NOTE_FOLDER already exists.
         """
-        with clean_up_file_if_created(
-            mock_notes_folder / "2024" / "01" / "existing.md"
-        ) as note_path:
-            first, created = IMarkdownFile.construct_from_data(
-                path=str(note_path),
-                body="first",
-                fields={"title": "Existing"},
-            )
-            assert first is not None
-            assert created is True
-
+        with temporary_notes({"tmp_existing/existing.md": "first"}) as paths:
+            note_path = paths["tmp_existing/existing.md"]
             result, new_file_created = IMarkdownFile.construct_from_data(
                 path=str(note_path),
                 body="updated",

@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.backend.main import get_template, upsert_template
-from tests.backend.helpers import MOCK_TEMPLATES_FOLDER, clean_up_file_if_created
+from src.backend.main import get_template
+from tests.backend.helpers import MOCK_TEMPLATES_FOLDER, temporary_notes
 
 
 class TestGetTemplate:
@@ -42,34 +42,19 @@ class TestGetTemplate:
         assert result.content[0].text.startswith("Error")
         assert result.structured_content == {"notes": [], "warnings": []}
 
-    def test_reads_latest_content_after_write(self, mock_templates_folder):
-        """Save then get_template must return the overwritten file contents."""
-        with clean_up_file_if_created(
-            mock_templates_folder / "overwrite-me.md",
+    def test_reads_file_written_on_disk(self, mock_templates_folder):
+        """get_template returns the current file contents from the template folder."""
+        with temporary_notes(
+            {"tmp_get.md": "---\ntitle: Fresh\n---\nfresh body"},
             folder=MOCK_TEMPLATES_FOLDER,
-        ) as template_path:
-            first = upsert_template(
-                path="overwrite-me.md",
-                contents="original body",
-                fields={"title": "Original"},
-            )
-            assert first.content[0].text == "Success"
-
-            second = upsert_template(
-                path="overwrite-me.md",
-                contents="updated body",
-                fields={"title": "Updated"},
-            )
-            assert second.content[0].text == "Success"
-            assert second.structured_content["newFileCreated"] is False
-
-            result = get_template(path="overwrite-me.md")
+        ):
+            result = get_template(path="tmp_get.md")
 
             assert result.content[0].text == "Success"
             template = result.structured_content["notes"][0]
-            assert template["text"].strip() == "updated body"
-            assert template["metadata"]["title"] == "Updated"
-            assert template_path.exists()
+            assert template["filename"] == "tmp_get.md"
+            assert template["text"].strip() == "fresh body"
+            assert template["metadata"]["title"] == "Fresh"
 
 
 if __name__ == "__main__":

@@ -7,7 +7,13 @@ import pytest
 from src.backend.database_adapter import NoteDatabase
 from src.backend.mcp_interface import init_db
 from src.backend.resolved_folders import ResolvedFolder
-from tests.backend.helpers import MOCK_NOTES_FOLDER, MOCK_TEMPLATES_FOLDER
+from tests.backend.helpers import (
+    COMMITTED_MOCK_NOTE_FILES,
+    COMMITTED_MOCK_TEMPLATE_FILES,
+    MOCK_NOTES_FOLDER,
+    MOCK_TEMPLATES_FOLDER,
+    reset_mock_folder,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -16,6 +22,16 @@ def clear_init_db_cache():
     init_db.cache_clear()
     yield
     init_db.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def isolate_mock_folders():
+    """Remove leftover files so listing tests see only committed mock contents."""
+    reset_mock_folder(MOCK_NOTES_FOLDER, COMMITTED_MOCK_NOTE_FILES)
+    reset_mock_folder(MOCK_TEMPLATES_FOLDER, COMMITTED_MOCK_TEMPLATE_FILES)
+    yield
+    reset_mock_folder(MOCK_NOTES_FOLDER, COMMITTED_MOCK_NOTE_FILES)
+    reset_mock_folder(MOCK_TEMPLATES_FOLDER, COMMITTED_MOCK_TEMPLATE_FILES)
 
 
 @pytest.fixture()

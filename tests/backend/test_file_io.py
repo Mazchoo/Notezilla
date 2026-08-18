@@ -1,7 +1,6 @@
 """Tests for src.backend.file_io core helpers."""
 
 from pathlib import Path
-import shutil
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -368,26 +367,19 @@ class TestCreateNewFolder:
             target = paths["tmp_create"] / "new_folder"
             assert create_new_folder(str(target)) is True
             assert target.is_dir()
-            target.rmdir()
 
     def test_creates_nested_folder_with_parents(self, mock_notes_folder):
-        target = mock_notes_folder / "tmp_create" / "deep" / "nested"
-        try:
+        with temporary_notes(dirs=["tmp_create"]):
+            target = mock_notes_folder / "tmp_create" / "deep" / "nested"
             assert create_new_folder(str(target)) is True
             assert target.is_dir()
-        finally:
-            if target.exists():
-                shutil.rmtree(mock_notes_folder / "tmp_create")
 
     def test_creates_folder_with_relative_path(self, mock_notes_folder):
         """MCP tools pass note-folder-relative paths, not absolute filesystem paths."""
-        target = mock_notes_folder / "tmp_create" / "rel_folder"
-        try:
+        with temporary_notes(dirs=["tmp_create"]):
+            target = mock_notes_folder / "tmp_create" / "rel_folder"
             assert create_new_folder("tmp_create/rel_folder") is True
             assert target.is_dir()
-        finally:
-            if target.exists():
-                shutil.rmtree(mock_notes_folder / "tmp_create")
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
         assert create_new_folder("/etc/passwd") is False
@@ -501,7 +493,6 @@ class TestMoveFileOrFolder:
             assert not src.exists()
             assert moved.is_file()
             assert moved.read_text(encoding="utf-8") == "hello"
-            moved.unlink()
 
     def test_moves_file_with_relative_paths(self, mock_notes_folder):
         """MCP tools pass vault-relative paths, not absolute filesystem paths."""
@@ -518,7 +509,6 @@ class TestMoveFileOrFolder:
             assert not src.exists()
             assert moved.is_file()
             assert moved.read_text(encoding="utf-8") == "hello"
-            moved.unlink()
 
     def test_moves_directory_into_dst_folder(self, mock_notes_folder):
         with temporary_notes(
@@ -536,7 +526,6 @@ class TestMoveFileOrFolder:
             assert not src.exists()
             assert (moved / "a.md").read_text(encoding="utf-8") == "a"
             assert (moved / "b.md").read_text(encoding="utf-8") == "b"
-            shutil.rmtree(moved)
 
     def test_moves_into_note_folder_root(self, mock_notes_folder):
         with temporary_notes({"tmp_move/src/root-move.md": "root"}) as paths:
@@ -547,7 +536,6 @@ class TestMoveFileOrFolder:
             assert not src.exists()
             assert moved.is_file()
             assert moved.read_text(encoding="utf-8") == "root"
-            moved.unlink()
 
     def test_rejects_src_outside_note_folder(self, mock_notes_folder):
         with temporary_notes(dirs=["tmp_move/dst"]) as paths:
@@ -652,7 +640,6 @@ class TestRenameBasename:
             assert not src.exists()
             assert dst.is_file()
             assert dst.read_text(encoding="utf-8") == "hello"
-            dst.unlink()
 
     def test_renames_file_with_relative_path(self, mock_notes_folder):
         """MCP tools pass note-folder-relative paths, not absolute filesystem paths."""
@@ -664,7 +651,6 @@ class TestRenameBasename:
             assert not src.exists()
             assert dst.is_file()
             assert dst.read_text(encoding="utf-8") == "hello"
-            dst.unlink()
 
     def test_preserves_file_extension_when_new_name_omits_it(self, mock_notes_folder):
         """Renaming my-note.md to 'some-note' must yield some-note.md."""
@@ -677,7 +663,6 @@ class TestRenameBasename:
             assert not (mock_notes_folder / "tmp_rename" / "some-note").exists()
             assert dst.is_file()
             assert dst.read_text(encoding="utf-8") == "hello"
-            dst.unlink()
 
     def test_renames_directory(self, mock_notes_folder):
         with temporary_notes(
@@ -693,7 +678,6 @@ class TestRenameBasename:
             assert not src.exists()
             assert (dst / "a.md").read_text(encoding="utf-8") == "a"
             assert (dst / "b.md").read_text(encoding="utf-8") == "b"
-            shutil.rmtree(dst)
 
     def test_rejects_path_outside_note_folder(self, mock_notes_folder):
         assert rename_basename("/etc/passwd", "renamed") is False
