@@ -1,5 +1,6 @@
 pub mod context_menu;
 pub mod file_tree;
+pub mod file_tree_backend;
 pub mod new_folder_modal;
 pub mod rename_modal;
 pub mod search_panel;
@@ -7,6 +8,7 @@ pub mod settings_panel;
 
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
+use file_tree_backend::FileTreeBackend;
 use leptos::prelude::*;
 use search_panel::SearchPanel;
 use settings_panel::SettingsPanel;
@@ -68,7 +70,26 @@ pub fn Sidebar() -> impl IntoView {
                     "is-hidden"
                 }
             }>
-                <FileTree/>
+                <FileTree
+                    backend=FileTreeBackend::Notes
+                    heading="FILES"
+                    root_label="note folder root"
+                    epoch=state.file_tree_epoch
+                />
+            </div>
+            <div class=move || {
+                if state.active_panel.get() == Some(ActivePanel::Templates) {
+                    ""
+                } else {
+                    "is-hidden"
+                }
+            }>
+                <FileTree
+                    backend=FileTreeBackend::Templates
+                    heading="TEMPLATES"
+                    root_label="template folder root"
+                    epoch=state.template_tree_epoch
+                />
             </div>
             <div class=move || {
                 if state.active_panel.get() == Some(ActivePanel::Search) {

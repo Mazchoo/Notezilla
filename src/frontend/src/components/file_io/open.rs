@@ -1,4 +1,4 @@
-use crate::mcp::tools::get_note;
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::models::block::EditorEntry;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -13,6 +13,23 @@ pub fn open_note_at_path(
     entries: RwSignal<Vec<EditorEntry>>,
     session: RwSignal<Option<String>>,
 ) {
+    open_file_at_path(
+        path,
+        current_path,
+        entries,
+        session,
+        FileTreeBackend::Notes,
+    );
+}
+
+/// Fetch a markdown file via `backend` and open it in the editor.
+pub fn open_file_at_path(
+    path: String,
+    current_path: RwSignal<Option<String>>,
+    entries: RwSignal<Vec<EditorEntry>>,
+    session: RwSignal<Option<String>>,
+    backend: FileTreeBackend,
+) {
     current_path.set(Some(path.clone()));
 
     let sid = match session.get_untracked() {
@@ -24,7 +41,7 @@ pub fn open_note_at_path(
     };
 
     spawn_local(async move {
-        match get_note(&sid, &path).await {
+        match backend.get_file(&sid, &path).await {
             Ok(note) => {
                 let display_path = display_note_path(&path);
                 let entry = entry_from_note(display_path, &note.text, &note.metadata);

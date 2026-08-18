@@ -29,6 +29,13 @@ pub fn ActivityBar() -> impl IntoView {
                 <Icon icon=id::LuFiles/>
             </button>
             <button
+                class=move || AppState::activity_btn_class(is_active(ActivePanel::Templates))
+                title="Templates"
+                on:click=move |_| toggle(ActivePanel::Templates)
+            >
+                <Icon icon=id::LuCopy/>
+            </button>
+            <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Search))
                 title="Search"
                 on:click=move |_| toggle(ActivePanel::Search)

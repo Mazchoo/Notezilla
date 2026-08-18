@@ -6,7 +6,7 @@ tags: [animal_facts]
 Brief summary
 
 ### Habitat
-Where the animals lives
+Where the animals lives and its population distribution.
 
 ### Life Cycle
 How long the animal lives, how does it breed, how does its behavior change throughout the year

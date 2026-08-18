@@ -12,6 +12,7 @@ const DEFAULT_MARKDOWN_TEMPLATE: &str = include_str!("../templates/new_markdown.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ActivePanel {
     Files,
+    Templates,
     Search,
     Settings,
 }
@@ -38,6 +39,8 @@ pub struct AppState {
     pub error_toast: RwSignal<Option<String>>,
     /// Bumped after successful note upserts so open file-tree folders re-fetch.
     pub file_tree_epoch: RwSignal<u64>,
+    /// Bumped after successful template tree mutations so open folders re-fetch.
+    pub template_tree_epoch: RwSignal<u64>,
     /// Sidebar panel width in CSS pixels (preserved while collapsed).
     pub sidebar_width: RwSignal<f64>,
     /// Max search results requested from the backend per query.
@@ -75,6 +78,7 @@ impl AppState {
             warning_toast: RwSignal::new(None),
             error_toast: RwSignal::new(None),
             file_tree_epoch: RwSignal::new(0),
+            template_tree_epoch: RwSignal::new(0),
             sidebar_width: RwSignal::new(250.0),
             number_results_per_page: RwSignal::new(DEFAULT_NUMBER_RESULTS_PER_PAGE),
             save_hotkey_key: RwSignal::new(DEFAULT_SAVE_HOTKEY_KEY.to_string()),

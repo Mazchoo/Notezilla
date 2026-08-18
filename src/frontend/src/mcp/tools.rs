@@ -101,7 +101,75 @@ pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryC
 }
 
 pub async fn get_note(session_id: &str, path: &str) -> Result<NoteFile, String> {
-    let val = call_tool(session_id, "get_note", json!({ "path": path })).await?;
+    get_markdown_file(session_id, "get_note", path).await
+}
+
+pub async fn get_template_dir_contents(
+    session_id: &str,
+    path: &str,
+) -> Result<DirectoryContents, String> {
+    let val = call_tool(
+        session_id,
+        "get_template_dir_contents",
+        json!({ "path": path }),
+    )
+    .await?;
+
+    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+}
+
+pub async fn get_template(session_id: &str, path: &str) -> Result<NoteFile, String> {
+    get_markdown_file(session_id, "get_template", path).await
+}
+
+pub async fn delete_template(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "delete_template", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
+pub async fn new_template_dir(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "new_template_dir", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
+pub async fn delete_template_folder(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(
+        session_id,
+        "delete_template_folder",
+        json!({ "path": path }),
+    )
+    .await
+    .map(|_| ())
+}
+
+pub async fn move_template_dir(session_id: &str, src: &str, dst: &str) -> Result<(), String> {
+    call_tool(
+        session_id,
+        "move_template_dir",
+        json!({ "src": src, "dst": dst }),
+    )
+    .await
+    .map(|_| ())
+}
+
+pub async fn rename_template_dir(
+    session_id: &str,
+    path: &str,
+    new_name: &str,
+) -> Result<(), String> {
+    call_tool(
+        session_id,
+        "rename_template_dir",
+        json!({ "path": path, "new_name": new_name }),
+    )
+    .await
+    .map(|_| ())
+}
+
+async fn get_markdown_file(session_id: &str, tool: &str, path: &str) -> Result<NoteFile, String> {
+    let val = call_tool(session_id, tool, json!({ "path": path })).await?;
 
     let notes = val
         .get("notes")
@@ -110,7 +178,7 @@ pub async fn get_note(session_id: &str, path: &str) -> Result<NoteFile, String> 
 
     let item = notes
         .first()
-        .ok_or_else(|| format!("Note not found at '{path}'"))?;
+        .ok_or_else(|| format!("File not found at '{path}'"))?;
 
     serde_json::from_value(item.clone()).map_err(|e| format!("Parse error: {e}"))
 }

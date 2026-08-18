@@ -1,15 +1,15 @@
 use crate::components::file_io::{
-    display_note_path, fetch_dir_contents, normalize_note_path, open_note_at_path,
+    display_note_path, fetch_dir_contents, normalize_note_path, open_file_at_path,
     path::{
         basename, is_invalid_move, join_path, resolved_rename_basename, rewrite_path_after_move,
         rewrite_path_after_rename,
     },
 };
 use crate::components::sidebar::context_menu::{FileContextMenu, FolderContextMenu};
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::new_folder_modal::{NewFolderModal, NewFolderModalCtrl};
 use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::mcp::tools::{delete_folder, delete_note, move_dir, new_dir, rename_dir};
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -20,6 +20,23 @@ use leptos::task::spawn_local;
 use leptos_icons::Icon;
 
 const DRAG_MIME: &str = "text/plain";
+
+#[derive(Clone, Copy)]
+struct FileTreeCtx {
+    backend: FileTreeBackend,
+    epoch: RwSignal<u64>,
+    root_label: &'static str,
+}
+
+/// Per-tree backend and UI handles. Passed as props; two trees cannot share
+/// Leptos context by type without the second overwriting the first.
+#[derive(Clone, Copy)]
+struct FileTreeScope {
+    ctx: FileTreeCtx,
+    dnd: FileTreeDnD,
+    rename_ctrl: RenameModalCtrl,
+    new_folder_ctrl: NewFolderModalCtrl,
+}
 
 /// Shared drag-and-drop signals for the file tree.
 #[derive(Clone, Copy)]
@@ -48,7 +65,7 @@ fn accept_drag_over(ev: &web_sys::DragEvent, dnd: FileTreeDnD, target: &str) {
     dnd.drop_target.set(Some(target.to_string()));
 }
 
-fn perform_move(state: &AppState, dnd: FileTreeDnD, src: String, dst: String) {
+fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: String, dst: String) {
     clear_dnd(dnd);
 
     if is_invalid_move(&src, &dst) {
@@ -63,14 +80,16 @@ fn perform_move(state: &AppState, dnd: FileTreeDnD, src: String, dst: String) {
         }
     };
 
-    let file_tree_epoch = state.file_tree_epoch;
+    let epoch = ctx.epoch;
     let current_path = state.current_path;
     let entries = state.entries;
     let toast = state.toast;
     let error_toast = state.error_toast;
+    let backend = ctx.backend;
+    let root_label = ctx.root_label;
 
     spawn_local(async move {
-        match move_dir(&sid, &src, &dst).await {
+        match backend.move_item(&sid, &src, &dst).await {
             Ok(()) => {
                 if let Some(cur) = current_path.get_untracked() {
                     if let Some(new_path) = rewrite_path_after_move(&cur, &src, &dst) {
@@ -85,10 +104,10 @@ fn perform_move(state: &AppState, dnd: FileTreeDnD, src: String, dst: String) {
                         }
                     }
                 });
-                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                epoch.update(|n| *n = n.wrapping_add(1));
                 let name = basename(&src);
                 let dest_label = if dst.is_empty() {
-                    "note folder root"
+                    root_label
                 } else {
                     dst.as_str()
                 };
@@ -114,7 +133,13 @@ fn on_drag_end(dnd: FileTreeDnD) {
     clear_dnd(dnd);
 }
 
-fn on_drop_at(ev: web_sys::DragEvent, state: &AppState, dnd: FileTreeDnD, dst: &str) {
+fn on_drop_at(
+    ev: web_sys::DragEvent,
+    state: &AppState,
+    ctx: FileTreeCtx,
+    dnd: FileTreeDnD,
+    dst: &str,
+) {
     ev.prevent_default();
     ev.stop_propagation();
     let src = dnd.drag_src.get_untracked().or_else(|| {
@@ -126,10 +151,10 @@ fn on_drop_at(ev: web_sys::DragEvent, state: &AppState, dnd: FileTreeDnD, dst: &
         clear_dnd(dnd);
         return;
     };
-    perform_move(state, dnd, src, dst.to_string());
+    perform_move(state, ctx, dnd, src, dst.to_string());
 }
 
-fn perform_new_folder(state: &AppState, parent_path: String, name: String) {
+fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, name: String) {
     let name = name.trim().to_string();
     if name.is_empty() {
         return;
@@ -151,14 +176,15 @@ fn perform_new_folder(state: &AppState, parent_path: String, name: String) {
     };
 
     let path = join_path(&parent_path, &name);
-    let file_tree_epoch = state.file_tree_epoch;
+    let epoch = ctx.epoch;
     let toast = state.toast;
     let error_toast = state.error_toast;
+    let backend = ctx.backend;
 
     spawn_local(async move {
-        match new_dir(&sid, &path).await {
+        match backend.new_dir(&sid, &path).await {
             Ok(()) => {
-                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                epoch.update(|n| *n = n.wrapping_add(1));
                 show_toast(toast, format!("Created folder {path}"));
             }
             Err(e) => {
@@ -169,7 +195,13 @@ fn perform_new_folder(state: &AppState, parent_path: String, name: String) {
     });
 }
 
-fn perform_rename(state: &AppState, path: String, new_name: String, is_file: bool) {
+fn perform_rename(
+    state: &AppState,
+    ctx: FileTreeCtx,
+    path: String,
+    new_name: String,
+    is_file: bool,
+) {
     let new_name = new_name.trim().to_string();
     if new_name.is_empty() {
         return;
@@ -196,14 +228,15 @@ fn perform_rename(state: &AppState, path: String, new_name: String, is_file: boo
         }
     };
 
-    let file_tree_epoch = state.file_tree_epoch;
+    let epoch = ctx.epoch;
     let current_path = state.current_path;
     let entries = state.entries;
     let toast = state.toast;
     let error_toast = state.error_toast;
+    let backend = ctx.backend;
 
     spawn_local(async move {
-        match rename_dir(&sid, &path, &new_name).await {
+        match backend.rename(&sid, &path, &new_name).await {
             Ok(()) => {
                 if let Some(cur) = current_path.get_untracked() {
                     if let Some(new_path) = rewrite_path_after_rename(&cur, &path, &resolved) {
@@ -218,7 +251,7 @@ fn perform_rename(state: &AppState, path: String, new_name: String, is_file: boo
                         }
                     }
                 });
-                file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                epoch.update(|n| *n = n.wrapping_add(1));
                 show_toast(toast, format!("Renamed to {resolved}"));
             }
             Err(e) => {
@@ -231,12 +264,16 @@ fn perform_rename(state: &AppState, path: String, new_name: String, is_file: boo
     });
 }
 
-/// File tree listing top-level note-folder entries from the MCP backend.
+/// File tree listing top-level entries from a substitutable MCP backend.
 #[component]
-pub fn FileTree() -> impl IntoView {
+pub fn FileTree(
+    backend: FileTreeBackend,
+    heading: &'static str,
+    root_label: &'static str,
+    epoch: RwSignal<u64>,
+) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let session = state.session_id;
-    let file_tree_epoch = state.file_tree_epoch;
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
     let dnd = FileTreeDnD {
         drag_src: RwSignal::new(None::<String>),
@@ -244,13 +281,21 @@ pub fn FileTree() -> impl IntoView {
     };
     let rename_ctrl = RenameModalCtrl::new();
     let new_folder_ctrl = NewFolderModalCtrl::new();
-    provide_context(dnd);
-    provide_context(rename_ctrl);
-    provide_context(new_folder_ctrl);
+    let ctx = FileTreeCtx {
+        backend,
+        epoch,
+        root_label,
+    };
+    let scope = FileTreeScope {
+        ctx,
+        dnd,
+        rename_ctrl,
+        new_folder_ctrl,
+    };
 
     Effect::new(move |_| {
-        let _ = file_tree_epoch.get();
-        fetch_dir_contents(session, "", dir_contents, || true);
+        let _ = epoch.get();
+        fetch_dir_contents(session, "", dir_contents, || true, backend);
     });
 
     let root_dragover = move |ev: web_sys::DragEvent| {
@@ -259,7 +304,7 @@ pub fn FileTree() -> impl IntoView {
     let root_drop = {
         let state = state.clone();
         move |ev: web_sys::DragEvent| {
-            on_drop_at(ev, &state, dnd, "");
+            on_drop_at(ev, &state, ctx, dnd, "");
         }
     };
     let root_class = move || {
@@ -273,13 +318,13 @@ pub fn FileTree() -> impl IntoView {
     let on_rename_confirm = {
         let state = state.clone();
         move |path: String, new_name: String, is_file: bool| {
-            perform_rename(&state, path, new_name, is_file);
+            perform_rename(&state, ctx, path, new_name, is_file);
         }
     };
     let on_new_folder_confirm = {
         let state = state.clone();
         move |parent_path: String, name: String| {
-            perform_new_folder(&state, parent_path, name);
+            perform_new_folder(&state, ctx, parent_path, name);
         }
     };
 
@@ -289,7 +334,7 @@ pub fn FileTree() -> impl IntoView {
             on:dragover=root_dragover
             on:drop=root_drop
         >
-            <p class="menu-label px-2 mt-2">"FILES"</p>
+            <p class="menu-label px-2 mt-2">{heading}</p>
             <aside class="menu px-1">
                 <ul class="menu-list">
                     <Show when=move || dir_contents.get().is_some()>
@@ -301,8 +346,8 @@ pub fn FileTree() -> impl IntoView {
                                     .unwrap_or_default()
                             }
                             key=|name| name.clone()
-                            children=|name: String| {
-                                view! { <TreeFolder name=name.clone() path=name/> }
+                            children=move |name: String| {
+                                view! { <TreeFolder name=name.clone() path=name scope=scope/> }
                             }
                         />
                         <For
@@ -313,8 +358,8 @@ pub fn FileTree() -> impl IntoView {
                                     .unwrap_or_default()
                             }
                             key=|name| name.clone()
-                            children=|name: String| {
-                                view! { <TreeFile name=name.clone() path=name/> }
+                            children=move |name: String| {
+                                view! { <TreeFile name=name.clone() path=name scope=scope/> }
                             }
                         />
                     </Show>
@@ -327,14 +372,14 @@ pub fn FileTree() -> impl IntoView {
 }
 
 #[component]
-fn TreeFolder(name: String, path: String) -> AnyView {
+fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let dnd = use_context::<FileTreeDnD>().expect("FileTreeDnD not provided");
-    let rename_ctrl = use_context::<RenameModalCtrl>().expect("RenameModalCtrl not provided");
-    let new_folder_ctrl =
-        use_context::<NewFolderModalCtrl>().expect("NewFolderModalCtrl not provided");
+    let ctx = scope.ctx;
+    let dnd = scope.dnd;
+    let rename_ctrl = scope.rename_ctrl;
+    let new_folder_ctrl = scope.new_folder_ctrl;
     let session = state.session_id;
-    let file_tree_epoch = state.file_tree_epoch;
+    let epoch = ctx.epoch;
     let toast = state.toast;
     let error_toast = state.error_toast;
     let open = RwSignal::new(false);
@@ -344,17 +389,22 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let menu_y = RwSignal::new(0.0);
     let path_for_fetch = path.clone();
     let path_for_dnd = path.clone();
+    let backend = ctx.backend;
 
-    // Fetch while open; re-fetch when file_tree_epoch bumps after a successful upsert/delete.
+    // Fetch while open; re-fetch when epoch bumps after a successful upsert/delete.
     Effect::new(move |_| {
         if !open.get() {
             dir_contents.set(None);
             return;
         }
-        let _ = file_tree_epoch.get();
-        fetch_dir_contents(session, path_for_fetch.clone(), dir_contents, move || {
-            open.get_untracked()
-        });
+        let _ = epoch.get();
+        fetch_dir_contents(
+            session,
+            path_for_fetch.clone(),
+            dir_contents,
+            move || open.get_untracked(),
+            backend,
+        );
     });
 
     let toggle = move |_| {
@@ -373,9 +423,9 @@ fn TreeFolder(name: String, path: String) -> AnyView {
             };
             let path = path.clone();
             spawn_local(async move {
-                match delete_folder(&sid, &path).await {
+                match backend.delete_folder(&sid, &path).await {
                     Ok(()) => {
-                        file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                        epoch.update(|n| *n = n.wrapping_add(1));
                         show_toast(toast, format!("Deleted folder {path}"));
                     }
                     Err(e) => {
@@ -424,7 +474,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let on_row_drop = {
         let path = path_for_dnd.clone();
         let state = state.clone();
-        move |ev: web_sys::DragEvent| on_drop_at(ev, &state, dnd, &path)
+        move |ev: web_sys::DragEvent| on_drop_at(ev, &state, ctx, dnd, &path)
     };
     let on_children_dragover = {
         let path = path_for_dnd.clone();
@@ -433,7 +483,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
     let on_children_drop = {
         let path = path_for_dnd.clone();
         let state = state.clone();
-        move |ev: web_sys::DragEvent| on_drop_at(ev, &state, dnd, &path)
+        move |ev: web_sys::DragEvent| on_drop_at(ev, &state, ctx, dnd, &path)
     };
 
     let path_for_class = path.clone();
@@ -496,7 +546,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                             let folder_path = path.clone();
                             move |child_name: String| {
                                 let child_path = join_path(&folder_path, &child_name);
-                                view! { <TreeFolder name=child_name path=child_path/> }
+                                view! { <TreeFolder name=child_name path=child_path scope=scope/> }
                             }
                         }
                     />
@@ -512,7 +562,7 @@ fn TreeFolder(name: String, path: String) -> AnyView {
                             let folder_path = path.clone();
                             move |file_name: String| {
                                 let file_path = join_path(&folder_path, &file_name);
-                                view! { <TreeFile name=file_name.clone() path=file_path/> }
+                                view! { <TreeFile name=file_name.clone() path=file_path scope=scope/> }
                             }
                         }
                     />
@@ -524,14 +574,15 @@ fn TreeFolder(name: String, path: String) -> AnyView {
 }
 
 #[component]
-fn TreeFile(name: String, path: String) -> impl IntoView {
+fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
-    let dnd = use_context::<FileTreeDnD>().expect("FileTreeDnD not provided");
-    let rename_ctrl = use_context::<RenameModalCtrl>().expect("RenameModalCtrl not provided");
+    let ctx = scope.ctx;
+    let dnd = scope.dnd;
+    let rename_ctrl = scope.rename_ctrl;
     let current_path = state.current_path;
     let entries = state.entries;
     let session = state.session_id;
-    let file_tree_epoch = state.file_tree_epoch;
+    let epoch = ctx.epoch;
     let toast = state.toast;
     let error_toast = state.error_toast;
     let path_for_active = path.clone();
@@ -539,12 +590,13 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
     let menu_visible = RwSignal::new(false);
     let menu_x = RwSignal::new(0.0);
     let menu_y = RwSignal::new(0.0);
+    let backend = ctx.backend;
 
     let is_active = move || current_path.get().as_deref() == Some(path_for_active.as_str());
 
-    let open_note = {
+    let open_file = {
         let path = path.clone();
-        move || open_note_at_path(path.clone(), current_path, entries, session)
+        move || open_file_at_path(path.clone(), current_path, entries, session, backend)
     };
 
     let delete_file = {
@@ -559,9 +611,9 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
             };
             let path = path.clone();
             spawn_local(async move {
-                match delete_note(&sid, &path).await {
+                match backend.delete_file(&sid, &path).await {
                     Ok(()) => {
-                        file_tree_epoch.update(|n| *n = n.wrapping_add(1));
+                        epoch.update(|n| *n = n.wrapping_add(1));
                         show_toast(toast, format!("Deleted {path}"));
                     }
                     Err(e) => {
@@ -579,8 +631,8 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
     };
 
     let on_click = {
-        let open_note = open_note.clone();
-        move |_| open_note()
+        let open_file = open_file.clone();
+        move |_| open_file()
     };
 
     let on_contextmenu = move |ev: web_sys::MouseEvent| {
@@ -629,7 +681,7 @@ fn TreeFile(name: String, path: String) -> impl IntoView {
                 visible=menu_visible
                 x=menu_x
                 y=menu_y
-                on_open=open_note
+                on_open=open_file
                 on_rename=rename_file
                 on_delete=delete_file
             />

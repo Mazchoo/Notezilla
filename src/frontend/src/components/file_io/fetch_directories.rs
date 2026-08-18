@@ -1,4 +1,4 @@
-use crate::mcp::tools::get_dir_contents;
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::models::note::DirectoryContents;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -13,6 +13,7 @@ pub fn fetch_dir_contents(
     path: impl Into<String>,
     into: RwSignal<Option<DirectoryContents>>,
     guard: impl Fn() -> bool + 'static,
+    backend: FileTreeBackend,
 ) {
     let sid = match session.get() {
         Some(s) => s,
@@ -20,7 +21,7 @@ pub fn fetch_dir_contents(
     };
     let path = path.into();
     spawn_local(async move {
-        match get_dir_contents(&sid, &path).await {
+        match backend.get_dir_contents(&sid, &path).await {
             Ok(contents) => {
                 if guard() {
                     into.set(Some(contents));
