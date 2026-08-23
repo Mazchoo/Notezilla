@@ -1,3 +1,7 @@
+mod active_panel;
+
+pub use active_panel::ActivePanel;
+
 use crate::models::{block::EditorEntry, note::NoteFile};
 use crate::settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
@@ -8,14 +12,6 @@ use leptos::prelude::*;
 
 const DEFAULT_MARKDOWN_PATH: &str = "./example_folder/new_markdown.md";
 const DEFAULT_MARKDOWN_TEMPLATE: &str = include_str!("../templates/new_markdown.md");
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ActivePanel {
-    Files,
-    Templates,
-    Search,
-    Settings,
-}
 
 #[derive(Clone)]
 pub struct AppState {

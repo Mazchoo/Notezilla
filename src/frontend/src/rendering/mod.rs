@@ -1,3 +1,4 @@
+mod block_kind;
 mod code;
 mod graphviz;
 mod image;
@@ -5,28 +6,20 @@ mod math;
 mod mermaid;
 mod pdf;
 mod pdf_colors;
+mod pdf_list_kind;
 mod utils;
 
+use block_kind::BlockKind;
 use code::highlight_code;
 use graphviz::render_dot;
 use image::missing_image_html;
 use math::{substitute_math, substitute_math_for_pdf};
 use mermaid::render_mermaid;
 pub(crate) use pdf::html_to_pdf_bytes;
+use pdf_list_kind::PdfListKind;
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use std::collections::VecDeque;
 pub(crate) use utils::escape_html;
-
-enum BlockKind {
-    Graphviz,
-    Mermaid,
-    Code(String), // language token
-}
-
-enum PdfListKind {
-    Ul,
-    Ol { next: u64 },
-}
 
 /// Streams parser events through code-block / image interception without
 /// buffering the full document in a `Vec<Event>`.

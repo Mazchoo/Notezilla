@@ -1,3 +1,5 @@
+//! Selects which MCP folder a file tree reads and writes.
+
 use crate::mcp::tools;
 use crate::models::note::{DirectoryContents, NoteFile};
 
