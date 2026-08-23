@@ -10,11 +10,13 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use state::AppState;
 
+/// Mount the Leptos app and install the WASM panic hook.
 fn main() {
     console_error_panic_hook::set_once();
     mount_to_body(|| view! { <App/> });
 }
 
+/// Provide app state, start the MCP session, and render the shell.
 #[component]
 fn App() -> impl IntoView {
     let state = AppState::new();

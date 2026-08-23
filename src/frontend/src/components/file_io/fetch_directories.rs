@@ -4,10 +4,6 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 /// Fetch a directory listing from the MCP backend into `into`.
-///
-/// Reads `session` reactively so callers inside an `Effect` re-run when the
-/// session becomes ready. After the request completes, contents are written
-/// only if `guard` returns true (e.g. ignore stale responses after collapse).
 pub fn fetch_dir_contents(
     session: RwSignal<Option<String>>,
     path: impl Into<String>,

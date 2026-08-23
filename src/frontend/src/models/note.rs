@@ -11,7 +11,7 @@ pub struct NoteFile {
 }
 
 impl NoteFile {
-    /// Basename of the note path (file name only, no folders).
+    /// Return the basename of the note path.
     pub fn file_name(&self) -> String {
         self.filename
             .rsplit(['/', '\\'])
@@ -21,7 +21,7 @@ impl NoteFile {
             .to_string()
     }
 
-    /// First `n` characters of note body text for list previews.
+    /// Return the first `n` characters of note body text for list previews.
     pub fn snippet_text(text: &str, n: usize) -> String {
         let mut iter = text.chars();
         let preview: String = iter.by_ref().take(n).collect();

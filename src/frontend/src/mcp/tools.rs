@@ -6,6 +6,7 @@ pub struct UpsertNoteResult {
     pub new_file_created: bool,
 }
 
+/// Parse `notes` from an MCP structured payload.
 fn notes_from_structured(val: &Value) -> Result<Vec<NoteFile>, String> {
     let notes = val
         .get("notes")
@@ -15,6 +16,7 @@ fn notes_from_structured(val: &Value) -> Result<Vec<NoteFile>, String> {
     serde_json::from_value(notes).map_err(|e| format!("Parse error: {e}"))
 }
 
+/// Search notes via the MCP `search_notes` tool.
 pub async fn search_by_text(
     session_id: &str,
     text: &str,
@@ -39,6 +41,7 @@ pub async fn search_by_text(
     notes_from_structured(&val)
 }
 
+/// Create or update a note via the MCP `upsert_note` tool.
 pub async fn upsert_note(
     session_id: &str,
     path: &str,
@@ -60,30 +63,35 @@ pub async fn upsert_note(
     Ok(UpsertNoteResult { new_file_created })
 }
 
+/// Delete a note via the MCP `delete_note` tool.
 pub async fn delete_note(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "delete_note", json!({ "path": path }))
         .await
         .map(|_| ())
 }
 
+/// Delete a folder via the MCP `delete_folder` tool.
 pub async fn delete_folder(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "delete_folder", json!({ "path": path }))
         .await
         .map(|_| ())
 }
 
+/// Create a directory via the MCP `new_dir` tool.
 pub async fn new_dir(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "new_dir", json!({ "path": path }))
         .await
         .map(|_| ())
 }
 
+/// Move a file or folder via the MCP `move_dir` tool.
 pub async fn move_dir(session_id: &str, src: &str, dst: &str) -> Result<(), String> {
     call_tool(session_id, "move_dir", json!({ "src": src, "dst": dst }))
         .await
         .map(|_| ())
 }
 
+/// Rename a file or folder via the MCP `rename_dir` tool.
 pub async fn rename_dir(session_id: &str, path: &str, new_name: &str) -> Result<(), String> {
     call_tool(
         session_id,
@@ -94,16 +102,19 @@ pub async fn rename_dir(session_id: &str, path: &str, new_name: &str) -> Result<
     .map(|_| ())
 }
 
+/// Fetch a directory listing via the MCP `get_dir_contents` tool.
 pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
     let val = call_tool(session_id, "get_dir_contents", json!({ "path": path })).await?;
 
     serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }
 
+/// Fetch a note via the MCP `get_note` tool.
 pub async fn get_note(session_id: &str, path: &str) -> Result<NoteFile, String> {
     get_markdown_file(session_id, "get_note", path).await
 }
 
+/// Fetch a template directory listing via the MCP backend.
 pub async fn get_template_dir_contents(
     session_id: &str,
     path: &str,
@@ -118,22 +129,26 @@ pub async fn get_template_dir_contents(
     serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
 }
 
+/// Fetch a template file via the MCP `get_template` tool.
 pub async fn get_template(session_id: &str, path: &str) -> Result<NoteFile, String> {
     get_markdown_file(session_id, "get_template", path).await
 }
 
+/// Delete a template file via the MCP `delete_template` tool.
 pub async fn delete_template(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "delete_template", json!({ "path": path }))
         .await
         .map(|_| ())
 }
 
+/// Create a template directory via the MCP `new_template_dir` tool.
 pub async fn new_template_dir(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(session_id, "new_template_dir", json!({ "path": path }))
         .await
         .map(|_| ())
 }
 
+/// Delete a template folder via the MCP `delete_template_folder` tool.
 pub async fn delete_template_folder(session_id: &str, path: &str) -> Result<(), String> {
     call_tool(
         session_id,
@@ -144,6 +159,7 @@ pub async fn delete_template_folder(session_id: &str, path: &str) -> Result<(), 
     .map(|_| ())
 }
 
+/// Move a template file or folder via the MCP `move_template_dir` tool.
 pub async fn move_template_dir(session_id: &str, src: &str, dst: &str) -> Result<(), String> {
     call_tool(
         session_id,
@@ -154,6 +170,7 @@ pub async fn move_template_dir(session_id: &str, src: &str, dst: &str) -> Result
     .map(|_| ())
 }
 
+/// Rename a template file or folder via the MCP `rename_template_dir` tool.
 pub async fn rename_template_dir(
     session_id: &str,
     path: &str,
@@ -168,6 +185,7 @@ pub async fn rename_template_dir(
     .map(|_| ())
 }
 
+/// Fetch a markdown file from an MCP get tool and parse the first note.
 async fn get_markdown_file(session_id: &str, tool: &str, path: &str) -> Result<NoteFile, String> {
     let val = call_tool(session_id, tool, json!({ "path": path })).await?;
 

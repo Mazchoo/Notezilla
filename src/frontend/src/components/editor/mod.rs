@@ -6,6 +6,7 @@ use crate::state::AppState;
 use block::EditorEntryComponent;
 use leptos::prelude::*;
 
+/// Render every open editor entry in the main pane.
 #[component]
 pub fn Editor() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

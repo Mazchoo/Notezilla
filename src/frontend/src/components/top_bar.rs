@@ -14,6 +14,7 @@ use leptos::task::spawn_local;
 use leptos_icons::Icon;
 use web_sys::Event;
 
+/// Format a count with the matching singular or plural noun.
 fn file_count_label(count: usize, singular: &str, plural: &str) -> String {
     if count == 1 {
         format!("1 {singular}")
@@ -22,6 +23,7 @@ fn file_count_label(count: usize, singular: &str, plural: &str) -> String {
     }
 }
 
+/// Format the toast text after a multi-file save.
 fn format_save_summary(created: usize, updated: usize) -> String {
     match (created, updated) {
         (0, 0) => String::new(),
@@ -126,6 +128,7 @@ pub fn toggle_markdown_editing(state: &AppState) {
         .update(|enabled| *enabled = !*enabled);
 }
 
+/// Render the top-bar import, save, export, edit-toggle, and new-file actions.
 #[component]
 pub fn TopBar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

@@ -3,9 +3,6 @@ use super::pdf_colors::TEXT;
 use latex2mathml::{latex_to_mathml, DisplayStyle};
 
 /// Convert a single LaTeX math expression to MathML.
-///
-/// `DisplayStyle::Inline` is for `$…$` (flows with surrounding text).
-/// `DisplayStyle::Block` is for `$$…$$` (standalone display equation).
 pub fn render_latex(latex: &str, display: DisplayStyle) -> String {
     match latex_to_mathml(latex, display) {
         Ok(mathml) => match display {
@@ -16,12 +13,7 @@ pub fn render_latex(latex: &str, display: DisplayStyle) -> String {
     }
 }
 
-/// Emit ironpress math HTML so PDF conversion typesets LaTeX instead of MathML.
-///
-/// Ironpress looks for `data-math` on `.math-inline` / `.math-display`. It does
-/// not layout `<math>` MathML from `latex2mathml`. `$…$` stays a span so it can
-/// sit on the same line as surrounding text; PDF list items are rewritten to
-/// flex rows in `render_markdown_for_pdf` because `<li>` drops math spans.
+/// Emit ironpress `data-math` HTML so PDF conversion typesets LaTeX.
 fn render_latex_for_pdf(latex: &str, display: DisplayStyle) -> String {
     let escaped = escape_html(latex);
     match display {
@@ -38,6 +30,7 @@ fn render_latex_for_pdf(latex: &str, display: DisplayStyle) -> String {
     }
 }
 
+/// Render a fallback HTML fragment for a LaTeX conversion error.
 fn math_error_html(latex: &str, display: DisplayStyle, err: &str) -> String {
     let escaped = escape_html(latex);
     let class = match display {
@@ -47,20 +40,17 @@ fn math_error_html(latex: &str, display: DisplayStyle, err: &str) -> String {
     format!("<code class=\"{class}\">{escaped}</code><!-- math error: {err} -->")
 }
 
-/// Replace `$…$` / `$$…$$` outside code spans and fenced blocks with MathML HTML.
-///
-/// Runs before `pulldown-cmark` so characters like `_` inside math are not
-/// interpreted as markdown emphasis. Raw MathML is left as HTML for the
-/// CommonMark HTML passthrough.
+/// Replace `$…$` / `$$…$$` outside code with MathML HTML.
 pub fn substitute_math(src: &str) -> String {
     rewrite_math(src, render_latex)
 }
 
-/// Same delimiter scan as [`substitute_math`], but emits ironpress `data-math` tags.
+/// Replace `$…$` / `$$…$$` outside code with ironpress `data-math` tags.
 pub fn substitute_math_for_pdf(src: &str) -> String {
     rewrite_math(src, render_latex_for_pdf)
 }
 
+/// Rewrite math delimiters in `src` with `render`, skipping fenced and inline code.
 fn rewrite_math(src: &str, render: fn(&str, DisplayStyle) -> String) -> String {
     let bytes = src.as_bytes();
     let mut out = String::with_capacity(src.len());
@@ -107,10 +97,12 @@ fn rewrite_math(src: &str, render: fn(&str, DisplayStyle) -> String) -> String {
     out
 }
 
+/// Return whether the byte at `i` is escaped by a preceding backslash.
 fn is_escaped(bytes: &[u8], i: usize) -> bool {
     i > 0 && bytes[i - 1] == b'\\'
 }
 
+/// Find the next occurrence of `delim` at or after `from`.
 fn find_closing_delim(bytes: &[u8], from: usize, delim: &[u8]) -> Option<usize> {
     let mut i = from;
     while i + delim.len() <= bytes.len() {
@@ -122,6 +114,7 @@ fn find_closing_delim(bytes: &[u8], from: usize, delim: &[u8]) -> Option<usize> 
     None
 }
 
+/// Find the closing `$` for inline math, rejecting a `$$` pair.
 fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     while i < bytes.len() {
@@ -137,6 +130,7 @@ fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     None
 }
 
+/// Return the index just past a fenced code block starting at `start`.
 fn skip_fenced_code(src: &str, start: usize) -> usize {
     let bytes = src.as_bytes();
     // Opening fence: one or more backticks (at least 3), then rest of line.
@@ -173,6 +167,7 @@ fn skip_fenced_code(src: &str, start: usize) -> usize {
     bytes.len()
 }
 
+/// Return the index just past an inline code span starting at `start`.
 fn skip_inline_code(src: &str, start: usize) -> usize {
     let bytes = src.as_bytes();
     let mut i = start;
@@ -200,6 +195,7 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Assert inline `$…$` and block `$$…$$` become distinct MathML displays.
     fn inline_vs_block() {
         let out = substitute_math(
             r#"inline $\gets$ and block
@@ -219,6 +215,7 @@ $$
     }
 
     #[test]
+    /// Assert fenced code keeps literal `$…$` delimiters.
     fn skips_fenced_code() {
         let src = "```\n$not_math$\n```\n";
         let out = substitute_math(src);
@@ -226,12 +223,14 @@ $$
     }
 
     #[test]
+    /// Assert inline code keeps literal `$…$` delimiters.
     fn skips_inline_code() {
         let out = substitute_math("use `$x$` in code");
         assert!(out.contains("`$x$`"), "{out}");
     }
 
     #[test]
+    /// Assert `_` inside math is converted before markdown emphasis runs.
     fn underscores_not_eaten_before_markdown() {
         let out = substitute_math(r#"$x_i$"#);
         assert!(out.contains("<math"), "{out}");
@@ -239,6 +238,7 @@ $$
     }
 
     #[test]
+    /// Assert PDF math emits `data-math` tags instead of MathML.
     fn pdf_math_uses_ironpress_data_math_not_mathml() {
         let out = substitute_math_for_pdf(
             r#"inline $x_i$ and block
@@ -265,12 +265,14 @@ $$
     }
 
     #[test]
+    /// Assert PDF math substitution skips fenced and inline code.
     fn pdf_math_skips_fenced_and_inline_code() {
         assert!(substitute_math_for_pdf("```\n$not_math$\n```\n").contains("$not_math$"));
         assert!(substitute_math_for_pdf("use `$x$` in code").contains("`$x$`"));
     }
 
     #[test]
+    /// Assert a list-item `$…$` stays inline for PDF export.
     fn pdf_list_item_single_dollar_stays_inline() {
         let out = substitute_math_for_pdf("- $x = \\pi$\n");
         assert!(

@@ -22,6 +22,7 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Assert the PDF export stylesheet matches the editor palette tokens.
     fn export_pdf_stylesheet_matches_palette() {
         let template = include_str!("../../templates/export-pdf.html");
         for (token, hex) in [

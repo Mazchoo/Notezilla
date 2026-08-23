@@ -45,11 +45,13 @@ struct FileTreeDnD {
     drop_target: RwSignal<Option<String>>,
 }
 
+/// Clear drag-source and drop-target highlights.
 fn clear_dnd(dnd: FileTreeDnD) {
     dnd.drag_src.set(None);
     dnd.drop_target.set(None);
 }
 
+/// Accept a drag-over event when the move into `target` is valid.
 fn accept_drag_over(ev: &web_sys::DragEvent, dnd: FileTreeDnD, target: &str) {
     let Some(src) = dnd.drag_src.get_untracked() else {
         return;
@@ -65,6 +67,7 @@ fn accept_drag_over(ev: &web_sys::DragEvent, dnd: FileTreeDnD, target: &str) {
     dnd.drop_target.set(Some(target.to_string()));
 }
 
+/// Move `src` into directory `dst` via the MCP backend.
 fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: String, dst: String) {
     clear_dnd(dnd);
 
@@ -121,6 +124,7 @@ fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: Strin
     });
 }
 
+/// Record the drag source when a tree item starts dragging.
 fn on_drag_start(ev: web_sys::DragEvent, dnd: FileTreeDnD, path: &str) {
     if let Some(dt) = ev.data_transfer() {
         let _ = dt.set_data(DRAG_MIME, path);
@@ -129,10 +133,12 @@ fn on_drag_start(ev: web_sys::DragEvent, dnd: FileTreeDnD, path: &str) {
     dnd.drag_src.set(Some(path.to_string()));
 }
 
+/// Clear drag-and-drop state when a drag ends.
 fn on_drag_end(dnd: FileTreeDnD) {
     clear_dnd(dnd);
 }
 
+/// Drop the dragged item into directory `dst`.
 fn on_drop_at(
     ev: web_sys::DragEvent,
     state: &AppState,
@@ -154,6 +160,7 @@ fn on_drop_at(
     perform_move(state, ctx, dnd, src, dst.to_string());
 }
 
+/// Create a new folder under `parent_path` via the MCP backend.
 fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, name: String) {
     let name = name.trim().to_string();
     if name.is_empty() {
@@ -195,6 +202,7 @@ fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, n
     });
 }
 
+/// Rename a file or folder via the MCP backend.
 fn perform_rename(
     state: &AppState,
     ctx: FileTreeCtx,
@@ -264,7 +272,7 @@ fn perform_rename(
     });
 }
 
-/// File tree listing top-level entries from a substitutable MCP backend.
+/// Render a file tree listing top-level entries from an MCP backend.
 #[component]
 pub fn FileTree(
     backend: FileTreeBackend,
@@ -371,6 +379,7 @@ pub fn FileTree(
     }
 }
 
+/// Render an expandable folder row and its children.
 #[component]
 fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -573,6 +582,7 @@ fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
     .into_any()
 }
 
+/// Render a file row that opens, renames, deletes, or drags the note.
 #[component]
 fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

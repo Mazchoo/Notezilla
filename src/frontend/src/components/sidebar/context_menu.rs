@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-/// Right-click context menu for file tree items.
+/// Render the right-click context menu for a file-tree file.
 #[component]
 pub fn FileContextMenu<FOpen, FRename, FDelete>(
     visible: RwSignal<bool>,
@@ -77,7 +77,7 @@ where
     }
 }
 
-/// Right-click context menu for folder tree items.
+/// Render the right-click context menu for a file-tree folder.
 #[component]
 pub fn FolderContextMenu<FNewFolder, FRename, FDelete>(
     visible: RwSignal<bool>,

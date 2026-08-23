@@ -6,11 +6,7 @@ use syntect::parsing::SyntaxSet;
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
 static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
 
-/// Render a fenced code block with syntax highlighting using syntect.
-///
-/// Uses the `fancy-regex` backend so this compiles to both native and
-/// `wasm32-unknown-unknown` targets without any JavaScript dependency.
-/// Output is inline-styled HTML — no external stylesheet required.
+/// Render a fenced code block with syntect syntax highlighting.
 pub fn highlight_code(lang: &str, src: &str) -> String {
     use syntect::easy::HighlightLines;
     use syntect::html::{styled_line_to_highlighted_html, IncludeBackground};

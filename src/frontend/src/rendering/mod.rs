@@ -46,6 +46,7 @@ struct InterceptedMarkdown<'a> {
 }
 
 impl<'a> InterceptedMarkdown<'a> {
+    /// Build a markdown event stream that intercepts code blocks and images.
     fn new(src: &'a str, opts: Options, pdf_lists: bool) -> Self {
         Self {
             parser: Parser::new_ext(src, opts).into_offset_iter(),
@@ -61,6 +62,7 @@ impl<'a> InterceptedMarkdown<'a> {
         }
     }
 
+    /// Insert extra `<br>` events for extra blank lines between top-level blocks.
     fn inject_blank_line_breaks(&mut self, range_start: usize) {
         if self.depth == 0
             && self.block.is_none()
@@ -78,6 +80,7 @@ impl<'a> InterceptedMarkdown<'a> {
         }
     }
 
+    /// Update nesting depth and the end offset of the last top-level event.
     fn track_depth(&mut self, event: &Event<'_>, range_end: usize) {
         match event {
             Event::Start(_) => self.depth += 1,
@@ -94,6 +97,7 @@ impl<'a> InterceptedMarkdown<'a> {
         }
     }
 
+    /// Render the intercepted code, graphviz, or mermaid block to HTML.
     fn finish_code_block(&mut self) {
         let html_fragment = match self.block.take().unwrap() {
             BlockKind::Graphviz => render_dot(&self.buf).unwrap_or_else(|_| {
@@ -107,6 +111,7 @@ impl<'a> InterceptedMarkdown<'a> {
         self.buf.clear();
     }
 
+    /// Replace the intercepted image with the missing-image placeholder.
     fn finish_image(&mut self) {
         self.in_image = false;
         let alt = std::mem::take(&mut self.buf);
@@ -114,8 +119,7 @@ impl<'a> InterceptedMarkdown<'a> {
             .push_back(Event::Html(missing_image_html(&alt).into()));
     }
 
-    /// Returns `None` if `event` opened an intercepted construct (and has
-    /// been consumed); otherwise hands the event back unchanged.
+    /// Consume `event` if it opens an intercepted construct; otherwise return it.
     fn try_start_intercepted(&mut self, event: Event<'a>) -> Option<Event<'a>> {
         match event {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) => {
@@ -138,10 +142,6 @@ impl<'a> InterceptedMarkdown<'a> {
     }
 
     /// Replace `<ul>/<ol>/<li>` so `$…$` can typeset on the same row as the marker.
-    ///
-    /// The extra inner `<div>` is a block child so the flex item uses
-    /// `flatten_element` (which typesets `data-math`) instead of inline text
-    /// collection (which skips math spans).
     fn rewrite_pdf_list(&mut self, event: Event<'a>) -> Option<Event<'a>> {
         if !self.pdf_lists {
             return Some(event);
@@ -183,6 +183,7 @@ impl<'a> InterceptedMarkdown<'a> {
 impl<'a> Iterator for InterceptedMarkdown<'a> {
     type Item = Event<'a>;
 
+    /// Yield the next rewritten markdown event.
     fn next(&mut self) -> Option<Event<'a>> {
         loop {
             if let Some(event) = self.pending.pop_front() {
@@ -220,17 +221,17 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
     }
 }
 
+/// Render markdown to HTML for the editor.
 pub fn render_markdown(src: &str) -> String {
     render_markdown_with(src, substitute_math, false)
 }
 
-/// Markdown → HTML for PDF export: mermaid/graphviz/code as usual, LaTeX as
-/// ironpress `data-math` elements instead of MathML. Lists are flex rows so
-/// `$…$` typesets beside the marker (ironpress `<li>` drops math spans).
+/// Render markdown to HTML for PDF export, with ironpress math and flex lists.
 pub fn render_markdown_for_pdf(src: &str) -> String {
     render_markdown_with(src, substitute_math_for_pdf, true)
 }
 
+/// Render markdown to HTML using the given math rewriter.
 fn render_markdown_with(src: &str, math: fn(&str) -> String, pdf_lists: bool) -> String {
     let opts = Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TABLES

@@ -16,6 +16,7 @@ use settings_panel::SettingsPanel;
 const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 
+/// Render the resizable sidebar and the active files, templates, search, or settings panel.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

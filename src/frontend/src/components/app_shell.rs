@@ -4,6 +4,7 @@ use crate::components::{
 };
 use leptos::prelude::*;
 
+/// Render the top-level layout: hotkeys, top bar, sidebar, editor, and toasts.
 #[component]
 pub fn AppShell() -> impl IntoView {
     view! {

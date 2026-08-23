@@ -3,6 +3,7 @@ use icondata as id;
 use leptos::prelude::*;
 use leptos_icons::Icon;
 
+/// Render the activity-bar panel switcher.
 #[component]
 pub fn ActivityBar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

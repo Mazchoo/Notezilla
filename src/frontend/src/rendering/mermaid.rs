@@ -11,10 +11,6 @@ const BASELINE_ASCENT_RATIO: f64 = 0.3;
 const ARROW_SIZE: f64 = 8.0;
 
 /// Render a Mermaid diagram source string to an inline SVG string.
-///
-/// Uses the pure-Rust `rusty-mermaid` pipeline (parse → layout → SVG) so the
-/// same code runs in WASM and on native, with no JavaScript runtime, no CDN
-/// script, and no DOM post-processing step.
 pub fn render_mermaid(src: &str) -> String {
     // The dark theme's text matches `pdf_colors::TEXT` so labels read
     // correctly both on shape fills and on the diagram background. Setting
@@ -52,14 +48,13 @@ pub fn render_mermaid(src: &str) -> String {
     }
 }
 
-/// Ironpress ignores `dominant-baseline` and SVG `<marker>` refs, and maps the
-/// mermaid font stack to Helvetica. Flatten labels to alphabetic baselines,
-/// paint arrows as polygons, and use Courier so advances match layout.
+/// Flatten mermaid SVG labels and expand marker arrows for PDF layout.
 fn prepare_mermaid_svg(svg: &str) -> String {
     let labeled = rewrite_text_elements(svg);
     expand_path_markers(&labeled)
 }
 
+/// Replace mermaid `<text>` elements with flattened baseline labels.
 fn rewrite_text_elements(svg: &str) -> String {
     let mut out = String::with_capacity(svg.len());
     let mut rest = svg;
@@ -77,6 +72,7 @@ fn rewrite_text_elements(svg: &str) -> String {
     out
 }
 
+/// Flatten one mermaid `<text>` element onto alphabetic baselines.
 fn flatten_label(elem: &str) -> String {
     let gt = match elem.find('>') {
         Some(i) => i,
@@ -130,6 +126,7 @@ struct LabelLine {
     italic: bool,
 }
 
+/// Collect label lines from `<tspan>` children or plain text.
 fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
     let mut lines = Vec::new();
     let mut rest = inner;
@@ -203,6 +200,7 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
     lines
 }
 
+/// Strip HTML/SVG tags from `s`, keeping text content.
 fn strip_tags(s: &str) -> String {
     let mut out = String::new();
     let mut in_tag = false;
@@ -217,6 +215,7 @@ fn strip_tags(s: &str) -> String {
     out
 }
 
+/// Parse a CSS `font-size` value in pixels.
 fn parse_font_px(v: &str) -> Option<f64> {
     v.trim()
         .trim_end_matches("px")
@@ -226,6 +225,7 @@ fn parse_font_px(v: &str) -> Option<f64> {
         .filter(|n| *n > 0.0)
 }
 
+/// Replace SVG marker refs on paths with painted arrow polygons.
 fn expand_path_markers(svg: &str) -> String {
     let mut out = String::with_capacity(svg.len() + 256);
     let mut rest = svg;
@@ -275,6 +275,7 @@ fn expand_path_markers(svg: &str) -> String {
     out
 }
 
+/// Remove attribute `name` from an SVG element string.
 fn strip_attr(elem: &str, name: &str) -> String {
     let Some(val) = attr(elem, name) else {
         return elem.to_string();
@@ -284,6 +285,7 @@ fn strip_attr(elem: &str, name: &str) -> String {
     elem.replace(&needle_dq, "").replace(&needle_sq, "")
 }
 
+/// Resolve an arrow color from a marker URL or the path stroke.
 fn marker_color(url: &str, stroke: Option<&str>) -> String {
     let id = url.trim().trim_start_matches("url(#").trim_end_matches(')');
     if let Some((_, hex)) = id.rsplit_once('-') {
@@ -301,6 +303,7 @@ struct PathEnds {
     end_dir: (f64, f64),
 }
 
+/// Compute start/end points and directions from an SVG path `d` string.
 fn path_ends(d: &str) -> Option<PathEnds> {
     let tokens = tokenize_path(d);
     let mut i = 0;
@@ -399,6 +402,7 @@ fn path_ends(d: &str) -> Option<PathEnds> {
     })
 }
 
+/// Tokenize an SVG path `d` string into commands and numbers.
 fn tokenize_path(d: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut cur = String::new();
@@ -422,18 +426,21 @@ fn tokenize_path(d: &str) -> Vec<String> {
     out
 }
 
+/// Consume the next numeric token from `tokens`.
 fn take_num(tokens: &[String], i: &mut usize) -> Option<f64> {
     let n = tokens.get(*i)?.parse().ok()?;
     *i += 1;
     Some(n)
 }
 
+/// Consume the next `x,y` pair from `tokens`.
 fn take_xy(tokens: &[String], i: &mut usize) -> Option<(f64, f64)> {
     let x = take_num(tokens, i)?;
     let y = take_num(tokens, i)?;
     Some((x, y))
 }
 
+/// Build an SVG polygon for an arrowhead at `tip` facing `dir`.
 fn arrow_polygon(tip: (f64, f64), dir: (f64, f64), color: &str) -> String {
     let len = (dir.0 * dir.0 + dir.1 * dir.1).sqrt();
     if len < 1e-6 {
@@ -457,6 +464,7 @@ fn arrow_polygon(tip: (f64, f64), dir: (f64, f64), color: &str) -> String {
     )
 }
 
+/// Read a quoted attribute value from an SVG tag string.
 fn attr(tag: &str, name: &str) -> Option<String> {
     let bytes = tag.as_bytes();
     let name_b = name.as_bytes();
@@ -488,8 +496,7 @@ fn attr(tag: &str, name: &str) -> Option<String> {
     None
 }
 
-/// Lowest x/y among shape primitives. Starts at 0 so only overhang past the
-/// reported scene origin is returned (enough to size SVG padding).
+/// Return the lowest x/y among scene primitives that overhang the origin.
 fn content_mins(scene: &Scene) -> (f64, f64) {
     let mut min_x: f64 = 0.0;
     let mut min_y: f64 = 0.0;
@@ -546,6 +553,7 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Assert flowchart labels use an alphabetic baseline and Courier.
     fn flowchart_labels_use_baseline_and_courier() {
         let svg = render_mermaid("graph LR\n    A[Square Rect] --> B((Circle))\n");
         assert!(
@@ -568,6 +576,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert a pie chart renders without `dominant-baseline`.
     fn pie_renders_without_dominant_baseline() {
         let svg = render_mermaid("pie title Pets\n\"Dogs\" : 2\n\"Cats\" : 3\n");
         assert!(svg.contains("<svg"), "{svg}");

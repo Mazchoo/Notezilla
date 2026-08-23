@@ -60,6 +60,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// Construct default application state inside a reactive owner.
     pub fn new() -> Self {
         Self {
             root_owner: Owner::current()
@@ -92,7 +93,7 @@ impl AppState {
         }
     }
 
-    /// Class for activity/top-bar icon buttons; appends `active` when selected.
+    /// Return the CSS class for activity and top-bar icon buttons.
     pub fn activity_btn_class(active: bool) -> &'static str {
         if active {
             "activity-btn active"

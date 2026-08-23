@@ -2,6 +2,7 @@ use crate::components::hotkeys::{format_ctrl_hotkey, normalize_hotkey_key};
 use crate::state::AppState;
 use leptos::prelude::*;
 
+/// Capture a printable key press into a hotkey settings signal.
 fn on_hotkey_keydown(ev: web_sys::KeyboardEvent, target: RwSignal<String>) {
     if ev.key() == "Tab" || ev.key() == "Escape" {
         return;
@@ -12,6 +13,7 @@ fn on_hotkey_keydown(ev: web_sys::KeyboardEvent, target: RwSignal<String>) {
     }
 }
 
+/// Render the settings form for search page size and hotkeys.
 #[component]
 pub fn SettingsPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

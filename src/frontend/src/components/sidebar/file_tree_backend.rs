@@ -9,6 +9,7 @@ pub enum FileTreeBackend {
 }
 
 impl FileTreeBackend {
+    /// Fetch a directory listing for this tree's MCP folder.
     pub async fn get_dir_contents(
         self,
         session_id: &str,
@@ -20,6 +21,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Fetch a markdown file for this tree's MCP folder.
     pub async fn get_file(self, session_id: &str, path: &str) -> Result<NoteFile, String> {
         match self {
             Self::Notes => tools::get_note(session_id, path).await,
@@ -27,6 +29,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Delete a file in this tree's MCP folder.
     pub async fn delete_file(self, session_id: &str, path: &str) -> Result<(), String> {
         match self {
             Self::Notes => tools::delete_note(session_id, path).await,
@@ -34,6 +37,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Delete a folder in this tree's MCP folder.
     pub async fn delete_folder(self, session_id: &str, path: &str) -> Result<(), String> {
         match self {
             Self::Notes => tools::delete_folder(session_id, path).await,
@@ -41,6 +45,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Create a directory in this tree's MCP folder.
     pub async fn new_dir(self, session_id: &str, path: &str) -> Result<(), String> {
         match self {
             Self::Notes => tools::new_dir(session_id, path).await,
@@ -48,6 +53,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Move a file or folder in this tree's MCP folder.
     pub async fn move_item(self, session_id: &str, src: &str, dst: &str) -> Result<(), String> {
         match self {
             Self::Notes => tools::move_dir(session_id, src, dst).await,
@@ -55,6 +61,7 @@ impl FileTreeBackend {
         }
     }
 
+    /// Rename a file or folder in this tree's MCP folder.
     pub async fn rename(self, session_id: &str, path: &str, new_name: &str) -> Result<(), String> {
         match self {
             Self::Notes => tools::rename_dir(session_id, path, new_name).await,

@@ -4,12 +4,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static BLOCK_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+/// Allocate the next unique block identifier.
 fn next_id() -> u64 {
     BLOCK_COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
-/// Splits `text` into an optional YAML front matter string and the remaining markdown body.
-/// Expects front matter wrapped in `---` delimiters at the very start of the file.
+/// Split `text` into optional YAML front matter and the remaining markdown body.
 pub fn split_front_matter(text: &str) -> (Option<String>, String) {
     let norm = text.replace("\r\n", "\n");
     if !norm.starts_with("---\n") {
@@ -38,6 +38,7 @@ pub struct FrontMatterBlock {
 }
 
 impl FrontMatterBlock {
+    /// Create a front-matter block from raw YAML.
     pub fn new(raw: impl Into<String>) -> Self {
         Self {
             raw: RwSignal::new(raw.into()),
@@ -45,8 +46,7 @@ impl FrontMatterBlock {
         }
     }
 
-    /// Parses the raw YAML into `(key, value)` pairs for display.
-    /// Handles simple `key: value` lines; skips blank lines and list continuations.
+    /// Parse raw YAML into `(key, value)` pairs for the view-mode table.
     pub fn parse_fields(raw: &str) -> Vec<(String, String)> {
         raw.lines()
             .filter_map(|line| {
@@ -75,6 +75,7 @@ pub struct TitleBlock {
 }
 
 impl TitleBlock {
+    /// Create a title block for a note path.
     pub fn new(path: impl Into<String>) -> Self {
         Self {
             id: next_id(),
@@ -97,8 +98,7 @@ pub struct MarkdownBlock {
 }
 
 impl MarkdownBlock {
-    /// Creates a block with raw markdown. HTML starts empty; the editor fills
-    /// it after mount so the shell can paint before heavy render work runs.
+    /// Create a markdown block; HTML starts empty until the editor renders it.
     pub fn new(raw: impl Into<String>) -> Self {
         Self {
             text: RwSignal::new(raw.into()),
@@ -107,8 +107,7 @@ impl MarkdownBlock {
         }
     }
 
-    /// Re-render markdown → HTML and update the cache.
-    /// Call before setting focused=false so the div shows fresh HTML on switch.
+    /// Re-render markdown to HTML and update the cache.
     pub fn rerender(self) {
         let raw = self.text.get_untracked();
         self.html.set(render_markdown(&raw));
@@ -127,6 +126,7 @@ pub struct EditorEntry {
 }
 
 impl EditorEntry {
+    /// Create an editor entry from a path and markdown body.
     pub fn new(path: impl Into<String>, raw: impl Into<String>) -> Self {
         Self {
             title: TitleBlock::new(path),
@@ -135,6 +135,7 @@ impl EditorEntry {
         }
     }
 
+    /// Create an empty editor entry for a path.
     pub fn empty(path: impl Into<String>) -> Self {
         Self::new(path, "")
     }

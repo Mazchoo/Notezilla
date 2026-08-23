@@ -15,9 +15,7 @@ struct JsonRpcResponse {
     error: Option<Value>,
 }
 
-/// Extract the first `data: ...` line from an SSE body and parse it as JSON.
-/// The FastMCP server returns Content-Type: text/event-stream but delivers
-/// the full body at once (not a persistent stream), so we read it as text.
+/// Parse the first `data:` JSON-RPC payload from an SSE body.
 fn parse_sse(body: &str) -> Option<JsonRpcResponse> {
     for line in body.lines() {
         if let Some(rest) = line.strip_prefix("data:") {
@@ -76,12 +74,7 @@ pub async fn initialize_session() -> Result<String, String> {
     Ok(session_id)
 }
 
-/// Call any MCP tool and return its structured payload.
-///
-/// FastMCP wraps every tool result as:
-///   { "result": { "content": [{ "type": "text", "text": "Success" | "Error: ..." }],
-///                 "structuredContent": { ... } } }
-/// Errors are surfaced from the text message; successful calls return structuredContent.
+/// Call an MCP tool and return its structured payload.
 pub async fn call_tool(
     session_id: &str,
     tool_name: &str,
@@ -141,6 +134,7 @@ pub async fn call_tool(
     Ok(structured)
 }
 
+/// Collect non-empty `warnings` strings from a tool payload.
 fn warnings_from_structured(structured: &Value) -> Vec<String> {
     let Some(arr) = structured.get("warnings").and_then(Value::as_array) else {
         return Vec::new();

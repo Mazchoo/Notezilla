@@ -10,6 +10,7 @@ use web_sys::{Event, FileReader, HtmlInputElement};
 
 const FILE_READ_ERROR_TOAST: &str = "File cannot be read";
 
+/// Log a file-read failure, show a toast, and reset the file input.
 fn report_file_read_error(detail: &str, toast: RwSignal<Option<String>>, input: &HtmlInputElement) {
     web_sys::console::error_1(&detail.into());
     show_toast(toast, FILE_READ_ERROR_TOAST);
@@ -43,9 +44,6 @@ pub fn entry_from_markdown(path: impl Into<String>, text: &str) -> EditorEntry {
 }
 
 /// Build an [`EditorEntry`] from a backend `get_note` document and metadata.
-///
-/// The backend returns body text with front matter already stripped and metadata
-/// in a separate map — do not re-parse `---` delimiters from the body.
 pub fn entry_from_note(
     path: impl Into<String>,
     body: &str,
@@ -63,7 +61,7 @@ pub fn open_note_in_editor(entries: RwSignal<Vec<EditorEntry>>, entry: EditorEnt
     });
 }
 
-/// Relative path for an imported file (directory structure when available).
+/// Return the relative path for an imported file.
 fn relative_path_from_file(file: &web_sys::File) -> String {
     js_sys::Reflect::get(file as &JsValue, &JsValue::from_str("webkitRelativePath"))
         .ok()
@@ -72,8 +70,7 @@ fn relative_path_from_file(file: &web_sys::File) -> String {
         .unwrap_or_else(|| file.name())
 }
 
-/// Handles a file-input `change` event: reads the selected file as UTF-8 text
-/// and opens it in the editor, keyed by its full relative path.
+/// Read the selected markdown file and open it in the editor.
 pub fn load_markdown_file(
     ev: Event,
     entries: RwSignal<Vec<EditorEntry>>,
@@ -132,6 +129,7 @@ pub fn load_markdown_file(
     }
 }
 
+/// Build YAML front matter from a backend metadata map.
 fn front_matter_from_metadata(meta: &HashMap<String, Value>) -> Option<String> {
     let mut scalar_fields: Vec<(String, Value)> = Vec::new();
     let mut list_items: HashMap<String, Vec<String>> = HashMap::new();
@@ -173,10 +171,12 @@ fn front_matter_from_metadata(meta: &HashMap<String, Value>) -> Option<String> {
     Some(lines.join("\n"))
 }
 
+/// Return whether a metadata key is an internal backend field.
 fn is_internal_metadata_key(key: &str) -> bool {
     key == "filename" || key == "text" || key.starts_with('\n')
 }
 
+/// Format one YAML front-matter `key: value` line.
 fn format_front_matter_line(key: &str, val: &Value) -> String {
     if let Value::String(s) = val {
         if let Ok(parsed) = serde_json::from_str::<Value>(s) {
@@ -191,6 +191,7 @@ fn format_front_matter_line(key: &str, val: &Value) -> String {
     format!("{key}: {}", format_yaml_scalar(val))
 }
 
+/// Format a JSON value as a YAML scalar.
 fn format_yaml_scalar(val: &Value) -> String {
     match val {
         Value::String(s) => s.clone(),

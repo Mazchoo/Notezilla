@@ -9,22 +9,25 @@ pub struct NewFolderModalCtrl {
 }
 
 impl NewFolderModalCtrl {
+    /// Create a closed new-folder modal controller.
     pub fn new() -> Self {
         Self {
             parent_path: RwSignal::new(None),
         }
     }
 
+    /// Open the new-folder modal under `parent_path`.
     pub fn open(self, parent_path: String) {
         self.parent_path.set(Some(parent_path));
     }
 
+    /// Close the new-folder modal.
     pub fn close(self) {
         self.parent_path.set(None);
     }
 }
 
-/// Modal prompting for a new folder name under a parent path.
+/// Prompt for a new folder name under a parent path.
 #[component]
 pub fn NewFolderModal<FConfirm>(ctrl: NewFolderModalCtrl, on_confirm: FConfirm) -> impl IntoView
 where

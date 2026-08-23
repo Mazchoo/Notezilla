@@ -10,6 +10,7 @@ pub struct RenameModalCtrl {
 }
 
 impl RenameModalCtrl {
+    /// Create a closed rename-modal controller.
     pub fn new() -> Self {
         Self {
             path: RwSignal::new(None),
@@ -17,17 +18,19 @@ impl RenameModalCtrl {
         }
     }
 
+    /// Open the rename modal for `path`.
     pub fn open(self, path: String, is_file: bool) {
         self.is_file.set(is_file);
         self.path.set(Some(path));
     }
 
+    /// Close the rename modal.
     pub fn close(self) {
         self.path.set(None);
     }
 }
 
-/// Modal prompting for a new basename for a file or folder.
+/// Prompt for a new basename for a file or folder.
 #[component]
 pub fn RenameModal<FConfirm>(ctrl: RenameModalCtrl, on_confirm: FConfirm) -> impl IntoView
 where

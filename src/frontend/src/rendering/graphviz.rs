@@ -7,6 +7,7 @@ const DEFAULT_FONT_SIZE: usize = 14;
 /// Alphabetic baseline below the node center so Latin caps sit in the box.
 const BASELINE_FROM_CENTER: f64 = 0.35;
 
+/// Render Graphviz DOT source to an inline SVG string.
 pub fn render_dot(dot: &str) -> Result<String, String> {
     let mut parser = DotParser::new(dot);
     let tree = parser.process().map_err(|e| format!("{e:?}"))?;
@@ -18,9 +19,7 @@ pub fn render_dot(dot: &str) -> Result<String, String> {
     Ok(prepare_graphviz_svg(&svg.finalize()))
 }
 
-/// layout-rs emits CSS classes, `tspan dy`, and `dominant-baseline` that
-/// browsers honor and ironpress does not. Flatten labels to presentation
-/// attributes and map default black/white paints onto the editor palette.
+/// Flatten graphviz labels and map default paints onto the editor palette.
 fn prepare_graphviz_svg(raw: &str) -> String {
     let without_xml = raw
         .trim_start()
@@ -35,6 +34,7 @@ fn prepare_graphviz_svg(raw: &str) -> String {
         .replace("fill=\"context-stroke\"", &format!("fill=\"{STROKE}\""))
 }
 
+/// Parse CSS font-size classes emitted by layout-rs.
 fn parse_font_classes(svg: &str) -> HashMap<String, usize> {
     let mut fonts = HashMap::new();
     let mut rest = svg;
@@ -51,6 +51,7 @@ fn parse_font_classes(svg: &str) -> HashMap<String, usize> {
     fonts
 }
 
+/// Replace graphviz `<text>` elements with flattened node labels.
 fn rewrite_text_elements(svg: &str, fonts: &HashMap<String, usize>) -> String {
     let mut out = String::with_capacity(svg.len());
     let mut rest = svg;
@@ -73,6 +74,7 @@ fn rewrite_text_elements(svg: &str, fonts: &HashMap<String, usize>) -> String {
     out
 }
 
+/// Flatten one graphviz `<text>` element onto alphabetic baselines.
 fn flatten_node_label(elem: &str, fonts: &HashMap<String, usize>) -> String {
     let gt = elem.find('>').unwrap_or(elem.len());
     let open = &elem[..gt];
@@ -106,6 +108,7 @@ fn flatten_node_label(elem: &str, fonts: &HashMap<String, usize>) -> String {
     out
 }
 
+/// Collect label lines from `<tspan>` children or plain text.
 fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
     let mut lines = Vec::new();
     let mut rest = inner;
@@ -134,6 +137,7 @@ fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
     lines
 }
 
+/// Read a quoted attribute value from an SVG tag string.
 fn attr(tag: &str, name: &str) -> Option<String> {
     let bytes = tag.as_bytes();
     let name_b = name.as_bytes();
@@ -170,6 +174,7 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Assert graphviz labels inline fill, font-size, and baseline.
     fn graphviz_svg_inlines_label_paint_and_baseline() {
         let svg = render_dot("digraph { A -> B }").unwrap();
         assert!(!svg.contains("<?xml"), "{svg}");

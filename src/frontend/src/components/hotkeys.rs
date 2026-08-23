@@ -7,7 +7,6 @@ use leptos::ev;
 use leptos::prelude::*;
 
 /// Normalize a settings hotkey value to a single lowercase character.
-/// Rejects multi-character key names such as `Enter` or `Control`.
 pub fn normalize_hotkey_key(raw: &str) -> Option<String> {
     let raw = raw.trim();
     let mut chars = raw.chars();
@@ -18,6 +17,7 @@ pub fn normalize_hotkey_key(raw: &str) -> Option<String> {
     Some(ch.to_lowercase().to_string())
 }
 
+/// Return whether a pressed key matches the configured hotkey letter.
 fn keys_match(pressed: &str, configured: &str) -> bool {
     !configured.is_empty() && pressed.eq_ignore_ascii_case(configured)
 }
@@ -28,6 +28,7 @@ pub fn format_ctrl_hotkey(key: &str) -> String {
     format!("Ctrl+{display}")
 }
 
+/// Bind global Ctrl/Meta hotkeys for save, new file, import, export, and edit toggle.
 #[component]
 pub fn GlobalHotkeys() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

@@ -40,6 +40,7 @@ pub fn show_mcp_warnings(warnings: &[String]) {
     set_timed_toast(toast, message);
 }
 
+/// Show a toast message and clear it after the dismiss timeout.
 fn set_timed_toast(toast: RwSignal<Option<String>>, message: impl Into<String>) {
     toast.set(Some(message.into()));
     let Some(window) = web_sys::window() else {
@@ -53,6 +54,7 @@ fn set_timed_toast(toast: RwSignal<Option<String>>, message: impl Into<String>) 
     closure.forget();
 }
 
+/// Render stacked error, warning, and status toast messages.
 #[component]
 pub fn Toast() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

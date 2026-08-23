@@ -1,10 +1,6 @@
 use super::pdf_colors::{TEXT_FILL, TEXT_STROKE};
 
 /// Convert a complete HTML document string to PDF bytes.
-///
-/// Uses ironpress's layout engine so the same path runs natively and in WASM.
-/// Callers must pass a self-contained document (inline CSS, inline SVG); remote
-/// stylesheets and images are not fetched.
 pub fn html_to_pdf_bytes(html: &str) -> Result<Vec<u8>, String> {
     // Uncompressed page streams so math fill/stroke operators can be rewritten.
     let pdf = ironpress::HtmlConverter::new()
@@ -14,6 +10,7 @@ pub fn html_to_pdf_bytes(html: &str) -> Result<Vec<u8>, String> {
     recolor_math_operators(&pdf)
 }
 
+/// Recolor black math fill/stroke operators to the page text color.
 fn recolor_math_operators(pdf: &[u8]) -> Result<Vec<u8>, String> {
     let Some(body) = pdf.strip_prefix(b"%PDF-1.4\n") else {
         return Ok(pdf.to_vec());
@@ -32,6 +29,7 @@ fn recolor_math_operators(pdf: &[u8]) -> Result<Vec<u8>, String> {
     Ok(serialize_pdf(&processed, catalog_id))
 }
 
+/// Parse the catalog object id from a PDF trailer.
 fn parse_catalog_id(trailer: &[u8]) -> Result<usize, String> {
     let text = String::from_utf8_lossy(trailer);
     let marker = "/Root ";
@@ -48,6 +46,7 @@ fn parse_catalog_id(trailer: &[u8]) -> Result<usize, String> {
     Ok(id)
 }
 
+/// Split a PDF body into individual object byte slices.
 fn split_objects(body: &[u8]) -> Result<Vec<Vec<u8>>, String> {
     let mut objects = Vec::new();
     let mut rest = body;
@@ -65,6 +64,7 @@ fn split_objects(body: &[u8]) -> Result<Vec<Vec<u8>>, String> {
     Ok(objects)
 }
 
+/// Take the next PDF object from `input` and return the remainder.
 fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
     let obj_tag = input
         .windows(6)
@@ -134,6 +134,7 @@ fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
     Ok((input[..end].to_vec(), &input[end..]))
 }
 
+/// Recolor an uncompressed content stream inside one PDF object.
 fn recolor_object(obj: Vec<u8>) -> Vec<u8> {
     let Some(stream_at) = find_subslice(&obj, b"\nstream\n") else {
         return obj;
@@ -162,6 +163,7 @@ fn recolor_object(obj: Vec<u8>) -> Vec<u8> {
     out
 }
 
+/// Rewrite a stream dictionary `/Length` to `new_len`.
 fn rewrite_length(dict: &mut Vec<u8>, new_len: usize) {
     let key = b"/Length ";
     let Some(at) = find_subslice(dict, key) else {
@@ -179,11 +181,13 @@ fn rewrite_length(dict: &mut Vec<u8>, new_len: usize) {
     *dict = new_dict;
 }
 
+/// Recolor black operators and inject fill after math `BT` operators.
 fn recolor_content(content: &[u8]) -> Vec<u8> {
     let replaced = replace_black_operators(content);
     insert_fill_after_bt(&replaced)
 }
 
+/// Replace `0 0 0 rg` / `RG` with the page text color operators.
 fn replace_black_operators(content: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(content.len());
     let mut i = 0;
@@ -206,9 +210,7 @@ fn replace_black_operators(content: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Ironpress math letters never emit `rg`. Fill set *before* `BT` is not
-/// always applied to `Tj`. Put `--text` inside math text objects so italic
-/// `x` / `b` (Helvetica-Oblique) paint with the page color.
+/// Insert the page text fill immediately after math `BT` operators.
 fn insert_fill_after_bt(content: &[u8]) -> Vec<u8> {
     const MATH_FONTS: [&[u8]; 3] = [b"/Helvetica-Oblique ", b"/Symbol ", b"/Helvetica "];
     let mut out = Vec::with_capacity(content.len() + 64);
@@ -242,6 +244,7 @@ fn insert_fill_after_bt(content: &[u8]) -> Vec<u8> {
     out
 }
 
+/// Serialize PDF objects with a rebuilt xref table and trailer.
 fn serialize_pdf(objects: &[Vec<u8>], catalog_id: usize) -> Vec<u8> {
     let mut out = b"%PDF-1.4\n".to_vec();
     let mut offsets = Vec::with_capacity(objects.len());
@@ -268,6 +271,7 @@ fn serialize_pdf(objects: &[Vec<u8>], catalog_id: usize) -> Vec<u8> {
     out
 }
 
+/// Parse `/Length` from a PDF stream dictionary.
 fn parse_length(dict: &[u8]) -> Option<usize> {
     let key = b"/Length ";
     let at = find_subslice(dict, key)?;
@@ -280,10 +284,12 @@ fn parse_length(dict: &[u8]) -> Option<usize> {
     n.parse().ok()
 }
 
+/// Return the index of `needle` in `haystack`.
 fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack.windows(needle.len()).position(|w| w == needle)
 }
 
+/// Return whether index `i` starts a PDF operator token.
 fn is_pdf_operator_start(pdf: &[u8], i: usize) -> bool {
     i == 0 || matches!(pdf[i - 1], b'\n' | b'\r' | b' ' | b'\t')
 }
@@ -293,6 +299,7 @@ mod tests {
     use super::html_to_pdf_bytes;
     use crate::rendering::render_markdown;
 
+    /// Assert `bytes` look like a non-trivial PDF document.
     fn assert_pdf(bytes: &[u8]) {
         assert!(
             bytes.starts_with(b"%PDF"),
@@ -308,12 +315,14 @@ mod tests {
     }
 
     #[test]
+    /// Assert simple HTML converts to a valid PDF.
     fn simple_html_converts_to_pdf() {
         let pdf = html_to_pdf_bytes("<h1>Hello</h1><p>World</p>").unwrap();
         assert_pdf(&pdf);
     }
 
     #[test]
+    /// Assert inline SVG HTML converts to a valid PDF.
     fn inline_svg_converts_to_pdf() {
         let html = r##"<h1>Diagram</h1>
 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
@@ -325,6 +334,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert graphviz markdown renders to SVG and converts to PDF.
     fn markdown_graphviz_svg_converts_to_pdf() {
         let body = render_markdown("```graphviz\ndigraph { A -> B }\n```\n");
         assert!(
@@ -361,6 +371,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert mermaid markdown renders to SVG and converts to PDF.
     fn markdown_mermaid_svg_converts_to_pdf() {
         let body =
             render_markdown("```mermaid\ngraph LR\n    A[Square Rect] --> B((Circle))\n```\n");
@@ -392,6 +403,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert the PDF export stylesheet sets the editor page background.
     fn pdf_export_stylesheet_sets_page_background() {
         use crate::rendering::pdf_colors::BG_2;
         let template = include_str!("../../templates/export-pdf.html");
@@ -413,6 +425,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert PDF math uses `data-math` and converts with page-color fill.
     fn latex_markdown_for_pdf_uses_data_math_and_converts() {
         use crate::rendering::pdf_colors::{TEXT, TEXT_FILL};
         use crate::rendering::render_markdown_for_pdf;
@@ -461,6 +474,7 @@ mod tests {
     }
 
     #[test]
+    /// Assert a list-item inline `$\\pi$` converts to PDF without `<li>`.
     fn list_item_inline_pi_converts_to_pdf() {
         use crate::rendering::render_markdown_for_pdf;
 

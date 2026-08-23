@@ -7,6 +7,7 @@ use crate::state::AppState;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+/// Run a note search against the MCP backend and store the results.
 fn run_search(
     query: RwSignal<String>,
     frontmatter: RwSignal<String>,
@@ -43,6 +44,7 @@ fn run_search(
     });
 }
 
+/// Run a search when the user presses Enter.
 fn search_on_enter(
     ev: web_sys::KeyboardEvent,
     query: RwSignal<String>,
@@ -71,6 +73,7 @@ fn search_on_enter(
     );
 }
 
+/// Render the note search form, results list, and pagination.
 #[component]
 pub fn SearchPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");

@@ -10,8 +10,7 @@ use leptos::html::{Input, Textarea};
 use leptos::prelude::*;
 use leptos_icons::Icon;
 
-/// Renders one editor entry: divider, file-path title, optional front matter, and markdown.
-/// The title row includes a disclosure control that collapses the front matter and markdown.
+/// Render one editor entry: divider, title, optional front matter, and markdown.
 #[component]
 pub fn EditorEntryComponent(entry: EditorEntry) -> impl IntoView {
     let entry_id = entry.title.id;
@@ -34,10 +33,7 @@ pub fn EditorEntryComponent(entry: EditorEntry) -> impl IntoView {
     }
 }
 
-/// Renders the file-path title for an editor entry.
-/// Displays the path as a styled label; click to edit inline, blur to confirm.
-/// Always one line — distinct from markdown `#` headings.
-/// A chevron on the left toggles [`TitleBlock::collapsed`].
+/// Render the file-path title row with collapse and entry actions.
 #[component]
 pub fn TitleBlockComponent(
     title: TitleBlock,
@@ -167,9 +163,7 @@ pub fn TitleBlockComponent(
     }
 }
 
-/// Renders YAML front matter as a key-value table (view mode) or editable textarea (edit mode).
-/// Visually distinct from markdown blocks: left-accented border, monospace key-value grid.
-/// Includes a delete button that removes only the front matter from the entry.
+/// Render YAML front matter as a key-value table or editable textarea.
 #[component]
 pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -251,6 +245,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
     }
 }
 
+/// Render a markdown block in view mode or as an editable textarea.
 #[component]
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
