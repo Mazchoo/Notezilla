@@ -49,7 +49,7 @@ impl RenderPdf for MathRender {
     /// Ironpress ignores MathML, so PDF export keeps the LaTeX source in a
     /// `data-math` attribute and paints it with the page text color.
     fn render_pdf(&self, source: &str) -> String {
-        let escaped = escape_html(source);
+        let escaped = escape_html(&space_ironpress_binops(source));
         match self.display {
             DisplayStyle::Inline => format!(
                 r#"<span class="math-inline" style="color:{TEXT}" data-math="{escaped}">{escaped}</span>"#
@@ -59,6 +59,38 @@ impl RenderPdf for MathRender {
             ),
         }
     }
+}
+
+/// Insert thick spaces around `\pm` / `\mp` so ironpress treats them as binary.
+///
+/// Ironpress classifies `±` and `∓` as Ord, so Knuth spacing around them is 0.
+/// `\;` is the thick space it does parse (5mu). Leave `\pmatrix` and similar
+/// commands untouched: only a complete `\pm` / `\mp` token is rewritten.
+fn space_ironpress_binops(latex: &str) -> String {
+    let mut out = String::with_capacity(latex.len() + 8);
+    let mut chars = latex.char_indices().peekable();
+    while let Some((i, ch)) = chars.next() {
+        if ch == '\\' {
+            let rest = &latex[i + 1..];
+            let cmd_len = rest
+                .chars()
+                .take_while(|c| c.is_ascii_alphabetic())
+                .map(|c| c.len_utf8())
+                .sum::<usize>();
+            let cmd = &rest[..cmd_len];
+            if cmd == "pm" || cmd == "mp" {
+                out.push_str(r"\;\");
+                out.push_str(cmd);
+                out.push_str(r"\;");
+                for _ in 0..cmd.chars().count() {
+                    chars.next();
+                }
+                continue;
+            }
+        }
+        out.push(ch);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -135,5 +167,31 @@ mod tests {
     fn pdf_html_differs_from_editor_html() {
         let render = MathRender::new(DisplayStyle::Inline);
         assert_ne!(render.render_pdf("x_i"), render.render("x_i"));
+    }
+
+    #[test]
+    /// Assert PDF LaTeX puts thick space around `\pm` and `\mp`.
+    fn pdf_spaces_pm_and_mp() {
+        assert_eq!(super::space_ironpress_binops(r"a\pm b"), r"a\;\pm\; b");
+        assert_eq!(super::space_ironpress_binops(r"a\mp b"), r"a\;\mp\; b");
+        assert_eq!(
+            super::space_ironpress_binops(r"\frac{-b \pm \sqrt{x}}{2a}"),
+            r"\frac{-b \;\pm\; \sqrt{x}}{2a}"
+        );
+    }
+
+    #[test]
+    /// Assert `\pmatrix` is not rewritten as a `\pm` command.
+    fn pdf_does_not_space_pmatrix() {
+        assert_eq!(super::space_ironpress_binops(r"\pmatrix"), r"\pmatrix");
+    }
+
+    #[test]
+    /// Assert PDF `data-math` carries the spaced `\pm`.
+    fn pdf_data_math_contains_spaced_pm() {
+        let html = MathRender::new(DisplayStyle::Block)
+            .render_pdf(r"\frac{-b \pm \sqrt{b^2-4ac}}{2a}");
+        assert!(html.contains(r"\;\pm\;"), "{html}");
+        assert!(!html.contains(r" \pm \"), "{html}");
     }
 }

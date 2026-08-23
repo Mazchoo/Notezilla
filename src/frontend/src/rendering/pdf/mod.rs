@@ -120,6 +120,20 @@ mod tests {
         String::from_utf8_lossy(TEXT_FILL).trim().to_string()
     }
 
+    /// Return the `Td` x of the text object that paints `glyph`.
+    fn glyph_x(pdf: &str, glyph: &str) -> f32 {
+        let object = text_object_before(pdf, glyph);
+        let td = object
+            .rfind(" Td")
+            .unwrap_or_else(|| panic!("no Td before {glyph} in {object}"));
+        let line_start = object[..td].rfind('\n').map(|i| i + 1).unwrap_or(0);
+        object[line_start..td]
+            .split_whitespace()
+            .next()
+            .and_then(|x| x.parse().ok())
+            .unwrap_or_else(|| panic!("Td x before {glyph} in {object}"))
+    }
+
     #[test]
     /// Assert simple HTML converts to a valid PDF.
     fn simple_html_converts_to_pdf() {
@@ -255,7 +269,7 @@ mod tests {
         assert!(html.contains("data-math="), "{html}");
         assert!(html.contains(&format!(r#"style="color:{TEXT}""#)), "{html}");
         assert!(
-            html.contains(r#"\frac{-b \pm \sqrt{b^2-4ac}}{2a}"#),
+            html.contains(r#"\frac{-b \;\pm\; \sqrt{b^2-4ac}}{2a}"#),
             "{html}"
         );
         assert!(!html.contains("<em>"), "{html}");
@@ -277,6 +291,24 @@ mod tests {
                 "fill must be inside the text object before {glyph}: {object}"
             );
         }
+    }
+
+    #[test]
+    /// Assert the numerator `\pm` has binary space after the preceding `b`.
+    ///
+    /// Ironpress treats `±` as Ord, so the LaTeX rewrite has to insert `\;`
+    /// or `b` and `±` share an edge.
+    fn quadratic_numerator_pm_is_spaced_from_b() {
+        let html = render_markdown_for_pdf("$$\nx = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n$$\n");
+        let pdf = export_to_pdf(&html);
+        let text = String::from_utf8_lossy(&pdf);
+        let b = glyph_x(&text, "(b)");
+        let pm = glyph_x(&text, "(\\261)");
+        let gap = pm - b;
+        assert!(
+            gap > 7.5,
+            "expected binary space between numerator b and ±, gap was {gap} (b={b}, pm={pm})"
+        );
     }
 
     #[test]
