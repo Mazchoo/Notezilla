@@ -6,15 +6,13 @@ pub mod rename_modal;
 pub mod search_panel;
 pub mod settings_panel;
 
+use crate::constants::{SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH};
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
 use file_tree_backend::FileTreeBackend;
 use leptos::prelude::*;
 use search_panel::SearchPanel;
 use settings_panel::SettingsPanel;
-
-const SIDEBAR_MIN_WIDTH: f64 = 160.0;
-const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 
 /// Render the resizable sidebar and the active files, templates, search, or settings panel.
 #[component]

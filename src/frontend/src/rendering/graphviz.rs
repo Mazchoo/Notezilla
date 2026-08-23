@@ -1,11 +1,9 @@
-use super::pdf_colors::{BG_3 as NODE_FILL, TEXT as STROKE, TEXT as TEXT_FILL};
+use crate::constants::{
+    BASELINE_FROM_CENTER, BG_3 as NODE_FILL, DEFAULT_FONT_SIZE, TEXT as STROKE, TEXT as TEXT_FILL,
+};
 use layout::backends::svg::SVGWriter;
 use layout::gv::{DotParser, GraphBuilder};
 use std::collections::HashMap;
-
-const DEFAULT_FONT_SIZE: usize = 14;
-/// Alphabetic baseline below the node center so Latin caps sit in the box.
-const BASELINE_FROM_CENTER: f64 = 0.35;
 
 /// Render Graphviz DOT source to an inline SVG string.
 pub fn render_dot(dot: &str) -> Result<String, String> {

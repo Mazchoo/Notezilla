@@ -10,6 +10,7 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::new_folder_modal::{NewFolderModal, NewFolderModalCtrl};
 use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
+use crate::constants::DRAG_MIME;
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -18,8 +19,6 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_icons::Icon;
-
-const DRAG_MIME: &str = "text/plain";
 
 #[derive(Clone, Copy)]
 struct FileTreeCtx {

@@ -1,4 +1,4 @@
-use super::pdf_colors::{TEXT_FILL, TEXT_STROKE};
+use crate::constants::{MATH_FONTS, TEXT_FILL, TEXT_STROKE};
 
 /// Convert a complete HTML document string to PDF bytes.
 pub fn html_to_pdf_bytes(html: &str) -> Result<Vec<u8>, String> {
@@ -212,7 +212,6 @@ fn replace_black_operators(content: &[u8]) -> Vec<u8> {
 
 /// Insert the page text fill immediately after math `BT` operators.
 fn insert_fill_after_bt(content: &[u8]) -> Vec<u8> {
-    const MATH_FONTS: [&[u8]; 3] = [b"/Helvetica-Oblique ", b"/Symbol ", b"/Helvetica "];
     let mut out = Vec::with_capacity(content.len() + 64);
     let mut i = 0;
     while i < content.len() {
@@ -342,7 +341,7 @@ mod tests {
             "graphviz HTML should contain SVG: {body}"
         );
         assert!(
-            body.contains(&format!("fill=\"{}\"", crate::rendering::pdf_colors::TEXT))
+            body.contains(&format!("fill=\"{}\"", crate::constants::TEXT))
                 && body.contains("font-size=\"14px\""),
             "graphviz labels must set fill and font-size as attributes: {body}"
         );
@@ -359,7 +358,7 @@ mod tests {
         .unwrap();
         assert_pdf(&pdf);
         let text = String::from_utf8_lossy(&pdf);
-        use crate::rendering::pdf_colors::TEXT_FILL;
+        use crate::constants::TEXT_FILL;
         let idx = text.find("(A)").expect("missing graphviz A");
         let bt = text[..idx].rfind("BT\n").expect("no BT before A");
         let fill_trim = String::from_utf8_lossy(TEXT_FILL).trim().to_string();
@@ -405,7 +404,7 @@ mod tests {
     #[test]
     /// Assert the PDF export stylesheet sets the editor page background.
     fn pdf_export_stylesheet_sets_page_background() {
-        use crate::rendering::pdf_colors::BG_2;
+        use crate::constants::BG_2;
         let template = include_str!("../../templates/export-pdf.html");
         assert!(
             template.contains("background-color: var(--bg-2)"),
@@ -427,7 +426,7 @@ mod tests {
     #[test]
     /// Assert PDF math uses `data-math` and converts with page-color fill.
     fn latex_markdown_for_pdf_uses_data_math_and_converts() {
-        use crate::rendering::pdf_colors::{TEXT, TEXT_FILL};
+        use crate::constants::{TEXT, TEXT_FILL};
         use crate::rendering::render_markdown_for_pdf;
 
         let src = "inline $x_i$ and\n\n$$\nx = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n$$\n";

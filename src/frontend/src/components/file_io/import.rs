@@ -1,5 +1,6 @@
 use super::save::{display_note_path, normalize_note_path};
 use crate::components::toast::show_toast;
+use crate::constants::FILE_READ_ERROR_TOAST;
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use serde_json::Value;
@@ -7,8 +8,6 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, FileReader, HtmlInputElement};
-
-const FILE_READ_ERROR_TOAST: &str = "File cannot be read";
 
 /// Log a file-read failure, show a toast, and reset the file input.
 fn report_file_read_error(detail: &str, toast: RwSignal<Option<String>>, input: &HtmlInputElement) {

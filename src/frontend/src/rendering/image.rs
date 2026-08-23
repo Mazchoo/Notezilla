@@ -1,7 +1,5 @@
 use super::escape_html;
-
-/// Placeholder shown for markdown images until real image serving exists.
-const IMAGE_MISSING_SVG: &str = include_str!("../../templates/image-missing.svg");
+use crate::constants::IMAGE_MISSING_SVG;
 
 /// Return inline HTML for a missing markdown image.
 pub fn missing_image_html(alt: &str) -> String {

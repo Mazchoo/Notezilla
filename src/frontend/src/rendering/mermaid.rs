@@ -1,18 +1,11 @@
 use super::escape_html;
-use super::pdf_colors::{TEXT, TEXT_SUBTLE};
+use crate::constants::{ARROW_SIZE, BASELINE_ASCENT_RATIO, PDF_FONT_FAMILY, TEXT, TEXT_SUBTLE};
 use rusty_mermaid::svg::SvgRenderer;
 use rusty_mermaid::{render, Color, Primitive, Scene, Theme};
 
-/// rusty-mermaid measures labels as Intel One Mono (~0.6em). Ironpress maps
-/// that family to Helvetica, so PDF uses Courier (standard 14 monospace).
-const PDF_FONT_FAMILY: &str = "Courier, monospace";
-/// Matches rusty_mermaid_core::constants::BASELINE_ASCENT_RATIO.
-const BASELINE_ASCENT_RATIO: f64 = 0.3;
-const ARROW_SIZE: f64 = 8.0;
-
 /// Render a Mermaid diagram source string to an inline SVG string.
 pub fn render_mermaid(src: &str) -> String {
-    // The dark theme's text matches `pdf_colors::TEXT` so labels read
+    // The dark theme's text matches `TEXT` so labels read
     // correctly both on shape fills and on the diagram background. Setting
     // `background` to white suppresses the background <rect> in the SVG (the
     // renderer skips it for white), letting the editor surface show through.

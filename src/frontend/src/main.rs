@@ -1,4 +1,5 @@
 mod components;
+mod constants;
 mod mcp;
 mod models;
 mod rendering;

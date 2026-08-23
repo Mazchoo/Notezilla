@@ -1,12 +1,11 @@
 use crate::components::toast::show_mcp_warnings;
+use crate::constants::MCP_URL;
 use gloo_net::http::Request;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-// Proxied by Trunk to http://127.0.0.1:8020 in development.
-const MCP_URL: &str = "/mcp";
 static CALL_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Deserialize, Debug)]

@@ -1,15 +1,13 @@
 use super::path::{
     html_page_title, path_to_html_filename, path_to_markdown_filename, path_to_pdf_filename,
 };
+use crate::constants::{EXPORT_PDF_TEMPLATE, EXPORT_TEMPLATE};
 use crate::models::block::EditorEntry;
 use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
 use leptos::prelude::GetUntracked;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, BlobPropertyBag, HtmlAnchorElement};
-
-const EXPORT_TEMPLATE: &str = include_str!("../../../templates/export.html");
-const EXPORT_PDF_TEMPLATE: &str = include_str!("../../../templates/export-pdf.html");
 
 /// Prompt the browser to save each editor entry as a standalone HTML file.
 pub fn export_entries_as_html(entries: &[EditorEntry]) {

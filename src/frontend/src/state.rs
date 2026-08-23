@@ -2,16 +2,14 @@ mod active_panel;
 
 pub use active_panel::ActivePanel;
 
+use crate::constants::{DEFAULT_MARKDOWN_PATH, DEFAULT_MARKDOWN_TEMPLATE};
 use crate::models::{block::EditorEntry, note::NoteFile};
-use crate::settings::{
+use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
     DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_SAVE_HOTKEY_KEY,
     DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use leptos::prelude::*;
-
-const DEFAULT_MARKDOWN_PATH: &str = "./example_folder/new_markdown.md";
-const DEFAULT_MARKDOWN_TEMPLATE: &str = include_str!("../templates/new_markdown.md");
 
 #[derive(Clone)]
 pub struct AppState {

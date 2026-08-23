@@ -1,5 +1,5 @@
 use super::escape_html;
-use super::pdf_colors::TEXT;
+use crate::constants::TEXT;
 use latex2mathml::{latex_to_mathml, DisplayStyle};
 
 /// Convert a single LaTeX math expression to MathML.

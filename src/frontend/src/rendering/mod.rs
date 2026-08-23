@@ -5,7 +5,6 @@ mod image;
 mod math;
 mod mermaid;
 mod pdf;
-mod pdf_colors;
 mod pdf_list_kind;
 mod utils;
 
