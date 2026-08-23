@@ -3,12 +3,12 @@ mod active_panel;
 pub use active_panel::ActivePanel;
 
 use crate::constants::{DEFAULT_MARKDOWN_PATH, DEFAULT_MARKDOWN_TEMPLATE};
-use crate::models::{block::EditorEntry, note::NoteFile};
 use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
     DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_SAVE_HOTKEY_KEY,
     DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
+use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -40,15 +40,15 @@ pub struct AppState {
     /// Max search results requested from the backend per query.
     pub number_results_per_page: RwSignal<usize>,
     /// Key letter for save (Ctrl/Meta + this key). Stored lowercase.
-    pub save_hotkey_key: RwSignal<String>,
+    pub save_hotkey_key: RwSignal<char>,
     /// Key letter for new file (Ctrl/Meta + this key). Stored lowercase.
-    pub new_file_hotkey_key: RwSignal<String>,
+    pub new_file_hotkey_key: RwSignal<char>,
     /// Key letter for import (Ctrl/Meta + this key). Stored lowercase.
-    pub import_hotkey_key: RwSignal<String>,
+    pub import_hotkey_key: RwSignal<char>,
     /// Key letter for export as HTML (Ctrl/Meta + this key). Stored lowercase.
-    pub export_hotkey_key: RwSignal<String>,
+    pub export_hotkey_key: RwSignal<char>,
     /// Key letter for toggling markdown editing (Ctrl/Meta + this key). Stored lowercase.
-    pub toggle_markdown_editing_hotkey_key: RwSignal<String>,
+    pub toggle_markdown_editing_hotkey_key: RwSignal<char>,
     /// Hidden file input used by the Import button and import hotkey.
     pub import_file_input: NodeRef<leptos::html::Input>,
 }
@@ -76,12 +76,12 @@ impl AppState {
             template_tree_epoch: RwSignal::new(0),
             sidebar_width: RwSignal::new(250.0),
             number_results_per_page: RwSignal::new(DEFAULT_NUMBER_RESULTS_PER_PAGE),
-            save_hotkey_key: RwSignal::new(DEFAULT_SAVE_HOTKEY_KEY.to_string()),
-            new_file_hotkey_key: RwSignal::new(DEFAULT_NEW_FILE_HOTKEY_KEY.to_string()),
-            import_hotkey_key: RwSignal::new(DEFAULT_IMPORT_HOTKEY_KEY.to_string()),
-            export_hotkey_key: RwSignal::new(DEFAULT_EXPORT_HOTKEY_KEY.to_string()),
+            save_hotkey_key: RwSignal::new(DEFAULT_SAVE_HOTKEY_KEY),
+            new_file_hotkey_key: RwSignal::new(DEFAULT_NEW_FILE_HOTKEY_KEY),
+            import_hotkey_key: RwSignal::new(DEFAULT_IMPORT_HOTKEY_KEY),
+            export_hotkey_key: RwSignal::new(DEFAULT_EXPORT_HOTKEY_KEY),
             toggle_markdown_editing_hotkey_key: RwSignal::new(
-                DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY.to_string(),
+                DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
             ),
             import_file_input: NodeRef::new(),
         }

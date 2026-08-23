@@ -1,8 +1,8 @@
 use crate::components::file_io::open_note_at_path;
 use crate::components::toast::show_error_toast;
+use crate::default_settings::DEFAULT_SEARCH_PREVIEW_CHARS;
 use crate::mcp::tools::search_by_text;
 use crate::models::note::NoteFile;
-use crate::settings::DEFAULT_SEARCH_PREVIEW_CHARS;
 use crate::state::AppState;
 use leptos::prelude::*;
 use leptos::task::spawn_local;

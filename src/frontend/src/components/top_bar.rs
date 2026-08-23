@@ -196,7 +196,7 @@ pub fn TopBar() -> impl IntoView {
             // Import button — opens the file picker.
             <button
                 class="activity-btn"
-                title=move || format!("Import Markdown ({})", format_ctrl_hotkey(&import_hotkey_key.get()))
+                title=move || format!("Import Markdown ({})", format_ctrl_hotkey(import_hotkey_key.get()))
                 on:click=on_import_click
             >
                 <Icon icon=id::LuUpload/>
@@ -204,7 +204,7 @@ pub fn TopBar() -> impl IntoView {
             // Save — upserts each entry via the MCP backend.
             <button
                 class="activity-btn"
-                title=move || format!("Save ({})", format_ctrl_hotkey(&save_hotkey_key.get()))
+                title=move || format!("Save ({})", format_ctrl_hotkey(save_hotkey_key.get()))
                 on:click=on_save
             >
                 <Icon icon=id::LuSave/>
@@ -212,7 +212,7 @@ pub fn TopBar() -> impl IntoView {
             // Export — save each entry as a standalone HTML file.
             <button
                 class="activity-btn"
-                title=move || format!("Export as HTML ({})", format_ctrl_hotkey(&export_hotkey_key.get()))
+                title=move || format!("Export as HTML ({})", format_ctrl_hotkey(export_hotkey_key.get()))
                 on:click=on_export_html
             >
                 <Icon icon=id::LuFileCode/>
@@ -229,7 +229,7 @@ pub fn TopBar() -> impl IntoView {
             <button
                 class=move || AppState::activity_btn_class(state.markdown_editing_enabled.get())
                 title=move || {
-                    let hotkey = format_ctrl_hotkey(&toggle_markdown_editing_hotkey_key.get());
+                    let hotkey = format_ctrl_hotkey(toggle_markdown_editing_hotkey_key.get());
                     if state.markdown_editing_enabled.get() {
                         format!("Edit main text (on) ({hotkey})")
                     } else {
@@ -249,7 +249,7 @@ pub fn TopBar() -> impl IntoView {
             // New File — appends a fresh empty entry.
             <button
                 class="activity-btn top-bar-new-block"
-                title=move || format!("New File ({})", format_ctrl_hotkey(&new_file_hotkey_key.get()))
+                title=move || format!("New File ({})", format_ctrl_hotkey(new_file_hotkey_key.get()))
                 on:click=on_new_block
             >
                 "＋"

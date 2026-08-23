@@ -1,4 +1,4 @@
-use crate::settings::TOAST_DISMISS_MS;
+use crate::default_settings::TOAST_DISMISS_MS;
 use crate::state::AppState;
 use leptos::prelude::*;
 use std::cell::Cell;

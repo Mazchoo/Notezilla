@@ -3,7 +3,7 @@ use crate::state::AppState;
 use leptos::prelude::*;
 
 /// Capture a printable key press into a hotkey settings signal.
-fn on_hotkey_keydown(ev: web_sys::KeyboardEvent, target: RwSignal<String>) {
+fn on_hotkey_keydown(ev: web_sys::KeyboardEvent, target: RwSignal<char>) {
     if ev.key() == "Tab" || ev.key() == "Escape" {
         return;
     }
@@ -54,14 +54,14 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!("Save hotkey ({})", format_ctrl_hotkey(&save_hotkey_key.get()))}
+                    {move || format!("Save hotkey ({})", format_ctrl_hotkey(save_hotkey_key.get()))}
                 </label>
                 <div class="control">
                     <input
                         class="input is-small"
                         type="text"
                         maxlength="1"
-                        prop:value=move || save_hotkey_key.get()
+                        prop:value=move || save_hotkey_key.get().to_string()
                         on:keydown=move |ev| on_hotkey_keydown(ev, save_hotkey_key)
                     />
                 </div>
@@ -70,7 +70,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 <label class="label is-small" style="color:var(--text-muted);">
                     {move || format!(
                         "New file hotkey ({})",
-                        format_ctrl_hotkey(&new_file_hotkey_key.get())
+                        format_ctrl_hotkey(new_file_hotkey_key.get())
                     )}
                 </label>
                 <div class="control">
@@ -78,7 +78,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         class="input is-small"
                         type="text"
                         maxlength="1"
-                        prop:value=move || new_file_hotkey_key.get()
+                        prop:value=move || new_file_hotkey_key.get().to_string()
                         on:keydown=move |ev| on_hotkey_keydown(ev, new_file_hotkey_key)
                     />
                 </div>
@@ -87,7 +87,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 <label class="label is-small" style="color:var(--text-muted);">
                     {move || format!(
                         "Import hotkey ({})",
-                        format_ctrl_hotkey(&import_hotkey_key.get())
+                        format_ctrl_hotkey(import_hotkey_key.get())
                     )}
                 </label>
                 <div class="control">
@@ -95,7 +95,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         class="input is-small"
                         type="text"
                         maxlength="1"
-                        prop:value=move || import_hotkey_key.get()
+                        prop:value=move || import_hotkey_key.get().to_string()
                         on:keydown=move |ev| on_hotkey_keydown(ev, import_hotkey_key)
                     />
                 </div>
@@ -104,7 +104,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 <label class="label is-small" style="color:var(--text-muted);">
                     {move || format!(
                         "Export hotkey ({})",
-                        format_ctrl_hotkey(&export_hotkey_key.get())
+                        format_ctrl_hotkey(export_hotkey_key.get())
                     )}
                 </label>
                 <div class="control">
@@ -112,7 +112,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         class="input is-small"
                         type="text"
                         maxlength="1"
-                        prop:value=move || export_hotkey_key.get()
+                        prop:value=move || export_hotkey_key.get().to_string()
                         on:keydown=move |ev| on_hotkey_keydown(ev, export_hotkey_key)
                     />
                 </div>
@@ -121,7 +121,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 <label class="label is-small" style="color:var(--text-muted);">
                     {move || format!(
                         "Toggle markdown editing ({})",
-                        format_ctrl_hotkey(&toggle_markdown_editing_hotkey_key.get())
+                        format_ctrl_hotkey(toggle_markdown_editing_hotkey_key.get())
                     )}
                 </label>
                 <div class="control">
@@ -129,7 +129,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         class="input is-small"
                         type="text"
                         maxlength="1"
-                        prop:value=move || toggle_markdown_editing_hotkey_key.get()
+                        prop:value=move || toggle_markdown_editing_hotkey_key.get().to_string()
                         on:keydown=move |ev| {
                             on_hotkey_keydown(ev, toggle_markdown_editing_hotkey_key)
                         }

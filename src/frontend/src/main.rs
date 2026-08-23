@@ -1,9 +1,9 @@
 mod components;
 mod constants;
+mod default_settings;
 mod mcp;
 mod models;
 mod rendering;
-mod settings;
 mod state;
 
 use components::app_shell::AppShell;
