@@ -17,16 +17,24 @@ pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../templates/export-pdf.html
 pub const IMAGE_MISSING_SVG: &str = include_str!("../templates/image-missing.svg");
 
 /// Palette for PDF export. Hex tokens match `templates/export-pdf.html` `:root`.
+/// Tokens unused in the WASM binary are asserted against that stylesheet in tests.
+#[allow(dead_code)]
 pub const BG_0: &str = "#11111b";
+#[allow(dead_code)]
 pub const BG_1: &str = "#181825";
+#[allow(dead_code)]
 pub const BG_2: &str = "#1e1e2e";
 pub const BG_3: &str = "#313244";
+#[allow(dead_code)]
 pub const BORDER: &str = "#45475a";
 pub const TEXT: &str = "#cdd6f4";
+#[allow(dead_code)]
 pub const TEXT_MUTED: &str = "#6c7086";
 /// Mermaid arrow fallback when a marker URL has no hex suffix (`--subtext0`).
 pub const TEXT_SUBTLE: &str = "#a6adc8";
+#[allow(dead_code)]
 pub const ACCENT: &str = "#cba6f7";
+#[allow(dead_code)]
 pub const CODE: &str = "#f38ba8";
 
 /// [`TEXT`] as PDF DeviceRGB fill. Ironpress math letters inherit this and
