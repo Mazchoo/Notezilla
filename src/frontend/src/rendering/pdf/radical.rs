@@ -1,6 +1,6 @@
 //! Corrects the height of the radical sign in ironpress math output.
 //!
-//! Delete this module, and its single call in [`super`], once ironpress paints
+//! Delete this module, and its single call in [`super::formatting`], once ironpress paints
 //! the radical sign at the right height. Its layout anchors a radical at the
 //! radicand baseline (`MathGlyph::Radical { y: 0.0, .. }`), but its PDF
 //! renderer paints the sign downwards from that anchor as if it were the top of

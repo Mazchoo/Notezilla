@@ -14,13 +14,19 @@
       --text-muted: #6c7086;
       --accent: #cba6f7;
     }
-    /* Zero page margin so the body background fills the sheet; padding keeps text inset. */
-    @page { margin: 0; }
+    /* @page margin repeats on every sheet. Body padding only insets page 1
+       (and the last page's bottom), so continuation pages would otherwise
+       start at the sheet edge with no header space. The @page background
+       paints the full sheet, including the margin area. */
+    @page {
+      margin: 72pt;
+      background-color: #1e1e2e;
+    }
     html, body {
       background-color: var(--bg-2);
       color: var(--text);
       margin: 0;
-      padding: 72pt;
+      padding: 0;
       font-family: Helvetica, Arial, sans-serif;
       font-size: 11pt;
       line-height: 1.5;
