@@ -4,6 +4,7 @@ mod color_from_hex;
 mod content;
 mod list_kind;
 mod objects;
+mod radical;
 
 pub(crate) use color_from_hex::pdf_rgb_operator;
 pub(super) use list_kind::{pdf_list_item_open, PdfListKind};
@@ -13,6 +14,7 @@ use content::recolor_content;
 use objects::{
     find_subslice, find_xref_offset, parse_catalog_id, rewrite_length, serialize_pdf, split_objects,
 };
+use radical::correct_radicals;
 
 /// Convert a complete HTML document string to PDF bytes.
 pub fn html_to_pdf_bytes(html: &str) -> Result<Vec<u8>, String> {
@@ -39,7 +41,7 @@ fn recolor_math_operators(pdf: &[u8]) -> Result<Vec<u8>, String> {
     Ok(serialize_pdf(&recolored, catalog_id))
 }
 
-/// Recolor the content stream of one PDF object.
+/// Rewrite the content stream of one PDF object.
 ///
 /// Objects without a stream, and objects whose stream is compressed, are
 /// returned unchanged.
@@ -60,6 +62,8 @@ fn recolor_object(object: Vec<u8>) -> Vec<u8> {
     if content.ends_with(b"\n") {
         content.pop();
     }
+    // Drop this line with `radical.rs` once ironpress places the radical sign.
+    let content = correct_radicals(&content);
     let recolored = recolor_content(&content);
 
     let mut dict = dict.to_vec();

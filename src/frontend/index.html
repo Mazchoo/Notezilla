@@ -441,15 +441,24 @@
       height: 100%;
       max-width: 4rem;
     }
-    /* LaTeX → MathML (latex2mathml): inline `$…$` vs block `$$…$$` */
+    /* LaTeX → MathML (latex2mathml): inline `$…$` vs block `$$…$$`.
+       Chromium sizes <msqrt> from the MATH table of the math font, so name one
+       explicitly rather than inherit the body sans-serif, and let math set its
+       own line height so stretched constructs are not squeezed. */
     .content math {
       color: var(--text);
+      line-height: normal;
+      font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", math, serif;
+    }
+    .content math * {
+      line-height: normal;
     }
     .content .math-block {
       display: block;
       text-align: center;
       overflow: visible;
       margin: 1em 0;
+      line-height: normal;
     }
     .content .math-error {
       color: #f38ba8;
