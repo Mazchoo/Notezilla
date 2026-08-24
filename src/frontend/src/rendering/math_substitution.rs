@@ -80,15 +80,17 @@ fn find_closing_delimiter(bytes: &[u8], from: usize, delimiter: &[u8]) -> Option
     None
 }
 
-/// Find the closing `$` for inline math, rejecting a `$$` pair.
+/// Find the closing `$` for inline math, rejecting a display `$$` pair.
 ///
 /// The closer must have a non-space before it and must not be followed by a digit.
 fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     while i < bytes.len() {
         if bytes[i] == b'$' && !is_escaped(bytes, i) {
-            // Don't treat the start of `$$` as an inline closer.
-            if bytes[i..].starts_with(b"$$") {
+            // A real `$$…$$` display delimiter is not an inline closer.
+            if bytes[i..].starts_with(b"$$")
+                && find_closing_delimiter(bytes, i + 2, b"$$").is_some()
+            {
                 return None;
             }
             let preceded_by_non_space = i > 0 && !bytes[i - 1].is_ascii_whitespace();
@@ -285,5 +287,14 @@ mod tests {
         let src = "``a ` b`` after";
         let end = skip_inline_code(src, 0);
         assert_eq!(&src[..end], "``a ` b``");
+    }
+
+    #[test]
+    /// Assert two abutting inline equations both convert.
+    fn abutting_inline_equations_both_convert() {
+        let out = substitute_math("$a$$b$", RenderTarget::Editor);
+        assert_eq!(out.matches("<math").count(), 2, "{out}");
+        assert!(!out.contains("$a"), "{out}");
+        assert!(!out.contains("$b"), "{out}");
     }
 }
