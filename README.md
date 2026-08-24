@@ -4,7 +4,7 @@
 
 Python library that can store and track markdown files for LLM usage. The notes are stored in folders and can be tagged with metadata which let the text contents naturally map to a database.
 
-## Core Principles
+## Core Objectives
 
 This project was generated from the following observations
 * Extending LLM memory is also about extending the user memory. Diagrams and interactive content within markdown are a realtively easy way to make content more memorable.
@@ -76,3 +76,7 @@ After the server is running add a configuration for the MCP server.
   }
 }
 ```
+
+## Browser Settings
+
+Note, to export multiple files as a html or a pdf the browser settings need to allow multiple downloads for the hosted address. In chrome, these settings are on the following page: `chrome://settings/content/automaticDownloads`.
