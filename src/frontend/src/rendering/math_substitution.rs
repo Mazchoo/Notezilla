@@ -25,6 +25,20 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             continue;
         }
 
+        if bytes[i..].starts_with(b"~~~") {
+            if let Some((content, end)) = same_line_tilde_span(src, i) {
+                out.push('`');
+                out.push_str(content);
+                out.push('`');
+                i = end;
+                continue;
+            }
+            let end = skip_fenced_code(src, i);
+            out.push_str(&src[i..end]);
+            i = end;
+            continue;
+        }
+
         if bytes[i] == b'`' {
             let end = skip_inline_code(src, i);
             out.push_str(&src[i..end]);
@@ -159,11 +173,48 @@ fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     None
 }
 
-/// Return the index just past the fenced code block starting at `start`.
-fn skip_fenced_code(src: &str, start: usize) -> usize {
+/// Return the inner text and the index past a same-line `~~~…~~~` wrap.
+///
+/// A newline before the closer is a block fence, not a wrap.
+fn same_line_tilde_span(src: &str, start: usize) -> Option<(&str, usize)> {
     let bytes = src.as_bytes();
     let mut i = start;
-    while i < bytes.len() && bytes[i] == b'`' {
+    while i < bytes.len() && bytes[i] == b'~' {
+        i += 1;
+    }
+    let n = i - start;
+    if n < 3 {
+        return None;
+    }
+    let content_start = i;
+    while i + n <= bytes.len() {
+        if bytes[i] == b'\n' || bytes[i] == b'\r' {
+            return None;
+        }
+        if bytes[i..].starts_with(&bytes[start..start + n]) {
+            if bytes.get(i + n).copied() == Some(b'~') {
+                i += 1;
+                continue;
+            }
+            if i == content_start {
+                return None;
+            }
+            return Some((&src[content_start..i], i + n));
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Return the index just past the fenced code block starting at `start`.
+///
+/// The opener is a run of backticks or tildes; the closer is a line of the
+/// same mark at least as long, and nothing else.
+fn skip_fenced_code(src: &str, start: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mark = bytes[start];
+    let mut i = start;
+    while i < bytes.len() && bytes[i] == mark {
         i += 1;
     }
     let fence_len = i - start;
@@ -173,14 +224,13 @@ fn skip_fenced_code(src: &str, start: usize) -> usize {
     if i < bytes.len() {
         i += 1;
     }
-    // The block ends at a line of at least `fence_len` backticks and nothing else.
     while i < bytes.len() {
         let line_start = i;
         while i < bytes.len() && bytes[i] != b'\n' {
             i += 1;
         }
         let line = src[line_start..i].trim_end_matches('\r');
-        if line.bytes().all(|b| b == b'`') && line.len() >= fence_len {
+        if line.bytes().all(|b| b == mark) && line.len() >= fence_len {
             if i < bytes.len() {
                 i += 1;
             }
@@ -306,6 +356,22 @@ mod tests {
         let out = substitute_math("café $x$ ☕", RenderTarget::Editor);
         assert!(out.starts_with("café "), "{out}");
         assert!(out.ends_with(" ☕"), "{out}");
+    }
+
+    #[test]
+    /// Assert `$…$` inside a tilde fence stays literal.
+    fn tilde_fence_keeps_literal_dollars() {
+        let out = substitute_math("~~~\n$not_math$\n~~~\n", RenderTarget::Editor);
+        assert!(out.contains("$not_math$"), "{out}");
+        assert!(!out.contains("<math"), "{out}");
+    }
+
+    #[test]
+    /// Assert a same-line `~~~…~~~` wrap keeps `$…$` as an inline code span.
+    fn same_line_tilde_span_keeps_literal_dollars() {
+        let out = substitute_math("~~~$not_math$~~~\n", RenderTarget::Editor);
+        assert!(out.contains("`$not_math$`"), "{out}");
+        assert!(!out.contains("<math"), "{out}");
     }
 
     #[test]

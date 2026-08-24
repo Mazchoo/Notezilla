@@ -257,6 +257,15 @@ mod tests {
     }
 
     #[test]
+    /// Assert a same-line `~~~…~~~` wrap is inline code, not an empty fence.
+    fn tilde_span_is_inline_code_not_an_empty_fence() {
+        let html = render_markdown("~~~$not_math$~~~\n");
+        assert!(html.contains("$not_math$"), "{html}");
+        assert!(html.contains("<code>"), "{html}");
+        assert!(!html.contains("<pre"), "{html}");
+    }
+
+    #[test]
     /// Assert a graphviz fence is intercepted by the graphviz render.
     fn graphviz_fence_uses_the_graphviz_render() {
         let html = render_markdown("```graphviz\ndigraph { A -> B }\n```\n");
