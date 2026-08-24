@@ -32,17 +32,25 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             continue;
         }
 
-        if bytes[i..].starts_with(b"$$") {
-            if let Some(close) = find_closing_delimiter(bytes, i + 2, b"$$") {
-                out.push_str(&render_math(&src[i + 2..close], DisplayStyle::Block, target));
-                i = close + 2;
-                continue;
+        if bytes[i..].starts_with(b"$$") && !is_escaped(bytes, i) {
+            if let Some(close) = find_closing_display_math(bytes, i) {
+                let latex = &src[i + 2..close];
+                if !latex.trim().is_empty() {
+                    out.push_str(&render_math(latex, DisplayStyle::Block, target));
+                    i = close + 2;
+                    continue;
+                }
             }
+            out.push_str("$$");
+            i += 2;
+            continue;
         }
 
         if bytes[i] == b'$' && !is_escaped(bytes, i) {
-            let opens = bytes.get(i + 1).is_some_and(|b| !b.is_ascii_whitespace());
-            if opens {
+            let next = bytes.get(i + 1).copied();
+            let opens = next.is_some_and(|b| !b.is_ascii_whitespace() && b != b'$');
+            let after_dollar = i > 0 && bytes[i - 1] == b'$';
+            if opens && !after_dollar {
                 if let Some(close) = find_closing_inline_dollar(bytes, i + 1) {
                     out.push_str(&render_math(
                         &src[i + 1..close],
@@ -72,11 +80,30 @@ fn is_escaped(bytes: &[u8], i: usize) -> bool {
     return n % 2 == 1
 }
 
-/// Find the next occurrence of `delimiter` at or after `from`.
-fn find_closing_delimiter(bytes: &[u8], from: usize, delimiter: &[u8]) -> Option<usize> {
+/// Find the closing `$$` for display math starting at `open_at`.
+///
+/// Same-line `$$…$$` always closes. A `$$` that is not at the start of a line
+/// does not span a newline, so a trailing `$$` and the `$$` inside `$a$$b$`
+/// stay literal.
+fn find_closing_display_math(bytes: &[u8], open_at: usize) -> Option<usize> {
+    let from = open_at + 2;
+    if let Some(close) = find_dollars_before_newline(bytes, from) {
+        return Some(close);
+    }
+    if at_line_start(bytes, open_at) {
+        return find_line_start_dollars(bytes, from);
+    }
+    None
+}
+
+/// Return the next unescaped `$$` on this line, before any newline.
+fn find_dollars_before_newline(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
-    while i + delimiter.len() <= bytes.len() {
-        if bytes[i..].starts_with(delimiter) {
+    while i + 2 <= bytes.len() {
+        if bytes[i] == b'\n' || bytes[i] == b'\r' {
+            return None;
+        }
+        if bytes[i..].starts_with(b"$$") && !is_escaped(bytes, i) {
             return Some(i);
         }
         i += 1;
@@ -84,10 +111,31 @@ fn find_closing_delimiter(bytes: &[u8], from: usize, delimiter: &[u8]) -> Option
     None
 }
 
+/// Return the next unescaped `$$` that sits at the start of a line.
+fn find_line_start_dollars(bytes: &[u8], from: usize) -> Option<usize> {
+    let mut i = from;
+    while i + 2 <= bytes.len() {
+        if bytes[i..].starts_with(b"$$") && !is_escaped(bytes, i) && at_line_start(bytes, i) {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Return whether `i` is at the start of a line, ignoring leading spaces and tabs.
+fn at_line_start(bytes: &[u8], i: usize) -> bool {
+    let mut j = i;
+    while j > 0 && matches!(bytes[j - 1], b' ' | b'\t') {
+        j -= 1;
+    }
+    j == 0 || bytes[j - 1] == b'\n' || bytes[j - 1] == b'\r'
+}
+
 /// Find the closing `$` for inline math, rejecting a display `$$` pair.
 ///
 /// The closer must be on the same line, have a non-space before it, and must
-/// not be followed by a digit. A newline cancels the opener.
+/// not be followed by a digit. A newline or a `$$` run cancels the opener.
 fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     while i < bytes.len() {
@@ -95,10 +143,9 @@ fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
             return None;
         }
         if bytes[i] == b'$' && !is_escaped(bytes, i) {
-            // A real `$$…$$` display delimiter is not an inline closer.
-            if bytes[i..].starts_with(b"$$")
-                && find_closing_delimiter(bytes, i + 2, b"$$").is_some()
-            {
+            // `$$` is display syntax; do not split it into an inline closer
+            // plus a new opener (`$a$$b$` stays literal).
+            if bytes[i..].starts_with(b"$$") {
                 return None;
             }
             let preceded_by_non_space = i > 0 && !bytes[i - 1].is_ascii_whitespace();
@@ -313,9 +360,15 @@ mod tests {
     }
 
     #[test]
-    /// Assert two abutting inline equations both convert.
-    fn abutting_inline_equations_both_convert() {
-        let out = substitute_math("$a$$b$", RenderTarget::Editor);
-        panic!("substitute_math: {out}");
+    /// Assert `$a$$b$` and a line-ending `$$` stay literal; later `$$…$$` still converts.
+    fn abutting_and_trailing_dollars_stay_literal() {
+        let out = substitute_math(
+            "hello $a$$b$\ntrailing $$\n\n$$\nE = mc^2\n$$\n",
+            RenderTarget::Editor,
+        );
+        assert!(out.contains("hello $a$$b$"), "{out}");
+        assert!(out.contains("trailing $$"), "{out}");
+        assert!(out.contains(r#"class="math-block""#), "{out}");
+        assert!(!out.contains("math-error"), "{out}");
     }
 }
