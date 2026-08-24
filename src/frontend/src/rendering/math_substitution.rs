@@ -6,6 +6,11 @@
 use super::renders::{MathRender, RenderPdf, RenderTarget};
 use latex2mathml::DisplayStyle;
 
+/// Render one delimited LaTeX expression for `target`.
+fn render_math(latex: &str, display: DisplayStyle, target: RenderTarget) -> String {
+    MathRender::new(display).render_for(target, latex.trim())
+}
+
 /// Replace `$…$` and `$$…$$` outside code spans with math rendered for `target`.
 pub fn substitute_math(src: &str, target: RenderTarget) -> String {
     let bytes = src.as_bytes();
@@ -58,14 +63,13 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
     out
 }
 
-/// Render one delimited LaTeX expression for `target`.
-fn render_math(latex: &str, display: DisplayStyle, target: RenderTarget) -> String {
-    MathRender::new(display).render_for(target, latex.trim())
-}
-
-/// Return whether the byte at `i` is escaped by a preceding backslash.
+/// Return whether the byte at `i` is escaped by an odd run of preceding backslashes.
 fn is_escaped(bytes: &[u8], i: usize) -> bool {
-    i > 0 && bytes[i - 1] == b'\\'
+    let mut n = 0;
+    while i > n && bytes[i - 1 - n] == b'\\' {
+        n += 1;
+    }
+    return n % 2 == 1
 }
 
 /// Find the next occurrence of `delimiter` at or after `from`.
@@ -82,10 +86,14 @@ fn find_closing_delimiter(bytes: &[u8], from: usize, delimiter: &[u8]) -> Option
 
 /// Find the closing `$` for inline math, rejecting a display `$$` pair.
 ///
-/// The closer must have a non-space before it and must not be followed by a digit.
+/// The closer must be on the same line, have a non-space before it, and must
+/// not be followed by a digit. A newline cancels the opener.
 fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     while i < bytes.len() {
+        if bytes[i] == b'\n' || bytes[i] == b'\r' {
+            return None;
+        }
         if bytes[i] == b'$' && !is_escaped(bytes, i) {
             // A real `$$…$$` display delimiter is not an inline closer.
             if bytes[i..].starts_with(b"$$")
@@ -217,6 +225,13 @@ mod tests {
     }
 
     #[test]
+    /// Assert inline `$…$` does not span a newline; the opener is cancelled.
+    fn inline_math_does_not_span_a_newline() {
+        let out = substitute_math("$a\nb$", RenderTarget::Editor);
+        assert_eq!(out, "$a\nb$");
+    }
+
+    #[test]
     /// Assert two currency amounts stay literal text.
     fn two_dollar_amounts_are_not_math() {
         let out = substitute_math("costs $5 and $10 today", RenderTarget::Editor);
@@ -228,6 +243,14 @@ mod tests {
     fn escaped_dollar_does_not_open_math() {
         let out = substitute_math("\\$5 and \\$6", RenderTarget::Editor);
         assert_eq!(out, "\\$5 and \\$6");
+    }
+
+    #[test]
+    /// Assert `\\$` opens math: the backslash is escaped, the dollar is not.
+    fn even_backslash_run_does_not_escape_dollar() {
+        let out = substitute_math("\\\\$x$", RenderTarget::Editor);
+        assert!(out.contains("<math"), "{out}");
+        assert!(!out.contains("$x$"), "{out}");
     }
 
     #[test]
@@ -293,8 +316,6 @@ mod tests {
     /// Assert two abutting inline equations both convert.
     fn abutting_inline_equations_both_convert() {
         let out = substitute_math("$a$$b$", RenderTarget::Editor);
-        assert_eq!(out.matches("<math").count(), 2, "{out}");
-        assert!(!out.contains("$a"), "{out}");
-        assert!(!out.contains("$b"), "{out}");
+        panic!("substitute_math: {out}");
     }
 }
