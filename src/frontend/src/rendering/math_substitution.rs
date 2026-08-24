@@ -36,14 +36,17 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
         }
 
         if bytes[i] == b'$' && !is_escaped(bytes, i) {
-            if let Some(close) = find_closing_inline_dollar(bytes, i + 1) {
-                out.push_str(&render_math(
-                    &src[i + 1..close],
-                    DisplayStyle::Inline,
-                    target,
-                ));
-                i = close + 1;
-                continue;
+            let opens = bytes.get(i + 1).is_some_and(|b| !b.is_ascii_whitespace());
+            if opens {
+                if let Some(close) = find_closing_inline_dollar(bytes, i + 1) {
+                    out.push_str(&render_math(
+                        &src[i + 1..close],
+                        DisplayStyle::Inline,
+                        target,
+                    ));
+                    i = close + 1;
+                    continue;
+                }
             }
         }
 
@@ -78,6 +81,8 @@ fn find_closing_delimiter(bytes: &[u8], from: usize, delimiter: &[u8]) -> Option
 }
 
 /// Find the closing `$` for inline math, rejecting a `$$` pair.
+///
+/// The closer must have a non-space before it and must not be followed by a digit.
 fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
     let mut i = from;
     while i < bytes.len() {
@@ -86,7 +91,11 @@ fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
             if bytes[i..].starts_with(b"$$") {
                 return None;
             }
-            return Some(i);
+            let preceded_by_non_space = i > 0 && !bytes[i - 1].is_ascii_whitespace();
+            let followed_by_digit = bytes.get(i + 1).is_some_and(|b| b.is_ascii_digit());
+            if preceded_by_non_space && !followed_by_digit {
+                return Some(i);
+            }
         }
         i += 1;
     }
@@ -203,6 +212,13 @@ mod tests {
     fn unclosed_dollar_is_left_as_text() {
         let out = substitute_math("costs $5 total", RenderTarget::Editor);
         assert_eq!(out, "costs $5 total");
+    }
+
+    #[test]
+    /// Assert two currency amounts stay literal text.
+    fn two_dollar_amounts_are_not_math() {
+        let out = substitute_math("costs $5 and $10 today", RenderTarget::Editor);
+        assert_eq!(out, "costs $5 and $10 today");
     }
 
     #[test]
