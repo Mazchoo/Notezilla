@@ -266,6 +266,22 @@ mod tests {
     }
 
     #[test]
+    /// Assert an unclosed tilde opener is not a fenced code block.
+    fn unclosed_tilde_block_is_not_a_fenced_block() {
+        let html = render_markdown("~~~\na \n");
+        assert!(!html.contains("<pre"), "{html}");
+    }
+
+    #[test]
+    /// Assert an unclosed same-line tilde wrap fences the rest of the line.
+    fn unclosed_same_line_tilde_wraps_the_rest() {
+        let html = render_markdown("~~~ a");
+        assert!(html.contains("<code>"), "{html}");
+        assert!(html.contains("a"), "{html}");
+        assert!(!html.contains("<pre"), "{html}");
+    }
+
+    #[test]
     /// Assert a graphviz fence is intercepted by the graphviz render.
     fn graphviz_fence_uses_the_graphviz_render() {
         let html = render_markdown("```graphviz\ndigraph { A -> B }\n```\n");

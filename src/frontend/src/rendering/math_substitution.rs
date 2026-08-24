@@ -19,7 +19,7 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
 
     while i < bytes.len() {
         if bytes[i..].starts_with(b"```") {
-            let end = skip_fenced_code(src, i);
+            let end = skip_fenced_code(src, i).unwrap_or(bytes.len());
             out.push_str(&src[i..end]);
             i = end;
             continue;
@@ -33,10 +33,15 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
                 i = end;
                 continue;
             }
-            let end = skip_fenced_code(src, i);
-            out.push_str(&src[i..end]);
-            i = end;
-            continue;
+            if let Some(end) = skip_fenced_code(src, i) {
+                out.push_str(&src[i..end]);
+                i = end;
+                continue;
+            }
+            // Unclosed block opener: do not start a fence.
+            if at_line_start(bytes, i) {
+                out.push('\\');
+            }
         }
 
         if bytes[i] == b'`' {
@@ -175,7 +180,8 @@ fn find_closing_inline_dollar(bytes: &[u8], from: usize) -> Option<usize> {
 
 /// Return the inner text and the index past a same-line `~~~…~~~` wrap.
 ///
-/// A newline before the closer is a block fence, not a wrap.
+/// A newline before the closer is a block fence, not a wrap. An unclosed
+/// wrap at end of input fences the rest of the line.
 fn same_line_tilde_span(src: &str, start: usize) -> Option<(&str, usize)> {
     let bytes = src.as_bytes();
     let mut i = start;
@@ -187,11 +193,8 @@ fn same_line_tilde_span(src: &str, start: usize) -> Option<(&str, usize)> {
         return None;
     }
     let content_start = i;
-    while i + n <= bytes.len() {
-        if bytes[i] == b'\n' || bytes[i] == b'\r' {
-            return None;
-        }
-        if bytes[i..].starts_with(&bytes[start..start + n]) {
+    while i < bytes.len() && bytes[i] != b'\n' && bytes[i] != b'\r' {
+        if i + n <= bytes.len() && bytes[i..].starts_with(&bytes[start..start + n]) {
             if bytes.get(i + n).copied() == Some(b'~') {
                 i += 1;
                 continue;
@@ -203,14 +206,18 @@ fn same_line_tilde_span(src: &str, start: usize) -> Option<(&str, usize)> {
         }
         i += 1;
     }
-    None
+    if i == content_start || i != bytes.len() {
+        return None;
+    }
+    Some((&src[content_start..i], i))
 }
 
 /// Return the index just past the fenced code block starting at `start`.
 ///
-/// The opener is a run of backticks or tildes; the closer is a line of the
-/// same mark at least as long, and nothing else.
-fn skip_fenced_code(src: &str, start: usize) -> usize {
+/// The opener is a run of backticks or tildes. The closer is a line of the
+/// same mark at least as long; CommonMark allows up to three leading spaces
+/// and trailing spaces or tabs. Return `None` if the fence is unterminated.
+fn skip_fenced_code(src: &str, start: usize) -> Option<usize> {
     let bytes = src.as_bytes();
     let mark = bytes[start];
     let mut i = start;
@@ -230,17 +237,38 @@ fn skip_fenced_code(src: &str, start: usize) -> usize {
             i += 1;
         }
         let line = src[line_start..i].trim_end_matches('\r');
-        if line.bytes().all(|b| b == mark) && line.len() >= fence_len {
+        if is_closing_fence(line, mark, fence_len) {
             if i < bytes.len() {
                 i += 1;
             }
-            return i;
+            return Some(i);
         }
         if i < bytes.len() {
             i += 1;
         }
     }
-    bytes.len()
+    None
+}
+
+/// Return whether `line` is a CommonMark closing fence for `mark`.
+///
+/// A closer may be indented by up to three spaces and may have trailing
+/// spaces or tabs. The remaining characters must be `mark`, at least
+/// `fence_len` of them.
+fn is_closing_fence(line: &str, mark: u8, fence_len: usize) -> bool {
+    let bytes = line.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && i < 3 && bytes[i] == b' ' {
+        i += 1;
+    }
+    let fence_start = i;
+    while i < bytes.len() && bytes[i] == mark {
+        i += 1;
+    }
+    if i - fence_start < fence_len {
+        return false;
+    }
+    bytes[i..].iter().all(|&b| b == b' ' || b == b'\t')
 }
 
 /// Return the index just past the inline code span starting at `start`.
@@ -375,6 +403,20 @@ mod tests {
     }
 
     #[test]
+    /// Assert an unclosed same-line tilde wrap fences the rest of the line.
+    fn unclosed_same_line_tilde_wraps_the_rest() {
+        let out = substitute_math("~~~ a", RenderTarget::Editor);
+        assert_eq!(out, "` a`");
+    }
+
+    #[test]
+    /// Assert an unclosed tilde opener does not skip the rest of the note.
+    fn unclosed_tilde_block_does_not_swallow_the_rest() {
+        let out = substitute_math("~~~\n$x$\n", RenderTarget::Editor);
+        assert!(out.contains("<math"), "{out}");
+    }
+
+    #[test]
     /// Assert both targets keep literal `$…$` inside fenced and inline code.
     fn code_spans_keep_literal_dollars() {
         for target in [RenderTarget::Editor, RenderTarget::Pdf] {
@@ -383,6 +425,22 @@ mod tests {
             let inline = substitute_math("use `$x$` in code", target);
             assert!(inline.contains("`$x$`"), "{inline}");
         }
+    }
+
+    #[test]
+    /// Assert math after a spaced closing fence still converts.
+    fn spaced_closing_fence_does_not_swallow_the_rest() {
+        let out = substitute_math("```\n$not_math$\n``` \n\n$x$\n", RenderTarget::Editor);
+        assert!(out.contains("$not_math$"), "{out}");
+        assert!(out.contains("<math"), "{out}");
+    }
+
+    #[test]
+    /// Assert math after an indented closing fence still converts.
+    fn indented_closing_fence_does_not_swallow_the_rest() {
+        let out = substitute_math("```\n$not_math$\n   ```\n\n$x$\n", RenderTarget::Editor);
+        assert!(out.contains("$not_math$"), "{out}");
+        assert!(out.contains("<math"), "{out}");
     }
 
     #[test]
@@ -398,15 +456,15 @@ mod tests {
     /// Assert a fenced block is skipped up to and including its closing fence.
     fn skips_whole_fenced_block() {
         let src = "```rust\nlet x = 1;\n```\nafter";
-        let end = skip_fenced_code(src, 0);
+        let end = skip_fenced_code(src, 0).expect("fence is closed");
         assert_eq!(&src[..end], "```rust\nlet x = 1;\n```\n");
     }
 
     #[test]
-    /// Assert an unterminated fenced block is skipped to the end of the source.
-    fn skips_unterminated_fenced_block_to_end() {
+    /// Assert an unterminated fenced block has no closer.
+    fn unterminated_fenced_block_has_no_closer() {
         let src = "```\nno close";
-        assert_eq!(skip_fenced_code(src, 0), src.len());
+        assert_eq!(skip_fenced_code(src, 0), None);
     }
 
     #[test]
