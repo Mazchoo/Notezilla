@@ -110,15 +110,29 @@ pub fn open_import_picker(state: &AppState) {
 
 /// Export every open editor entry as a standalone HTML file.
 pub fn export_all_as_html(state: &AppState) {
-    export_entries_as_html(&state.entries.get_untracked());
+    export_entries_as_html(
+        state.entries.get_untracked(),
+        state.export_progress,
+        state.error_toast,
+    );
 }
 
 /// Convert each open entry's markdown to HTML, then to PDF, and download the files.
 pub fn export_all_as_pdf(state: &AppState) {
-    let errors = export_entries_as_pdf(&state.entries.get_untracked());
-    if !errors.is_empty() {
-        show_error_toast(state.error_toast, errors.join("\n"));
-    }
+    export_entries_as_pdf(
+        state.entries.get_untracked(),
+        state.export_progress,
+        state.error_toast,
+    );
+}
+
+/// Export every open editor entry as a markdown file.
+pub fn export_all_as_markdown(state: &AppState) {
+    export_entries_as_markdown(
+        state.entries.get_untracked(),
+        state.export_progress,
+        state.error_toast,
+    );
 }
 
 /// Toggle whether main markdown blocks can enter edit mode.
@@ -166,11 +180,9 @@ pub fn TopBar() -> impl IntoView {
         export_all_as_pdf(&state_export_pdf);
     };
 
-    let on_export_markdown = {
-        let state = state.clone();
-        move |_| {
-            export_entries_as_markdown(&state.entries.get_untracked());
-        }
+    let state_export_markdown = state.clone();
+    let on_export_markdown = move |_| {
+        export_all_as_markdown(&state_export_markdown);
     };
 
     let state_new = state.clone();

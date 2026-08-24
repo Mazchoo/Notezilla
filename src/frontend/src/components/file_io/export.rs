@@ -1,68 +1,165 @@
 use super::path::{
     html_page_title, path_to_html_filename, path_to_markdown_filename, path_to_pdf_filename,
 };
+use crate::components::toast::show_error_toast;
 use crate::constants::{EXPORT_PDF_TEMPLATE, EXPORT_TEMPLATE};
 use crate::models::block::EditorEntry;
 use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
-use leptos::prelude::GetUntracked;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, BlobPropertyBag, HtmlAnchorElement};
 
 /// Prompt the browser to save each editor entry as a standalone HTML file.
-pub fn export_entries_as_html(entries: &[EditorEntry]) {
-    for entry in entries {
-        let path = entry.title.path.get_untracked();
-        let filename = path_to_html_filename(&path);
-        let page_title = html_page_title(&path);
-        let body_html = entry_to_html_body(*entry);
-        let document = build_html_document(EXPORT_TEMPLATE, &page_title, &body_html);
-
-        if let Err(err) = download_text_file(&filename, &document, "text/html;charset=utf-8") {
-            web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
-        }
-    }
+pub fn export_entries_as_html(
+    entries: Vec<EditorEntry>,
+    progress: RwSignal<Option<String>>,
+    error_toast: RwSignal<Option<String>>,
+) {
+    run_export(
+        entries,
+        progress,
+        error_toast,
+        path_to_html_filename,
+        |entry, filename| {
+            let path = entry.title.path.get_untracked();
+            let page_title = html_page_title(&path);
+            let body_html = entry_to_html_body(entry);
+            let document = build_html_document(EXPORT_TEMPLATE, &page_title, &body_html);
+            download_text_file(filename, &document, "text/html;charset=utf-8")
+                .err()
+                .map(|err| format_export_error("Export failed", filename, err))
+        },
+    );
 }
 
 /// Prompt the browser to save each editor entry as a markdown file.
-pub fn export_entries_as_markdown(entries: &[EditorEntry]) {
-    for entry in entries {
-        let path = entry.title.path.get_untracked();
-        let filename = path_to_markdown_filename(&path);
-        let content = entry_to_markdown(*entry);
-
-        if let Err(err) = download_text_file(&filename, &content, "text/markdown;charset=utf-8") {
-            web_sys::console::error_1(&format!("Export failed for {filename}: {err:?}").into());
-        }
-    }
+pub fn export_entries_as_markdown(
+    entries: Vec<EditorEntry>,
+    progress: RwSignal<Option<String>>,
+    error_toast: RwSignal<Option<String>>,
+) {
+    run_export(
+        entries,
+        progress,
+        error_toast,
+        path_to_markdown_filename,
+        |entry, filename| {
+            let content = entry_to_markdown(entry);
+            download_text_file(filename, &content, "text/markdown;charset=utf-8")
+                .err()
+                .map(|err| format_export_error("Export failed", filename, err))
+        },
+    );
 }
 
 /// Convert each editor entry to PDF and download the files.
-pub fn export_entries_as_pdf(entries: &[EditorEntry]) -> Vec<String> {
-    let mut errors = Vec::new();
-    for entry in entries {
-        let path = entry.title.path.get_untracked();
-        let filename = path_to_pdf_filename(&path);
-        let page_title = html_page_title(&path);
-        let body_html = entry_to_pdf_body(*entry);
-        let document = build_html_document(EXPORT_PDF_TEMPLATE, &page_title, &body_html);
-
-        match html_to_pdf_bytes(&document) {
-            Ok(bytes) => {
-                if let Err(err) = download_bytes_file(&filename, &bytes, "application/pdf") {
-                    let msg = format!("PDF export failed for {filename}: {err:?}");
+pub fn export_entries_as_pdf(
+    entries: Vec<EditorEntry>,
+    progress: RwSignal<Option<String>>,
+    error_toast: RwSignal<Option<String>>,
+) {
+    run_export(
+        entries,
+        progress,
+        error_toast,
+        path_to_pdf_filename,
+        |entry, filename| {
+            let path = entry.title.path.get_untracked();
+            let page_title = html_page_title(&path);
+            let body_html = entry_to_pdf_body(entry);
+            let document = build_html_document(EXPORT_PDF_TEMPLATE, &page_title, &body_html);
+            match html_to_pdf_bytes(&document) {
+                Ok(bytes) => download_bytes_file(filename, &bytes, "application/pdf")
+                    .err()
+                    .map(|err| format_export_error("PDF export failed", filename, err)),
+                Err(e) => {
+                    let msg = format!("PDF conversion failed for {filename}: {e}");
                     web_sys::console::error_1(&msg.clone().into());
-                    errors.push(msg);
+                    Some(msg)
                 }
             }
-            Err(e) => {
-                let msg = format!("PDF conversion failed for {filename}: {e}");
-                web_sys::console::error_1(&msg.clone().into());
-                errors.push(msg);
+        },
+    );
+}
+
+/// Log a download failure and return the toast text.
+fn format_export_error(prefix: &str, filename: &str, err: JsValue) -> String {
+    let msg = format!("{prefix} for {filename}: {err:?}");
+    web_sys::console::error_1(&msg.clone().into());
+    msg
+}
+
+/// Return the overlay label for the file currently being generated.
+fn export_progress_label(filename: &str, index: usize, total: usize) -> String {
+    if total <= 1 {
+        format!("Generating {filename}")
+    } else {
+        format!("Generating {filename} ({} of {total})", index + 1)
+    }
+}
+
+/// Generate and download each entry, showing a spinner and yielding so it can paint.
+fn run_export(
+    entries: Vec<EditorEntry>,
+    progress: RwSignal<Option<String>>,
+    error_toast: RwSignal<Option<String>>,
+    filename_for: fn(&str) -> String,
+    export_one: impl Fn(EditorEntry, &str) -> Option<String> + 'static,
+) {
+    if progress.get_untracked().is_some() || entries.is_empty() {
+        return;
+    }
+    let total = entries.len();
+    let first_name = filename_for(&entries[0].title.path.get_untracked());
+    progress.set(Some(export_progress_label(&first_name, 0, total)));
+
+    spawn_local(async move {
+        let mut errors = Vec::new();
+        for (i, entry) in entries.into_iter().enumerate() {
+            let name = filename_for(&entry.title.path.get_untracked());
+            if i > 0 {
+                progress.set(Some(export_progress_label(&name, i, total)));
+            }
+            yield_for_paint().await;
+            if let Some(err) = export_one(entry, &name) {
+                errors.push(err);
             }
         }
-    }
-    errors
+        progress.set(None);
+        if !errors.is_empty() {
+            show_error_toast(error_toast, errors.join("\n"));
+        }
+    });
+}
+
+/// Yield so the overlay can paint before the next blocking WASM conversion.
+async fn yield_for_paint() {
+    let timeout = js_sys::Promise::new(&mut |resolve, _reject| {
+        let Some(window) = web_sys::window() else {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+            return;
+        };
+        if window
+            .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 0)
+            .is_err()
+        {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+        }
+    });
+    let _ = wasm_bindgen_futures::JsFuture::from(timeout).await;
+
+    let frame = js_sys::Promise::new(&mut |resolve, _reject| {
+        let Some(window) = web_sys::window() else {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+            return;
+        };
+        if window.request_animation_frame(&resolve).is_err() {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+        }
+    });
+    let _ = wasm_bindgen_futures::JsFuture::from(frame).await;
 }
 
 /// Serialize an editor entry to markdown, including front matter when present.
@@ -156,4 +253,26 @@ fn download_blob(filename: &str, blob: &Blob) -> Result<(), JsValue> {
 
     web_sys::Url::revoke_object_url(&url)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::export_progress_label;
+
+    #[test]
+    /// Assert the spinner names the file being generated and the batch position.
+    fn export_progress_label_names_the_file_and_index() {
+        assert_eq!(
+            export_progress_label("hello.pdf", 0, 1),
+            "Generating hello.pdf"
+        );
+        assert_eq!(
+            export_progress_label("hello.pdf", 0, 3),
+            "Generating hello.pdf (1 of 3)"
+        );
+        assert_eq!(
+            export_progress_label("note.html", 2, 3),
+            "Generating note.html (3 of 3)"
+        );
+    }
 }

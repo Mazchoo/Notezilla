@@ -51,6 +51,8 @@ pub struct AppState {
     pub toggle_markdown_editing_hotkey_key: RwSignal<char>,
     /// Hidden file input used by the Import button and import hotkey.
     pub import_file_input: NodeRef<leptos::html::Input>,
+    /// Filename currently being generated during export. `None` when idle.
+    pub export_progress: RwSignal<Option<String>>,
 }
 
 impl AppState {
@@ -84,6 +86,7 @@ impl AppState {
                 DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
             ),
             import_file_input: NodeRef::new(),
+            export_progress: RwSignal::new(None),
         }
     }
 
