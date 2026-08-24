@@ -152,7 +152,10 @@ mod tests {
         let lines = tspan_lines(r#"<tspan x="5">one</tspan><tspan x="6">two</tspan>"#);
         assert_eq!(
             lines,
-            vec![(Some(5.0), "one".to_string()), (Some(6.0), "two".to_string())]
+            vec![
+                (Some(5.0), "one".to_string()),
+                (Some(6.0), "two".to_string())
+            ]
         );
     }
 

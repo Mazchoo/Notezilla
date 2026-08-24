@@ -124,7 +124,10 @@ mod tests {
         let inline = MathRender::new(DisplayStyle::Inline).error_html("x_", "unexpected EOF");
         assert!(inline.starts_with("<code class=\"math-error"), "{inline}");
         assert!(inline.contains("math-error-inline"), "{inline}");
-        assert!(inline.contains("<!-- math error: unexpected EOF -->"), "{inline}");
+        assert!(
+            inline.contains("<!-- math error: unexpected EOF -->"),
+            "{inline}"
+        );
         let block = MathRender::new(DisplayStyle::Block).error_html("x_", "unexpected EOF");
         assert!(block.contains("math-error-block"), "{block}");
     }
@@ -189,8 +192,8 @@ mod tests {
     #[test]
     /// Assert PDF `data-math` carries the spaced `\pm`.
     fn pdf_data_math_contains_spaced_pm() {
-        let html = MathRender::new(DisplayStyle::Block)
-            .render_pdf(r"\frac{-b \pm \sqrt{b^2-4ac}}{2a}");
+        let html =
+            MathRender::new(DisplayStyle::Block).render_pdf(r"\frac{-b \pm \sqrt{b^2-4ac}}{2a}");
         assert!(html.contains(r"\;\pm\;"), "{html}");
         assert!(!html.contains(r" \pm \"), "{html}");
     }

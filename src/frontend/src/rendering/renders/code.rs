@@ -94,7 +94,10 @@ mod tests {
     /// Assert the block is wrapped in `pre.code-block > code`.
     fn wraps_source_in_code_block() {
         let html = CodeRender::new("rust").render("fn main() {}\n");
-        assert!(html.starts_with("<pre class=\"code-block\"><code>"), "{html}");
+        assert!(
+            html.starts_with("<pre class=\"code-block\"><code>"),
+            "{html}"
+        );
         assert!(html.ends_with("</code></pre>"), "{html}");
     }
 
@@ -126,6 +129,9 @@ mod tests {
     /// Assert PDF export reuses the editor HTML.
     fn pdf_html_matches_editor_html() {
         let render = CodeRender::new("rust");
-        assert_eq!(render.render_pdf("fn main() {}\n"), render.render("fn main() {}\n"));
+        assert_eq!(
+            render.render_pdf("fn main() {}\n"),
+            render.render("fn main() {}\n")
+        );
     }
 }

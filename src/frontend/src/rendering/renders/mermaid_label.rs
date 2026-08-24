@@ -279,7 +279,8 @@ mod tests {
     fn keeps_bold_and_italic_emphasis() {
         let parent = flatten_label(r#"<text x="1" y="2" font-weight="bold">A</text>"#);
         assert!(parent.contains("font-weight=\"bold\""), "{parent}");
-        let child = flatten_label(r#"<text x="1" y="2"><tspan font-style="italic">A</tspan></text>"#);
+        let child =
+            flatten_label(r#"<text x="1" y="2"><tspan font-style="italic">A</tspan></text>"#);
         assert!(child.contains("font-style=\"italic\""), "{child}");
     }
 

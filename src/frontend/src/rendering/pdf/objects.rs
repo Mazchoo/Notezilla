@@ -132,7 +132,12 @@ fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
             .map(|at| payload_start + at)
             .ok_or_else(|| "PDF stream missing endstream".to_string())?;
         let after_endstream = skip_newline(input, endstream + b"\nendstream".len());
-        expect_keyword(input, after_endstream, b"endobj", "PDF stream missing endobj")?
+        expect_keyword(
+            input,
+            after_endstream,
+            b"endobj",
+            "PDF stream missing endobj",
+        )?
     };
     Ok((input[..end].to_vec(), &input[end..]))
 }
@@ -153,8 +158,8 @@ fn own_stream_keyword(input: &[u8], header_end: usize) -> Option<usize> {
 
 /// Return the index just past the `N 0 obj` header line of `input`.
 fn object_header_end(input: &[u8]) -> Result<usize, String> {
-    let obj_tag = find_subslice(input, b" 0 obj")
-        .ok_or_else(|| "PDF object header not found".to_string())?;
+    let obj_tag =
+        find_subslice(input, b" 0 obj").ok_or_else(|| "PDF object header not found".to_string())?;
     let after_tag = obj_tag + b" 0 obj".len();
     input[after_tag..]
         .iter()
@@ -168,8 +173,7 @@ fn object_header_end(input: &[u8]) -> Result<usize, String> {
 /// A filtered payload can contain `endstream`, so its length is taken from the
 /// dictionary rather than by scanning for the keyword.
 fn filtered_stream_end(input: &[u8], dict: &[u8], payload_start: usize) -> Result<usize, String> {
-    let len =
-        parse_length(dict).ok_or_else(|| "filtered PDF stream missing Length".to_string())?;
+    let len = parse_length(dict).ok_or_else(|| "filtered PDF stream missing Length".to_string())?;
     let payload_end = payload_start + len;
     if payload_end > input.len() {
         return Err("filtered PDF stream Length overruns file".to_string());
@@ -190,12 +194,7 @@ fn filtered_stream_end(input: &[u8], dict: &[u8], payload_start: usize) -> Resul
 }
 
 /// Return the index just past `keyword` at `at`, and past a trailing newline.
-fn expect_keyword(
-    input: &[u8],
-    at: usize,
-    keyword: &[u8],
-    error: &str,
-) -> Result<usize, String> {
+fn expect_keyword(input: &[u8], at: usize, keyword: &[u8], error: &str) -> Result<usize, String> {
     if !input[at..].starts_with(keyword) {
         return Err(error.to_string());
     }
@@ -307,7 +306,11 @@ mod tests {
                      2 0 obj\n<< /Length 5 >>\nstream\nBT ET\nendstream\nendobj\n";
         let objects = split_objects(body).expect("objects");
         assert_eq!(objects.len(), 2);
-        assert!(!objects[0].ends_with(b"endstream\nendobj\n"), "{:?}", objects[0]);
+        assert!(
+            !objects[0].ends_with(b"endstream\nendobj\n"),
+            "{:?}",
+            objects[0]
+        );
         assert!(objects[1].starts_with(b"2 0 obj"), "{:?}", objects[1]);
     }
 
@@ -350,7 +353,10 @@ mod tests {
     #[test]
     /// Assert each xref entry holds the object's byte offset.
     fn xref_entries_hold_object_offsets() {
-        let objects = vec![b"1 0 obj\n<< >>\nendobj\n".to_vec(), b"2 0 obj\n<< >>\nendobj\n".to_vec()];
+        let objects = vec![
+            b"1 0 obj\n<< >>\nendobj\n".to_vec(),
+            b"2 0 obj\n<< >>\nendobj\n".to_vec(),
+        ];
         let pdf = serialize_pdf(&objects, 1);
         let text = String::from_utf8_lossy(&pdf);
         for (index, object) in objects.iter().enumerate() {

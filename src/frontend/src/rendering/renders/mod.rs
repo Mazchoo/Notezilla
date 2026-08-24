@@ -94,7 +94,10 @@ mod tests {
     #[test]
     /// Assert `render_for` selects the overridden PDF HTML for the PDF target.
     fn render_for_selects_target_html() {
-        assert_eq!(SplitRender.render_for(RenderTarget::Editor, "a"), "editor:a");
+        assert_eq!(
+            SplitRender.render_for(RenderTarget::Editor, "a"),
+            "editor:a"
+        );
         assert_eq!(SplitRender.render_for(RenderTarget::Pdf, "a"), "pdf:a");
     }
 }

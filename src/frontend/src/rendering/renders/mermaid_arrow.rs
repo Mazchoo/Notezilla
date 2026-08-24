@@ -152,7 +152,10 @@ mod tests {
     fn arrow_polygon_is_a_triangle_behind_the_tip() {
         let polygon = arrow_polygon((10.0, 0.0), (1.0, 0.0), "#fff");
         assert!(polygon.starts_with("<polygon points=\"10,0 "), "{polygon}");
-        assert!(polygon.contains(&format!("{},", 10.0 - ARROW_SIZE)), "{polygon}");
+        assert!(
+            polygon.contains(&format!("{},", 10.0 - ARROW_SIZE)),
+            "{polygon}"
+        );
         assert!(polygon.contains("fill=\"#fff\""), "{polygon}");
     }
 

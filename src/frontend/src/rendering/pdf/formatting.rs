@@ -207,7 +207,9 @@ mod tests {
     #[test]
     /// Assert a compressed stream is left unchanged.
     fn compressed_stream_is_unchanged() {
-        let object = b"1 0 obj\n<< /Filter /FlateDecode /Length 4 >>\nstream\n0 0 0 rg\nendstream\nendobj\n".to_vec();
+        let object =
+            b"1 0 obj\n<< /Filter /FlateDecode /Length 4 >>\nstream\n0 0 0 rg\nendstream\nendobj\n"
+                .to_vec();
         assert_eq!(recolor_object(object.clone()), object);
     }
 

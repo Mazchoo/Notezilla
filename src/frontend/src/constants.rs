@@ -67,7 +67,8 @@ pub const GRAPHVIZ_ERROR_CLASS: &str = "graphviz-error";
 pub const MERMAID_ERROR_CLASS: &str = "mermaid-error";
 
 /// XML declaration layout-rs prefixes to its SVG output.
-pub const SVG_XML_DECLARATION: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
+pub const SVG_XML_DECLARATION: &str =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
 
 /// Header of every PDF ironpress produces.
 pub const PDF_HEADER: &[u8] = b"%PDF-1.4\n";

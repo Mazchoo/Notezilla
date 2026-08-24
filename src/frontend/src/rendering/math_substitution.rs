@@ -77,7 +77,7 @@ fn is_escaped(bytes: &[u8], i: usize) -> bool {
     while i > n && bytes[i - 1 - n] == b'\\' {
         n += 1;
     }
-    return n % 2 == 1
+    return n % 2 == 1;
 }
 
 /// Find the closing `$$` for display math starting at `open_at`.

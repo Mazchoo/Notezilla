@@ -44,7 +44,7 @@ pub fn pdf_list_item_open(marker: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{LIST_BULLET, PdfListKind};
+    use super::{PdfListKind, LIST_BULLET};
 
     #[test]
     /// Assert an unordered list marks every item with a bullet.

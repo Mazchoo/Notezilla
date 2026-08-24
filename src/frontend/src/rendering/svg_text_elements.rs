@@ -28,10 +28,13 @@ mod tests {
     /// Assert each text element is passed to the rewriter with its tags.
     fn passes_whole_element_to_rewriter() {
         let mut seen = Vec::new();
-        rewrite_text_elements(r#"<g><text x="1">A</text><text x="2">B</text></g>"#, |element| {
-            seen.push(element.to_string());
-            String::new()
-        });
+        rewrite_text_elements(
+            r#"<g><text x="1">A</text><text x="2">B</text></g>"#,
+            |element| {
+                seen.push(element.to_string());
+                String::new()
+            },
+        );
         assert_eq!(
             seen,
             vec![r#"<text x="1">A</text>"#, r#"<text x="2">B</text>"#]
