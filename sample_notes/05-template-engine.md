@@ -5,15 +5,13 @@ tags: [llm, templates, python]
 status: todo
 ---
 
-# TODO - Research what are good templates for reports, diagrams ect
-
 # 05 - Template Engine
 
 **Phase 2: Local LLM Integration (Ollama)**
 
 Create a system to store Markdown templates with placeholders for LLM injection.
 
-## Steps (ToDo - expect markdown templates to be more flexible than this)
+## Steps
 
 1. Design a template format using Markdown with placeholder syntax (e.g. `{{context}}`, `{{summary}}`) for LLM-generated content.
 2. Implement a template loader that reads `.md` template files from a configurable templates directory.
@@ -32,3 +30,4 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 - [ ] Only a single template can be open in the editor at any given time
 - [ ] Template must be visually distinctive from other files
 - [ ] Tests exist on frontend for utilities and file creation and ensure they can be debugged locally
+- [x] Can export pdfs but page is responsive when the pdf is being generated
