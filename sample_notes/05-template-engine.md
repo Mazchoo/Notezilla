@@ -27,7 +27,7 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 - [x] At least 4 built-in starter templates are provided.
 - [x] Backend api call is available to get, delete and update templates
 - [ ] File tree has button to add folder to top level
-- [ ] Sidebar is available to browse templates just like regular file tree
+- [x] Sidebar is available to browse templates just like regular file tree
 - [ ] Only a single template can be open in the editor at any given time
 - [ ] Template must be visually distinctive from other files
 - [ ] Tests exist on frontend for utilities and file creation and ensure they can be debugged locally
