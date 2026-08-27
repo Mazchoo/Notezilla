@@ -1,4 +1,5 @@
-use super::save::{display_note_path, normalize_note_path};
+use super::save::display_note_path;
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::show_toast;
 use crate::constants::FILE_READ_ERROR_TOAST;
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
@@ -51,13 +52,9 @@ pub fn entry_from_note(
     entry_from_content(path, body, front_matter_from_metadata(metadata))
 }
 
-/// Replace any open entry with the same full path, then append the new one.
+/// Replace any open note with the same full path, then insert the new one before templates.
 pub fn open_note_in_editor(entries: RwSignal<Vec<EditorEntry>>, entry: EditorEntry) {
-    let path = normalize_note_path(&entry.title.path.get_untracked());
-    entries.update(|list| {
-        list.retain(|e| normalize_note_path(&e.title.path.get_untracked()) != path);
-        list.push(entry);
-    });
+    entries.update(|list| FileTreeBackend::Notes.open_in_editor(list, entry));
 }
 
 /// Return the relative path for an imported file.
@@ -229,7 +226,10 @@ mod tests {
     #[test]
     /// Assert a front-matter line formats scalars, arrays, and nested JSON strings.
     fn format_front_matter_line_formats_scalars_and_arrays() {
-        assert_eq!(format_front_matter_line("title", &json!("Hello")), "title: Hello");
+        assert_eq!(
+            format_front_matter_line("title", &json!("Hello")),
+            "title: Hello"
+        );
         assert_eq!(format_front_matter_line("n", &json!(3)), "n: 3");
         assert_eq!(
             format_front_matter_line("tags", &json!(["b", "a"])),

@@ -216,7 +216,10 @@ mod tests {
     fn resolved_rename_basename_preserves_file_suffix() {
         assert_eq!(resolved_rename_basename("a.md", "b", true), "b.md");
         assert_eq!(resolved_rename_basename("a.md", "b.txt", true), "b.txt");
-        assert_eq!(resolved_rename_basename("folder", "renamed", false), "renamed");
+        assert_eq!(
+            resolved_rename_basename("folder", "renamed", false),
+            "renamed"
+        );
         assert_eq!(resolved_rename_basename(".hidden", "x", true), "x");
         assert_eq!(resolved_rename_basename("noext", "x", true), "x");
     }

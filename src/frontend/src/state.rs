@@ -137,7 +137,10 @@ mod tests {
                 state.number_results_per_page.get_untracked(),
                 DEFAULT_NUMBER_RESULTS_PER_PAGE
             );
-            assert_eq!(state.save_hotkey_key.get_untracked(), DEFAULT_SAVE_HOTKEY_KEY);
+            assert_eq!(
+                state.save_hotkey_key.get_untracked(),
+                DEFAULT_SAVE_HOTKEY_KEY
+            );
             assert_eq!(
                 state.new_file_hotkey_key.get_untracked(),
                 DEFAULT_NEW_FILE_HOTKEY_KEY

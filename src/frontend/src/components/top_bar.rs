@@ -3,6 +3,7 @@ use crate::components::file_io::{
     load_markdown_file,
 };
 use crate::components::hotkeys::format_ctrl_hotkey;
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::mcp::tools::upsert_note;
 use crate::models::block::EditorEntry;
@@ -97,7 +98,7 @@ pub fn append_new_file(state: &AppState) {
         if editing_enabled {
             entry.content.focused.set(true);
         }
-        list.push(entry);
+        FileTreeBackend::Notes.insert_in_editor(list, entry);
     });
 }
 

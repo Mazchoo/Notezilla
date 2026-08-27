@@ -294,7 +294,9 @@ mod tests {
             let entry = EditorEntry::new("./a.md", "body");
             assert_eq!(entry_to_markdown(entry), "body");
 
-            entry.front_matter.set(Some(FrontMatterBlock::new("title: x")));
+            entry
+                .front_matter
+                .set(Some(FrontMatterBlock::new("title: x")));
             assert_eq!(entry_to_markdown(entry), "---\ntitle: x\n---\nbody");
 
             entry.front_matter.set(Some(FrontMatterBlock::new("")));

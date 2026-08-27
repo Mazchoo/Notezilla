@@ -1,3 +1,4 @@
+use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::rendering::render_markdown;
 use leptos::prelude::*;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -123,6 +124,7 @@ pub struct EditorEntry {
     pub title: TitleBlock,
     pub front_matter: RwSignal<Option<FrontMatterBlock>>,
     pub content: MarkdownBlock,
+    pub backend: FileTreeBackend,
 }
 
 impl EditorEntry {
@@ -132,6 +134,7 @@ impl EditorEntry {
             title: TitleBlock::new(path),
             front_matter: RwSignal::new(None),
             content: MarkdownBlock::new(raw),
+            backend: FileTreeBackend::Notes,
         }
     }
 
@@ -187,7 +190,8 @@ mod tests {
     #[test]
     /// Assert parse_fields keeps `key: value` rows and skips list items and blanks.
     fn parse_fields_reads_key_value_lines() {
-        let fields = FrontMatterBlock::parse_fields("title: Hello\n\n- skip\n: empty\ntags: [a, b]");
+        let fields =
+            FrontMatterBlock::parse_fields("title: Hello\n\n- skip\n: empty\ntags: [a, b]");
         assert_eq!(
             fields,
             vec![
@@ -195,7 +199,10 @@ mod tests {
                 ("tags".into(), "[a, b]".into()),
             ]
         );
-        assert_eq!(FrontMatterBlock::parse_fields("title:"), vec![("title".into(), "".into())]);
+        assert_eq!(
+            FrontMatterBlock::parse_fields("title:"),
+            vec![("title".into(), "".into())]
+        );
     }
 
     #[test]

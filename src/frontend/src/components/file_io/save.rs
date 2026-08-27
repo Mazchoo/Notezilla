@@ -118,6 +118,9 @@ mod tests {
     fn yaml_to_fields_parses_mapping_or_empty() {
         assert_eq!(yaml_to_fields(""), json!({}));
         assert_eq!(yaml_to_fields("  "), json!({}));
-        assert_eq!(yaml_to_fields("title: Hello\ncount: 2"), json!({"title": "Hello", "count": 2}));
+        assert_eq!(
+            yaml_to_fields("title: Hello\ncount: 2"),
+            json!({"title": "Hello", "count": 2})
+        );
     }
 }

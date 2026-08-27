@@ -3,7 +3,7 @@ use crate::models::block::EditorEntry;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use super::import::{entry_from_note, open_note_in_editor};
+use super::import::entry_from_note;
 use super::save::display_note_path;
 
 /// Fetch a note from the MCP backend and open it in the editor.
@@ -39,7 +39,7 @@ pub fn open_file_at_path(
             Ok(note) => {
                 let display_path = display_note_path(&path);
                 let entry = entry_from_note(display_path, &note.text, &note.metadata);
-                open_note_in_editor(entries, entry);
+                entries.update(|list| backend.open_in_editor(list, entry));
             }
             Err(e) => web_sys::console::error_1(&e.into()),
         }
