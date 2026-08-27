@@ -16,9 +16,9 @@ Make a cargo crate that replicates the behavior to convert a markdown to html.
 3. Copy over all functionality from src/frontend
 4. Extend tests with regression tests
 5. Add configuration class make conversion configurable
+6. Consider seperating pdf rendering as well
 
 ## Acceptance Criteria
 
 - [ ] Cargo crate is published with tests to render all the different parts
-- [ ] Pdf rendering trait is also included in the crate
 - [ ] Configuration class is setup to change the colors and format of output files
