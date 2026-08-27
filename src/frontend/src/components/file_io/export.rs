@@ -257,7 +257,7 @@ fn download_blob(filename: &str, blob: &Blob) -> Result<(), JsValue> {
 
 #[cfg(test)]
 mod tests {
-    use super::export_progress_label;
+    use super::*;
 
     #[test]
     /// Assert the spinner names the file being generated and the batch position.
@@ -274,5 +274,56 @@ mod tests {
             export_progress_label("note.html", 2, 3),
             "Generating note.html (3 of 3)"
         );
+    }
+
+    #[test]
+    /// Assert template placeholders are replaced and the title is HTML-escaped.
+    fn build_html_document_fills_title_and_body() {
+        let html = build_html_document("<title>{{TITLE}}</title>{{BODY}}", "A & B", "<p>ok</p>");
+        assert_eq!(html, "<title>A &amp; B</title><p>ok</p>");
+    }
+
+    #[test]
+    /// Assert markdown export wraps non-empty front matter in `---` delimiters.
+    fn entry_to_markdown_includes_front_matter() {
+        use crate::models::block::{EditorEntry, FrontMatterBlock};
+        use leptos::prelude::{Owner, Set};
+
+        let owner = Owner::new();
+        owner.with(|| {
+            let entry = EditorEntry::new("./a.md", "body");
+            assert_eq!(entry_to_markdown(entry), "body");
+
+            entry.front_matter.set(Some(FrontMatterBlock::new("title: x")));
+            assert_eq!(entry_to_markdown(entry), "---\ntitle: x\n---\nbody");
+
+            entry.front_matter.set(Some(FrontMatterBlock::new("")));
+            assert_eq!(entry_to_markdown(entry), "body");
+        });
+    }
+
+    #[test]
+    /// Assert body HTML prepends escaped front matter and the rendered markdown.
+    fn entry_body_html_prepends_escaped_front_matter() {
+        use crate::models::block::{EditorEntry, FrontMatterBlock};
+        use leptos::prelude::{Owner, Set};
+
+        let owner = Owner::new();
+        owner.with(|| {
+            let entry = EditorEntry::new("./a.md", "ignored");
+            entry
+                .front_matter
+                .set(Some(FrontMatterBlock::new("title: <x>")));
+            let html = entry_body_html(entry, |_| "<p>md</p>".into());
+            assert!(
+                html.starts_with("<section class=\"frontmatter\"><h2>Metadata</h2><pre>"),
+                "{html}"
+            );
+            assert!(html.contains("title: &lt;x&gt;"), "{html}");
+            assert!(html.ends_with("</pre></section><p>md</p>"), "{html}");
+
+            let no_fm = EditorEntry::new("./b.md", "ignored");
+            assert_eq!(entry_body_html(no_fm, |_| "<p>md</p>".into()), "<p>md</p>");
+        });
     }
 }

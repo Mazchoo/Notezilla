@@ -78,3 +78,34 @@ pub fn GlobalHotkeys() -> impl IntoView {
 
     ()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    /// Assert a single printable character is lowercased and longer values are rejected.
+    fn normalize_hotkey_key_takes_one_printable_letter() {
+        assert_eq!(normalize_hotkey_key("S"), Some('s'));
+        assert_eq!(normalize_hotkey_key(" s "), Some('s'));
+        assert_eq!(normalize_hotkey_key("ab"), None);
+        assert_eq!(normalize_hotkey_key(""), None);
+        assert_eq!(normalize_hotkey_key("\u{1}"), None);
+    }
+
+    #[test]
+    /// Assert a pressed key matches the configured letter without case.
+    fn keys_match_ignores_case() {
+        assert!(keys_match("S", 's'));
+        assert!(keys_match("s", 's'));
+        assert!(!keys_match("n", 's'));
+        assert!(!keys_match("ab", 'a'));
+    }
+
+    #[test]
+    /// Assert Ctrl hotkey labels use an uppercase letter.
+    fn format_ctrl_hotkey_uppercases_the_key() {
+        assert_eq!(format_ctrl_hotkey('s'), "Ctrl+S");
+        assert_eq!(format_ctrl_hotkey('N'), "Ctrl+N");
+    }
+}

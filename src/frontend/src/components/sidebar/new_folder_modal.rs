@@ -118,3 +118,25 @@ where
         </Show>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leptos::prelude::{GetUntracked, Owner};
+
+    #[test]
+    /// Assert open stores the parent path, including root as empty string.
+    fn new_folder_modal_ctrl_open_and_close() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let ctrl = NewFolderModalCtrl::new();
+            assert!(ctrl.parent_path.get_untracked().is_none());
+            ctrl.open(String::new());
+            assert_eq!(ctrl.parent_path.get_untracked().as_deref(), Some(""));
+            ctrl.open("notes".into());
+            assert_eq!(ctrl.parent_path.get_untracked().as_deref(), Some("notes"));
+            ctrl.close();
+            assert!(ctrl.parent_path.get_untracked().is_none());
+        });
+    }
+}

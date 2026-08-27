@@ -90,3 +90,16 @@ pub fn Toast() -> impl IntoView {
         </div>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::show_mcp_warnings;
+
+    #[test]
+    /// Assert unbound or empty warnings do not require a toast signal.
+    fn show_mcp_warnings_is_noop_when_unbound_or_empty() {
+        show_mcp_warnings(&[]);
+        show_mcp_warnings(&[String::new(), String::new()]);
+        show_mcp_warnings(&["warn".into()]);
+    }
+}

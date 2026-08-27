@@ -144,3 +144,44 @@ fn warnings_from_structured(structured: &Value) -> Vec<String> {
         .map(str::to_string)
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    /// Assert the first non-empty `data:` JSON-RPC payload is parsed.
+    fn parse_sse_reads_the_first_data_payload() {
+        let body = "event: message\ndata: {\"result\":{\"ok\":true}}\n\n";
+        let rpc = parse_sse(body).expect("payload");
+        assert_eq!(rpc.result, Some(json!({"ok": true})));
+        assert_eq!(rpc.error, None);
+    }
+
+    #[test]
+    /// Assert empty and `[DONE]` data lines are skipped.
+    fn parse_sse_skips_empty_and_done_lines() {
+        let body = "data:\ndata: [DONE]\ndata: {\"error\":{\"code\":1}}\n";
+        let rpc = parse_sse(body).expect("payload");
+        assert_eq!(rpc.error, Some(json!({"code": 1})));
+    }
+
+    #[test]
+    /// Assert missing or invalid payloads yield None.
+    fn parse_sse_returns_none_without_valid_json() {
+        assert!(parse_sse("no data here").is_none());
+        assert!(parse_sse("data: not-json\n").is_none());
+    }
+
+    #[test]
+    /// Assert non-empty warning strings are collected and empties dropped.
+    fn warnings_from_structured_collects_non_empty_strings() {
+        assert_eq!(
+            warnings_from_structured(&json!({"warnings": ["a", "", "b", 1]})),
+            vec!["a".to_string(), "b".to_string()]
+        );
+        assert!(warnings_from_structured(&json!({})).is_empty());
+        assert!(warnings_from_structured(&json!({"warnings": "x"})).is_empty());
+    }
+}

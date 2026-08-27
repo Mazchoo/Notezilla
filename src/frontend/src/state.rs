@@ -99,3 +99,62 @@ impl AppState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::{DEFAULT_MARKDOWN_PATH, DEFAULT_MARKDOWN_TEMPLATE};
+    use crate::default_settings::{
+        DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
+        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_SAVE_HOTKEY_KEY,
+        DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    };
+    use leptos::prelude::{GetUntracked, Owner};
+
+    #[test]
+    /// Assert the activity button class includes `active` only when selected.
+    fn activity_btn_class_marks_the_active_button() {
+        assert_eq!(AppState::activity_btn_class(true), "activity-btn active");
+        assert_eq!(AppState::activity_btn_class(false), "activity-btn");
+    }
+
+    #[test]
+    /// Assert AppState::new seeds the default note, panel, and settings.
+    fn new_seeds_default_entry_and_settings() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            let entries = state.entries.get_untracked();
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].title.path.get_untracked(), DEFAULT_MARKDOWN_PATH);
+            assert_eq!(
+                entries[0].content.text.get_untracked(),
+                DEFAULT_MARKDOWN_TEMPLATE
+            );
+            assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
+            assert!(state.markdown_editing_enabled.get_untracked());
+            assert_eq!(
+                state.number_results_per_page.get_untracked(),
+                DEFAULT_NUMBER_RESULTS_PER_PAGE
+            );
+            assert_eq!(state.save_hotkey_key.get_untracked(), DEFAULT_SAVE_HOTKEY_KEY);
+            assert_eq!(
+                state.new_file_hotkey_key.get_untracked(),
+                DEFAULT_NEW_FILE_HOTKEY_KEY
+            );
+            assert_eq!(
+                state.import_hotkey_key.get_untracked(),
+                DEFAULT_IMPORT_HOTKEY_KEY
+            );
+            assert_eq!(
+                state.export_hotkey_key.get_untracked(),
+                DEFAULT_EXPORT_HOTKEY_KEY
+            );
+            assert_eq!(
+                state.toggle_markdown_editing_hotkey_key.get_untracked(),
+                DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY
+            );
+            assert_eq!(state.sidebar_width.get_untracked(), 250.0);
+        });
+    }
+}

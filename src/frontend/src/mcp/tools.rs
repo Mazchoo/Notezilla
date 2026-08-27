@@ -200,3 +200,31 @@ async fn get_markdown_file(session_id: &str, tool: &str, path: &str) -> Result<N
 
     serde_json::from_value(item.clone()).map_err(|e| format!("Parse error: {e}"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    /// Assert notes are deserialized from the structured `notes` array.
+    fn notes_from_structured_parses_note_files() {
+        let val = json!({
+            "notes": [{"filename": "a.md", "text": "hi"}]
+        });
+        let notes = notes_from_structured(&val).expect("notes");
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0].filename, "a.md");
+        assert_eq!(notes[0].text, "hi");
+        assert!(notes[0].metadata.is_empty());
+    }
+
+    #[test]
+    /// Assert a missing or invalid `notes` field is an error.
+    fn notes_from_structured_rejects_missing_or_invalid_notes() {
+        let missing = notes_from_structured(&json!({})).unwrap_err();
+        assert!(missing.contains("Missing notes"));
+        let invalid = notes_from_structured(&json!({"notes": "bad"})).unwrap_err();
+        assert!(invalid.contains("Parse error"));
+    }
+}

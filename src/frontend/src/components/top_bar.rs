@@ -269,3 +269,74 @@ pub fn TopBar() -> impl IntoView {
         </div>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::DEFAULT_MARKDOWN_PATH;
+    use leptos::prelude::{GetUntracked, Owner, Set};
+
+    #[test]
+    /// Assert a count of one uses the singular noun and any other count uses the plural.
+    fn file_count_label_picks_singular_or_plural() {
+        assert_eq!(file_count_label(1, "file", "files"), "1 file");
+        assert_eq!(file_count_label(0, "file", "files"), "0 files");
+        assert_eq!(file_count_label(2, "file", "files"), "2 files");
+    }
+
+    #[test]
+    /// Assert the save toast names created and updated files, or is empty when none.
+    fn format_save_summary_describes_created_and_updated() {
+        assert_eq!(format_save_summary(0, 0), "");
+        assert_eq!(format_save_summary(1, 0), "Created 1 file");
+        assert_eq!(format_save_summary(0, 2), "Updated 2 files");
+        assert_eq!(
+            format_save_summary(1, 2),
+            "Created 1 file and updated 2 files"
+        );
+    }
+
+    #[test]
+    /// Assert a new empty entry is appended and focused when editing is enabled.
+    fn append_new_file_adds_an_empty_focused_entry() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            append_new_file(&state);
+            let entries = state.entries.get_untracked();
+            assert_eq!(entries.len(), 2);
+            assert_eq!(entries[0].title.path.get_untracked(), DEFAULT_MARKDOWN_PATH);
+            let added = entries[1];
+            assert_eq!(added.title.path.get_untracked(), "./new_file.md");
+            assert_eq!(added.content.text.get_untracked(), "");
+            assert!(added.content.focused.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert a new entry is not focused when markdown editing is disabled.
+    fn append_new_file_skips_focus_when_editing_disabled() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            state.markdown_editing_enabled.set(false);
+            append_new_file(&state);
+            let added = state.entries.get_untracked()[1];
+            assert!(!added.content.focused.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert the markdown-editing flag flips on each call.
+    fn toggle_markdown_editing_flips_the_flag() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            assert!(state.markdown_editing_enabled.get_untracked());
+            toggle_markdown_editing(&state);
+            assert!(!state.markdown_editing_enabled.get_untracked());
+            toggle_markdown_editing(&state);
+            assert!(state.markdown_editing_enabled.get_untracked());
+        });
+    }
+}

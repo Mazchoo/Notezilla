@@ -137,3 +137,27 @@ where
         </Show>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leptos::prelude::{GetUntracked, Owner};
+
+    #[test]
+    /// Assert open stores the path and file flag, and close clears the path.
+    fn rename_modal_ctrl_open_and_close() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let ctrl = RenameModalCtrl::new();
+            assert!(ctrl.path.get_untracked().is_none());
+            ctrl.open("notes/a.md".into(), true);
+            assert_eq!(ctrl.path.get_untracked().as_deref(), Some("notes/a.md"));
+            assert!(ctrl.is_file.get_untracked());
+            ctrl.open("notes/folder".into(), false);
+            assert_eq!(ctrl.path.get_untracked().as_deref(), Some("notes/folder"));
+            assert!(!ctrl.is_file.get_untracked());
+            ctrl.close();
+            assert!(ctrl.path.get_untracked().is_none());
+        });
+    }
+}

@@ -200,3 +200,108 @@ fn format_yaml_scalar(val: &Value) -> String {
         other => other.to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leptos::prelude::{GetUntracked, Owner, RwSignal};
+    use serde_json::json;
+
+    #[test]
+    /// Assert internal backend keys are skipped.
+    fn is_internal_metadata_key_matches_filename_text_and_newline() {
+        assert!(is_internal_metadata_key("filename"));
+        assert!(is_internal_metadata_key("text"));
+        assert!(is_internal_metadata_key("\ninternal"));
+        assert!(!is_internal_metadata_key("title"));
+    }
+
+    #[test]
+    /// Assert scalars stringify and nested JSON is left as a JSON string.
+    fn format_yaml_scalar_stringifies_json_values() {
+        assert_eq!(format_yaml_scalar(&json!("hello")), "hello");
+        assert_eq!(format_yaml_scalar(&json!(2)), "2");
+        assert_eq!(format_yaml_scalar(&json!(true)), "true");
+        assert_eq!(format_yaml_scalar(&json!(null)), "");
+        assert_eq!(format_yaml_scalar(&json!({"a": 1})), "{\"a\":1}");
+    }
+
+    #[test]
+    /// Assert a front-matter line formats scalars, arrays, and nested JSON strings.
+    fn format_front_matter_line_formats_scalars_and_arrays() {
+        assert_eq!(format_front_matter_line("title", &json!("Hello")), "title: Hello");
+        assert_eq!(format_front_matter_line("n", &json!(3)), "n: 3");
+        assert_eq!(
+            format_front_matter_line("tags", &json!(["b", "a"])),
+            "tags: [b, a]"
+        );
+        assert_eq!(
+            format_front_matter_line("tags", &json!("[\"a\", \"b\"]")),
+            "tags: [a, b]"
+        );
+    }
+
+    #[test]
+    /// Assert metadata maps skip internals, expand tab-list flags, and sort keys.
+    fn front_matter_from_metadata_builds_sorted_yaml() {
+        let mut meta = HashMap::new();
+        meta.insert("filename".into(), json!("skip.md"));
+        meta.insert("text".into(), json!("body"));
+        meta.insert("title".into(), json!("Hello"));
+        meta.insert("priority".into(), json!(1));
+        meta.insert("tags\twork".into(), json!(true));
+        meta.insert("tags\thome".into(), json!(true));
+        meta.insert("tags\tskip".into(), json!(false));
+        let yaml = front_matter_from_metadata(&meta).expect("yaml");
+        assert_eq!(yaml, "priority: 1\ntitle: Hello\ntags: [home, work]");
+        assert_eq!(front_matter_from_metadata(&HashMap::new()), None);
+    }
+
+    #[test]
+    /// Assert markdown with YAML front matter becomes an entry with both parts.
+    fn entry_from_markdown_splits_front_matter() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let entry = entry_from_markdown("./a.md", "---\ntitle: x\n---\nbody");
+            assert_eq!(entry.title.path.get_untracked(), "./a.md");
+            assert_eq!(entry.content.text.get_untracked(), "body");
+            let fm = entry.front_matter.get_untracked().expect("front matter");
+            assert_eq!(fm.raw.get_untracked(), "title: x");
+
+            let empty = entry_from_markdown("./b.md", "");
+            assert_eq!(empty.content.text.get_untracked(), "");
+            assert!(empty.front_matter.get_untracked().is_none());
+        });
+    }
+
+    #[test]
+    /// Assert a note's metadata map is converted into front matter on the entry.
+    fn entry_from_note_uses_metadata_as_front_matter() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let mut meta = HashMap::new();
+            meta.insert("title".into(), json!("Hello"));
+            let entry = entry_from_note("./a.md", "body", &meta);
+            assert_eq!(entry.content.text.get_untracked(), "body");
+            let fm = entry.front_matter.get_untracked().expect("front matter");
+            assert_eq!(fm.raw.get_untracked(), "title: Hello");
+        });
+    }
+
+    #[test]
+    /// Assert opening a note replaces any existing entry with the same path.
+    fn open_note_in_editor_replaces_same_path() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let entries = RwSignal::new(vec![EditorEntry::new("./a.md", "old")]);
+            open_note_in_editor(entries, EditorEntry::new("./a.md", "new"));
+            let list = entries.get_untracked();
+            assert_eq!(list.len(), 1);
+            assert_eq!(list[0].content.text.get_untracked(), "new");
+
+            open_note_in_editor(entries, EditorEntry::new("./b.md", "other"));
+            let list = entries.get_untracked();
+            assert_eq!(list.len(), 2);
+        });
+    }
+}
