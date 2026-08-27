@@ -26,7 +26,7 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 - [x] Templates are stored as `.md` files in a dedicated templates directory.
 - [x] At least 4 built-in starter templates are provided.
 - [x] Backend api call is available to get, delete and update templates
-- [ ] File tree has button to add folder to top level
+- [x] File tree has button to add folder to top level
 - [x] Sidebar is available to browse templates just like regular file tree
 - [ ] Only a single template can be open in the editor at any given time
 - [ ] Template must be visually distinctive from other files
