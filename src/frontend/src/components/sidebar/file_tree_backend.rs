@@ -101,6 +101,14 @@ impl FileTreeBackend {
             Self::Templates => tools::rename_template_dir(session_id, path, new_name).await,
         }
     }
+
+    /// Return the CSS class for an editor entry frame.
+    pub fn entry_class(self) -> &'static str {
+        match self {
+            Self::Notes => "editor-entry",
+            Self::Templates => "editor-entry editor-entry-template",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -130,5 +138,15 @@ mod tests {
             assert_eq!(list[1].title.path.get_untracked(), "./b.md");
             assert_eq!(list[2].backend, FileTreeBackend::Templates);
         });
+    }
+
+    #[test]
+    /// Assert template editor frames use a distinct class from notes.
+    fn template_editor_classes_differ_from_notes() {
+        assert_eq!(FileTreeBackend::Notes.entry_class(), "editor-entry");
+        assert_eq!(
+            FileTreeBackend::Templates.entry_class(),
+            "editor-entry editor-entry-template"
+        );
     }
 }

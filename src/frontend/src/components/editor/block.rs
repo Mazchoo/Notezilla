@@ -17,18 +17,20 @@ pub fn EditorEntryComponent(entry: EditorEntry) -> impl IntoView {
     let front_matter_signal = entry.front_matter;
     view! {
         <hr class="entry-divider"/>
-        <TitleBlockComponent title=entry.title entry_id=entry_id front_matter=front_matter_signal/>
-        <div class=move || {
-            if entry.title.collapsed.get() {
-                "editor-entry-body is-hidden"
-            } else {
-                "editor-entry-body"
-            }
-        }>
-            {move || front_matter_signal.get().map(|fm| view! {
-                <FrontMatterBlockComponent block=fm entry_id=entry_id/>
-            })}
-            <BlockComponent block=entry.content/>
+        <div class=entry.backend.entry_class()>
+            <TitleBlockComponent title=entry.title entry_id=entry_id front_matter=front_matter_signal/>
+            <div class=move || {
+                if entry.title.collapsed.get() {
+                    "editor-entry-body is-hidden"
+                } else {
+                    "editor-entry-body"
+                }
+            }>
+                {move || front_matter_signal.get().map(|fm| view! {
+                    <FrontMatterBlockComponent block=fm entry_id=entry_id/>
+                })}
+                <BlockComponent block=entry.content/>
+            </div>
         </div>
     }
 }

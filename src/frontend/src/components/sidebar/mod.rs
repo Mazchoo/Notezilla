@@ -71,7 +71,7 @@ pub fn Sidebar() -> impl IntoView {
             }>
                 <FileTree
                     backend=FileTreeBackend::Notes
-                    heading="FILES"
+                    heading="NOTES"
                     root_label="note folder root"
                     epoch=state.file_tree_epoch
                 />
@@ -85,7 +85,7 @@ pub fn Sidebar() -> impl IntoView {
             }>
                 <FileTree
                     backend=FileTreeBackend::Templates
-                    heading="TEMPLATES"
+                    heading="TEMPLATE MARKDOWN RESPONSES"
                     root_label="template folder root"
                     epoch=state.template_tree_epoch
                 />
