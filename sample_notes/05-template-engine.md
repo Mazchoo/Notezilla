@@ -30,5 +30,5 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 - [x] Sidebar is available to browse templates just like regular file tree
 - [ ] Only a single template can be open in the editor at any given time
 - [ ] Template must be visually distinctive from other files
-- [ ] Tests exist on frontend for utilities and file creation and ensure they can be debugged locally
+- [x] Tests exist on frontend for utilities and file creation and ensure they can be debugged locally
 - [x] Can export pdfs but page is responsive when the pdf is being generated
