@@ -147,6 +147,29 @@
       outline: 1px dashed var(--accent);
       outline-offset: -2px;
     }
+    .file-tree-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.25rem;
+    }
+    .file-tree-heading .menu-label { margin: 0; }
+    .file-tree-new-folder {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 4px;
+      padding: 0;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: none;
+      flex-shrink: 0;
+    }
+    .file-tree-new-folder:hover { color: var(--text); background: var(--bg-3); }
+    .file-tree-new-folder svg { width: 14px; height: 14px; }
 
     /* ── Rename modal ──────────────────────────────────────────────── */
     .rename-modal-backdrop {
