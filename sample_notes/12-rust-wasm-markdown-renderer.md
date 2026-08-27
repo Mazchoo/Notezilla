@@ -28,5 +28,5 @@ Build a Rust WebAssembly (wasm-bindgen) component that accepts byte strings as i
 - [x] Standard Markdown elements (headings, lists, tables, links, images, blockquotes) render correctly.
 - [x] Fenced code blocks render with syntax highlighting for common languages (Python, JS, Rust, C#, etc.).
 - [x] Mermaid code blocks are identified and wrapped in a way that enables client-side Mermaid.js rendering.
-- [ ] Task exists to perform wasm-opt
+- [x] Task exists to create release build with wasm-opt
 - [x] Input encoding errors (invalid UTF-8) are handled gracefully.
