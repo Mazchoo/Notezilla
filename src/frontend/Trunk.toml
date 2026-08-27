@@ -6,6 +6,16 @@ public_url = "/"
 [watch]
 ignore = ["dist", "target"]
 
+# wasm-opt -O4 plus extra passes. Runs only for `trunk build/serve --release`.
+[[hooks]]
+stage = "post_build"
+command = "powershell"
+command_arguments = [
+  "-NoProfile",
+  "-File",
+  "wasm-opt-release.ps1"
+]
+
 [[proxy]]
 # Proxy /mcp requests to the FastMCP Python backend — avoids CORS in dev
 # Trunk strips the `rewrite` prefix then appends the remainder to `backend`.
