@@ -22,6 +22,19 @@
     {
       "label": "Run Frontend",
       "type": "shell",
+      "command": "trunk serve --release",
+      "options": {
+        "cwd": "${workspaceFolder}/src/frontend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Frontend (Debug)",
+      "type": "shell",
       "command": "trunk serve",
       "options": {
         "cwd": "${workspaceFolder}/src/frontend"
@@ -59,7 +72,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Run Tests",
+      "label": "Run Backend Tests",
       "type": "shell",
       "command": "python",
       "args": ["-m", "pytest", "."],
@@ -67,6 +80,54 @@
         "cwd": "${workspaceFolder}"
       },
       "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Frontend Tests",
+      "type": "shell",
+      "command": "cargo test",
+      "options": {
+        "cwd": "${workspaceFolder}/src/frontend"
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Optimize WASM",
+      "type": "shell",
+      "command": "wasm-opt",
+      "args": [
+        "${workspaceFolder}/src/frontend/target/wasm-bindgen/release/notezilla-frontend_bg.wasm",
+        "-O4",
+        "--converge",
+        "--closed-world",
+        "--zero-filled-memory",
+        "--inline-functions-with-loops",
+        "--traps-never-happen",
+        "--strip-debug",
+        "--strip-producers",
+        "--enable-bulk-memory",
+        "--enable-sign-ext",
+        "--enable-mutable-globals",
+        "--enable-nontrapping-float-to-int",
+        "--enable-multivalue",
+        "--enable-reference-types",
+        "--enable-simd",
+        "--enable-extended-const",
+        "-o",
+        "${workspaceFolder}/src/frontend/target/wasm-bindgen/release/notezilla-frontend_bg.wasm"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared"
