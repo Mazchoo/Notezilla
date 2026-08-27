@@ -4,7 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Notezilla</title>
-  <link data-trunk rel="rust" data-bin="notezilla-frontend" />
+  <link
+    data-trunk
+    rel="rust"
+    data-bin="notezilla-frontend"
+    data-wasm-opt="4"
+    data-wasm-opt-params="--converge --closed-world --zero-filled-memory --inline-functions-with-loops --traps-never-happen --strip-debug --strip-producers --enable-bulk-memory --enable-sign-ext --enable-mutable-globals --enable-nontrapping-float-to-int --enable-multivalue --enable-reference-types --enable-simd --enable-extended-const"
+  />
 
   <!-- Bulma 1.0 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />

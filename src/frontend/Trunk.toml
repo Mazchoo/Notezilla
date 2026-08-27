@@ -4,7 +4,7 @@ dist       = "dist"
 public_url = "/"
 
 [watch]
-ignore = ["dist", "target"]
+ignore = ["dist"]
 
 [[proxy]]
 # Proxy /mcp requests to the FastMCP Python backend — avoids CORS in dev
