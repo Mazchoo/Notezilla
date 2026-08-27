@@ -21,6 +21,8 @@
     },
     {
       "label": "Run Frontend",
+      "dependsOn": ["Optimize WASM"],
+      "dependsOrder": "sequence",
       "type": "shell",
       "command": "trunk serve --release",
       "options": {
@@ -103,30 +105,9 @@
     {
       "label": "Optimize WASM",
       "type": "shell",
-      "command": "wasm-opt",
-      "args": [
-        "${workspaceFolder}/src/frontend/target/wasm-bindgen/release/notezilla-frontend_bg.wasm",
-        "-O4",
-        "--converge",
-        "--closed-world",
-        "--zero-filled-memory",
-        "--inline-functions-with-loops",
-        "--traps-never-happen",
-        "--strip-debug",
-        "--strip-producers",
-        "--enable-bulk-memory",
-        "--enable-sign-ext",
-        "--enable-mutable-globals",
-        "--enable-nontrapping-float-to-int",
-        "--enable-multivalue",
-        "--enable-reference-types",
-        "--enable-simd",
-        "--enable-extended-const",
-        "-o",
-        "${workspaceFolder}/src/frontend/target/wasm-bindgen/release/notezilla-frontend_bg.wasm"
-      ],
+      "command": "trunk build --release",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/src/frontend"
       },
       "presentation": {
         "reveal": "always",

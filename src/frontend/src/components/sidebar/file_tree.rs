@@ -159,6 +159,11 @@ fn on_drop_at(
     perform_move(state, ctx, dnd, src, dst.to_string());
 }
 
+/// Open the new-folder modal for a folder at the tree root.
+fn open_root_new_folder(ctrl: NewFolderModalCtrl) {
+    ctrl.open(String::new());
+}
+
 /// Create a new folder under `parent_path` via the MCP backend.
 fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, name: String) {
     let name = name.trim().to_string();
@@ -334,6 +339,11 @@ pub fn FileTree(
             perform_new_folder(&state, ctx, parent_path, name);
         }
     };
+    let on_new_root_folder = move |ev: web_sys::MouseEvent| {
+        ev.prevent_default();
+        ev.stop_propagation();
+        open_root_new_folder(new_folder_ctrl);
+    };
 
     view! {
         <div
@@ -341,7 +351,17 @@ pub fn FileTree(
             on:dragover=root_dragover
             on:drop=root_drop
         >
-            <p class="menu-label px-2 mt-2">{heading}</p>
+            <div class="file-tree-heading px-2 mt-2">
+                <p class="menu-label">{heading}</p>
+                <button
+                    class="file-tree-new-folder"
+                    type="button"
+                    title="New folder"
+                    on:click=on_new_root_folder
+                >
+                    <Icon icon=id::LuFolderPlus/>
+                </button>
+            </div>
             <aside class="menu px-1">
                 <ul class="menu-list">
                     <Show when=move || dir_contents.get().is_some()>
@@ -695,5 +715,22 @@ fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
                 on_delete=delete_file
             />
         </li>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leptos::prelude::{GetUntracked, Owner};
+
+    #[test]
+    /// Assert the header new-folder action opens the modal at the tree root.
+    fn header_new_folder_opens_modal_at_root() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let ctrl = NewFolderModalCtrl::new();
+            open_root_new_folder(ctrl);
+            assert_eq!(ctrl.parent_path.get_untracked().as_deref(), Some(""));
+        });
     }
 }
