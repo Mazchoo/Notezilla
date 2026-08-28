@@ -75,7 +75,7 @@ html, body {
 /* ── Sidebar panel ─────────────────────────────────────────────── */
 .sidebar-panel {
   position: relative;
-  width: 250px;
+  width: 400px;
   min-width: 250px;
   flex-shrink: 0;
   background-color: var(--bg-2);
@@ -194,6 +194,13 @@ html, body {
 .prompt-actions .button svg {
   width: 16px;
   height: 16px;
+}
+.prompt-divider {
+  display: block;
+  height: 1px;
+  background-color: var(--border);
+  border: none;
+  margin: 0.75rem 0;
 }
 
 /* ── Rename modal ──────────────────────────────────────────────── */

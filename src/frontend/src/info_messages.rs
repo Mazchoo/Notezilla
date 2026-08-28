@@ -64,7 +64,6 @@ pub const NEXT_BUTTON: &str = "Next";
 
 pub const PROMPT_HEADING: &str = "Send prompt";
 pub const PROMPT_PLACEHOLDER: &str = "Write a prompt...";
-pub const OUTPUT_FILE_LABEL: &str = "output file";
 pub const SEND_BUTTON: &str = "Send";
 pub const COPY_BUTTON: &str = "Copy";
 pub const COPY_PROMPT_TITLE: &str = "Copy prompt";

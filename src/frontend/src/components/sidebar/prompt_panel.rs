@@ -2,7 +2,7 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
     CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON, COPY_PROMPT_TITLE, ENTER_PROMPT_TOAST,
-    OUTPUT_FILE_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING, PROMPT_PLACEHOLDER, SEND_BUTTON,
+    PROMPT_COPIED_TOAST, PROMPT_HEADING, PROMPT_PLACEHOLDER, SEND_BUTTON,
 };
 use crate::models::block::EditorEntry;
 use crate::prompting::create_prompt;
@@ -80,7 +80,7 @@ fn copy_text_to_clipboard(
     });
 }
 
-/// Render the Send prompt form: prompt text, output path, send, and clipboard.
+/// Render the Send prompt form: prompt text, copy, output path, and send.
 #[component]
 pub fn PromptPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -113,10 +113,18 @@ pub fn PromptPanel() -> impl IntoView {
                     />
                 </div>
             </div>
-            <div class="field mt-2">
-                <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
-                    {OUTPUT_FILE_LABEL}
-                </label>
+            <div class="prompt-actions mt-2">
+                <button
+                    class="button is-small is-dark"
+                    title=COPY_PROMPT_TITLE
+                    on:click=on_clipboard
+                >
+                    <Icon icon=id::LuClipboard/>
+                    {COPY_BUTTON}
+                </button>
+            </div>
+            <hr class="prompt-divider"/>
+            <div class="field">
                 <div class="control">
                     <input
                         class="input is-small"
@@ -130,14 +138,6 @@ pub fn PromptPanel() -> impl IntoView {
                 <button class="button is-small is-dark" title=SEND_BUTTON on:click=on_send>
                     <Icon icon=id::LuSend/>
                     {SEND_BUTTON}
-                </button>
-                <button
-                    class="button is-small is-dark"
-                    title=COPY_PROMPT_TITLE
-                    on:click=on_clipboard
-                >
-                    <Icon icon=id::LuClipboard/>
-                    {COPY_BUTTON}
                 </button>
             </div>
         </div>

@@ -6,7 +6,7 @@ use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
     DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
-    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
@@ -82,7 +82,7 @@ impl AppState {
             error_toast: RwSignal::new(None),
             file_tree_epoch: RwSignal::new(0),
             template_tree_epoch: RwSignal::new(0),
-            sidebar_width: RwSignal::new(250.0),
+            sidebar_width: RwSignal::new(DEFAULT_SIDEBAR_WIDTH),
             number_results_per_page: RwSignal::new(DEFAULT_NUMBER_RESULTS_PER_PAGE),
             save_hotkey_key: RwSignal::new(DEFAULT_SAVE_HOTKEY_KEY),
             new_file_hotkey_key: RwSignal::new(DEFAULT_NEW_FILE_HOTKEY_KEY),
@@ -116,7 +116,7 @@ mod tests {
     use crate::default_settings::{
         DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
         DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
-        DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -166,7 +166,7 @@ mod tests {
                 state.toggle_markdown_editing_hotkey_key.get_untracked(),
                 DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY
             );
-            assert_eq!(state.sidebar_width.get_untracked(), 250.0);
+            assert_eq!(state.sidebar_width.get_untracked(), DEFAULT_SIDEBAR_WIDTH);
             assert_eq!(state.prompt_text.get_untracked(), "");
             assert_eq!(
                 state.prompt_output_path.get_untracked(),
