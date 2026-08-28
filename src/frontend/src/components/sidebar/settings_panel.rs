@@ -1,8 +1,9 @@
 use crate::components::hotkeys::{format_ctrl_hotkey, normalize_hotkey_key};
 use crate::info_messages::{
-    with_hotkey, EXPORT_HOTKEY_LABEL, IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL,
-    OLLAMA_PORT_LABEL, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL, SETTINGS_HEADING,
-    TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+    with_hotkey, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL, HOTKEY_SETTINGS_HEADING,
+    IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_LABEL, OLLAMA_MODEL_PLACEHOLDER,
+    OLLAMA_PORT_LABEL, OLLAMA_SETTINGS_HEADING, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
+    SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
@@ -24,12 +25,13 @@ fn parse_ollama_port(raw: &str) -> Option<u16> {
     (n != 0).then_some(n)
 }
 
-/// Render the settings form for search page size, Ollama port, and hotkeys.
+/// Render the settings form for display, Ollama, and hotkeys.
 #[component]
 pub fn SettingsPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let number_results_per_page = state.number_results_per_page;
     let ollama_port = state.ollama_port;
+    let ollama_model = state.ollama_model;
     let save_hotkey_key = state.save_hotkey_key;
     let new_file_hotkey_key = state.new_file_hotkey_key;
     let import_hotkey_key = state.import_hotkey_key;
@@ -57,6 +59,7 @@ pub fn SettingsPanel() -> impl IntoView {
     view! {
         <div class="p-3">
             <p class="menu-label mt-2">{SETTINGS_HEADING}</p>
+            <p class="menu-label mt-2">{DISPLAY_SETTINGS_HEADING}</p>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
                     {RESULTS_PER_PAGE_LABEL}
@@ -71,6 +74,8 @@ pub fn SettingsPanel() -> impl IntoView {
                     />
                 </div>
             </div>
+            <hr class="settings-divider"/>
+            <p class="menu-label mt-2">{OLLAMA_SETTINGS_HEADING}</p>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
                     {OLLAMA_PORT_LABEL}
@@ -86,6 +91,22 @@ pub fn SettingsPanel() -> impl IntoView {
                     />
                 </div>
             </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_MODEL_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="text"
+                        placeholder=OLLAMA_MODEL_PLACEHOLDER
+                        prop:value=move || ollama_model.get()
+                        on:input=move |ev| ollama_model.set(event_target_value(&ev))
+                    />
+                </div>
+            </div>
+            <hr class="settings-divider"/>
+            <p class="menu-label mt-2">{HOTKEY_SETTINGS_HEADING}</p>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
                     {move || with_hotkey(SAVE_HOTKEY_LABEL, &format_ctrl_hotkey(save_hotkey_key.get()))}

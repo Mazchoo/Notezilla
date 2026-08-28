@@ -12,3 +12,12 @@ ignore = ["dist"]
 # A POST to /mcp → strips "/mcp" → "" → forwarded to http://127.0.0.1:8020/mcp
 backend = "http://127.0.0.1:8020/mcp"
 rewrite  = "/mcp"
+
+[[proxy]]
+# Proxy /ollama to the local Ollama HTTP API — avoids CORS in the browser.
+# GET /ollama/api/tags → strips "/ollama" → "/api/tags" → http://127.0.0.1:11434/api/tags
+# Ollama 403s Origin/Host values like `http://localhost.:8080` (FQDN trailing dot),
+# so replace them with loopback values already on Ollama's allowlist.
+backend = "http://127.0.0.1:11434/"
+rewrite  = "/ollama"
+request_headers = { "Host" = "127.0.0.1:11434", "Origin" = "http://127.0.0.1" }

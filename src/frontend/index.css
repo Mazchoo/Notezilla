@@ -197,6 +197,15 @@ html, body {
   width: 16px;
   height: 16px;
 }
+.prompt-send-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: export-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
 .ollama-status-badge {
   display: inline-flex;
   align-items: center;
@@ -222,7 +231,8 @@ html, body {
   fill: var(--status-err);
   stroke: none;
 }
-.prompt-divider {
+.prompt-divider,
+.settings-divider {
   display: block;
   height: 1px;
   background-color: var(--border);

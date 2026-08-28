@@ -19,6 +19,14 @@ fn entry_markdown(entry: EditorEntry) -> String {
     }
 }
 
+/// Fill the prompt template with the user prompt, open-note context, and response template.
+pub fn create_prompt(user_prompt: &str, context: &str, response_template: &str) -> String {
+    PROMPT_TEMPLATE
+        .replace("{{USER_PROMPT}}", user_prompt)
+        .replace("{{CONTEXT}}", context)
+        .replace("{{RESPONSE_TEMPLATE}}", response_template)
+}
+
 /// Fill the prompt template from the user text and open editor entries.
 pub fn build_prompt(user_prompt: &str, entries: &[EditorEntry]) -> String {
     let mut context_parts = Vec::new();
@@ -34,14 +42,6 @@ pub fn build_prompt(user_prompt: &str, entries: &[EditorEntry]) -> String {
         }
     }
     create_prompt(user_prompt, &context_parts.join("\n\n"), &response_template)
-}
-
-/// Fill the prompt template with the user prompt, open-note context, and response template.
-pub fn create_prompt(user_prompt: &str, context: &str, response_template: &str) -> String {
-    PROMPT_TEMPLATE
-        .replace("{{USER_PROMPT}}", user_prompt)
-        .replace("{{CONTEXT}}", context)
-        .replace("{{RESPONSE_TEMPLATE}}", response_template)
 }
 
 #[cfg(test)]

@@ -73,12 +73,22 @@ pub const CLIPBOARD_COPY_FAILED_TOAST: &str = "Clipboard copy failed";
 pub const OLLAMA_STATUS_LABEL: &str = "Ollama";
 pub const OLLAMA_AVAILABLE_TITLE: &str = "Ollama available";
 pub const OLLAMA_UNAVAILABLE_TITLE: &str = "Ollama unavailable";
+pub const PROMPT_OUTPUT_PATH_TITLE: &str = "Save response to";
+pub const SENDING_PROMPT_LABEL: &str = "Sending prompt";
+pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
+pub const MCP_SESSION_NOT_READY_TOAST: &str = "MCP session not ready";
 
 // --- Settings ---
 
 pub const SETTINGS_HEADING: &str = "SETTINGS";
+pub const DISPLAY_SETTINGS_HEADING: &str = "Display";
+pub const OLLAMA_SETTINGS_HEADING: &str = "Ollama";
+pub const HOTKEY_SETTINGS_HEADING: &str = "Hotkeys";
 pub const RESULTS_PER_PAGE_LABEL: &str = "Results per page";
 pub const OLLAMA_PORT_LABEL: &str = "Ollama port";
+pub const OLLAMA_MODEL_LABEL: &str = "Ollama model";
+pub const OLLAMA_MODEL_PLACEHOLDER: &str = "model name";
+pub const ENTER_OLLAMA_MODEL_TOAST: &str = "Enter an Ollama model";
 pub const SAVE_HOTKEY_LABEL: &str = "Save hotkey";
 pub const NEW_FILE_HOTKEY_LABEL: &str = "New file hotkey";
 pub const IMPORT_HOTKEY_LABEL: &str = "Import hotkey";
@@ -126,6 +136,16 @@ pub fn ollama_status_title(available: bool) -> &'static str {
     } else {
         OLLAMA_UNAVAILABLE_TITLE
     }
+}
+
+/// Return the toast text when an Ollama request fails.
+pub fn ollama_send_failed_toast(error: impl std::fmt::Display) -> String {
+    format!("Ollama request failed: {error}")
+}
+
+/// Return the toast text after writing the prompt response to `path`.
+pub fn prompt_response_saved_toast(path: &str) -> String {
+    format!("Saved {path}")
 }
 
 /// Return a count with the matching singular or plural file noun.
@@ -276,5 +296,23 @@ mod tests {
     fn ollama_status_title_marks_available_or_unavailable() {
         assert_eq!(ollama_status_title(true), OLLAMA_AVAILABLE_TITLE);
         assert_eq!(ollama_status_title(false), OLLAMA_UNAVAILABLE_TITLE);
+    }
+
+    #[test]
+    /// Assert a failed Ollama request includes the error text.
+    fn ollama_send_failed_toast_includes_the_error() {
+        assert_eq!(
+            ollama_send_failed_toast("HTTP 404"),
+            "Ollama request failed: HTTP 404"
+        );
+    }
+
+    #[test]
+    /// Assert a written prompt response toast names the save path.
+    fn prompt_response_saved_toast_names_the_path() {
+        assert_eq!(
+            prompt_response_saved_toast("./prompt_response.md"),
+            "Saved ./prompt_response.md"
+        );
     }
 }

@@ -5,6 +5,10 @@ pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 
 /// Proxied by Trunk to http://127.0.0.1:8020 in development.
 pub const MCP_URL: &str = "/mcp";
+/// Proxied by Trunk to http://127.0.0.1:11434 in development.
+pub const OLLAMA_URL: &str = "/ollama";
+pub const OLLAMA_TAGS_PATH: &str = "/api/tags";
+pub const OLLAMA_GENERATE_PATH: &str = "/api/generate";
 
 pub const DRAG_MIME: &str = "text/plain";
 

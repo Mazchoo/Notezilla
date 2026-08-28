@@ -5,8 +5,9 @@ pub use active_panel::ActivePanel;
 use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
-    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_PORT,
+    DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
+    DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
@@ -59,6 +60,8 @@ pub struct AppState {
     pub prompt_output_path: RwSignal<String>,
     /// TCP port of the local Ollama HTTP API.
     pub ollama_port: RwSignal<u16>,
+    /// Ollama model name used by POST `/api/generate`.
+    pub ollama_model: RwSignal<String>,
 }
 
 impl AppState {
@@ -96,6 +99,7 @@ impl AppState {
             prompt_text: RwSignal::new(String::new()),
             prompt_output_path: RwSignal::new(DEFAULT_PROMPT_OUTPUT_PATH.to_string()),
             ollama_port: RwSignal::new(DEFAULT_OLLAMA_PORT),
+            ollama_model: RwSignal::new(DEFAULT_OLLAMA_MODEL.to_string()),
         }
     }
 
@@ -115,8 +119,9 @@ mod tests {
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
         DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
-        DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_PORT,
+        DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
+        DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -173,6 +178,7 @@ mod tests {
                 DEFAULT_PROMPT_OUTPUT_PATH
             );
             assert_eq!(state.ollama_port.get_untracked(), DEFAULT_OLLAMA_PORT);
+            assert_eq!(state.ollama_model.get_untracked(), DEFAULT_OLLAMA_MODEL);
         });
     }
 }

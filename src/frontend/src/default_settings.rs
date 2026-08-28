@@ -15,5 +15,7 @@ pub const DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY: char = 'm';
 pub const DEFAULT_PROMPT_OUTPUT_PATH: &str = "./prompt_response.md";
 /// Default TCP port for the local Ollama HTTP API.
 pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
+/// Default Ollama model name shown in Settings.
+pub const DEFAULT_OLLAMA_MODEL: &str = "qwen3:4b";
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;
