@@ -1,3 +1,4 @@
+use crate::info_messages::{DELETE_MENU, NEW_FOLDER_MENU, OPEN_MENU, RENAME_MENU};
 use leptos::prelude::*;
 
 /// Render the right-click context menu for a file-tree file.
@@ -38,7 +39,7 @@ where
                                 }
                             }
                         >
-                            "Open"
+                            {OPEN_MENU}
                         </a>
                     </li>
                     <li>
@@ -53,7 +54,7 @@ where
                                 }
                             }
                         >
-                            "Rename"
+                            {RENAME_MENU}
                         </a>
                     </li>
                     <li>
@@ -68,7 +69,7 @@ where
                                 }
                             }
                         >
-                            "Delete"
+                            {DELETE_MENU}
                         </a>
                     </li>
                 </ul>
@@ -115,7 +116,7 @@ where
                                 }
                             }
                         >
-                            "New Folder"
+                            {NEW_FOLDER_MENU}
                         </a>
                     </li>
                     <li>
@@ -130,7 +131,7 @@ where
                                 }
                             }
                         >
-                            "Rename"
+                            {RENAME_MENU}
                         </a>
                     </li>
                     <li>
@@ -145,7 +146,7 @@ where
                                 }
                             }
                         >
-                            "Delete"
+                            {DELETE_MENU}
                         </a>
                     </li>
                 </ul>

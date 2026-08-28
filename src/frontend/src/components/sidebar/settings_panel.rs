@@ -1,4 +1,9 @@
 use crate::components::hotkeys::{format_ctrl_hotkey, normalize_hotkey_key};
+use crate::info_messages::{
+    with_hotkey, EXPORT_HOTKEY_LABEL, IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL,
+    OLLAMA_PORT_LABEL, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL, SETTINGS_HEADING,
+    TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+};
 use crate::state::AppState;
 use leptos::prelude::*;
 
@@ -51,10 +56,10 @@ pub fn SettingsPanel() -> impl IntoView {
 
     view! {
         <div class="p-3">
-            <p class="menu-label mt-2">"SETTINGS"</p>
+            <p class="menu-label mt-2">{SETTINGS_HEADING}</p>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    "Results per page"
+                    {RESULTS_PER_PAGE_LABEL}
                 </label>
                 <div class="control">
                     <input
@@ -68,7 +73,7 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    "Ollama port"
+                    {OLLAMA_PORT_LABEL}
                 </label>
                 <div class="control">
                     <input
@@ -83,7 +88,7 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!("Save hotkey ({})", format_ctrl_hotkey(save_hotkey_key.get()))}
+                    {move || with_hotkey(SAVE_HOTKEY_LABEL, &format_ctrl_hotkey(save_hotkey_key.get()))}
                 </label>
                 <div class="control">
                     <input
@@ -97,9 +102,9 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!(
-                        "New file hotkey ({})",
-                        format_ctrl_hotkey(new_file_hotkey_key.get())
+                    {move || with_hotkey(
+                        NEW_FILE_HOTKEY_LABEL,
+                        &format_ctrl_hotkey(new_file_hotkey_key.get()),
                     )}
                 </label>
                 <div class="control">
@@ -114,9 +119,9 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!(
-                        "Import hotkey ({})",
-                        format_ctrl_hotkey(import_hotkey_key.get())
+                    {move || with_hotkey(
+                        IMPORT_HOTKEY_LABEL,
+                        &format_ctrl_hotkey(import_hotkey_key.get()),
                     )}
                 </label>
                 <div class="control">
@@ -131,9 +136,9 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!(
-                        "Export hotkey ({})",
-                        format_ctrl_hotkey(export_hotkey_key.get())
+                    {move || with_hotkey(
+                        EXPORT_HOTKEY_LABEL,
+                        &format_ctrl_hotkey(export_hotkey_key.get()),
                     )}
                 </label>
                 <div class="control">
@@ -148,9 +153,9 @@ pub fn SettingsPanel() -> impl IntoView {
             </div>
             <div class="field">
                 <label class="label is-small" style="color:var(--text-muted);">
-                    {move || format!(
-                        "Toggle markdown editing ({})",
-                        format_ctrl_hotkey(toggle_markdown_editing_hotkey_key.get())
+                    {move || with_hotkey(
+                        TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+                        &format_ctrl_hotkey(toggle_markdown_editing_hotkey_key.get()),
                     )}
                 </label>
                 <div class="control">

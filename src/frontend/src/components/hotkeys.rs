@@ -2,6 +2,7 @@ use crate::components::top_bar::{
     append_new_file, export_all_as_html, open_import_picker, save_all_entries,
     toggle_markdown_editing,
 };
+use crate::info_messages::CTRL_HOTKEY_PREFIX;
 use crate::state::AppState;
 use leptos::ev;
 use leptos::prelude::*;
@@ -24,7 +25,7 @@ fn keys_match(pressed: &str, configured: char) -> bool {
 
 /// Format a Ctrl/Meta hotkey for button titles and settings labels.
 pub fn format_ctrl_hotkey(key: char) -> String {
-    format!("Ctrl+{}", key.to_ascii_uppercase())
+    format!("{CTRL_HOTKEY_PREFIX}{}", key.to_ascii_uppercase())
 }
 
 /// Bind global Ctrl/Meta hotkeys for save, new file, import, export, and edit toggle.

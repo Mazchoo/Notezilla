@@ -1,3 +1,6 @@
+use crate::info_messages::{
+    CANCEL_BUTTON, CREATE_BUTTON, FOLDER_NAME_PLACEHOLDER, NEW_FOLDER_TITLE,
+};
 use leptos::html::Input;
 use leptos::prelude::*;
 
@@ -58,15 +61,15 @@ where
                     class="rename-modal"
                     role="dialog"
                     aria-modal="true"
-                    aria-label="New folder"
+                    aria-label=NEW_FOLDER_TITLE
                     on:click=|ev: web_sys::MouseEvent| ev.stop_propagation()
                 >
-                    <p class="rename-modal-title">"New folder"</p>
+                    <p class="rename-modal-title">{NEW_FOLDER_TITLE}</p>
                     <input
                         node_ref=input_ref
                         class="input rename-modal-input"
                         type="text"
-                        placeholder="Folder name"
+                        placeholder=FOLDER_NAME_PLACEHOLDER
                         prop:value=move || draft.get()
                         on:input=on_input
                         on:keydown={
@@ -93,7 +96,7 @@ where
                             type="button"
                             on:click=move |_| ctrl.close()
                         >
-                            "Cancel"
+                            {CANCEL_BUTTON}
                         </button>
                         <button
                             class="button is-dark is-small rename-modal-confirm"
@@ -110,7 +113,7 @@ where
                                 }
                             }
                         >
-                            "Create"
+                            {CREATE_BUTTON}
                         </button>
                     </div>
                 </div>

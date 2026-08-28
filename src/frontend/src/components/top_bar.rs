@@ -5,6 +5,11 @@ use crate::components::file_io::{
 use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::{show_error_toast, show_toast};
+use crate::info_messages::{
+    format_save_summary, save_failed_toast, with_hotkey, EDIT_MAIN_TEXT_FROZEN_TITLE,
+    EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_TITLE, EXPORT_MARKDOWN_TITLE, EXPORT_PDF_TITLE,
+    IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
+};
 use crate::mcp::tools::upsert_note;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
@@ -14,29 +19,6 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_icons::Icon;
 use web_sys::Event;
-
-/// Format a count with the matching singular or plural noun.
-fn file_count_label(count: usize, singular: &str, plural: &str) -> String {
-    if count == 1 {
-        format!("1 {singular}")
-    } else {
-        format!("{count} {plural}")
-    }
-}
-
-/// Format the toast text after a multi-file save.
-fn format_save_summary(created: usize, updated: usize) -> String {
-    match (created, updated) {
-        (0, 0) => String::new(),
-        (c, 0) => format!("Created {}", file_count_label(c, "file", "files")),
-        (0, u) => format!("Updated {}", file_count_label(u, "file", "files")),
-        (c, u) => format!(
-            "Created {} and updated {}",
-            file_count_label(c, "file", "files"),
-            file_count_label(u, "file", "files"),
-        ),
-    }
-}
 
 /// Upsert every open editor entry via the MCP backend.
 pub fn save_all_entries(state: &AppState) {
@@ -75,7 +57,7 @@ pub fn save_all_entries(state: &AppState) {
                 }
                 Err(e) => {
                     web_sys::console::error_1(&format!("Save failed for {path}: {e}").into());
-                    errors.push(format!("Save failed for {path}: {e}"));
+                    errors.push(save_failed_toast(&path, e));
                 }
             }
         }
@@ -209,7 +191,7 @@ pub fn TopBar() -> impl IntoView {
             // Import button — opens the file picker.
             <button
                 class="activity-btn"
-                title=move || format!("Import Markdown ({})", format_ctrl_hotkey(import_hotkey_key.get()))
+                title=move || with_hotkey(IMPORT_MARKDOWN_TITLE, &format_ctrl_hotkey(import_hotkey_key.get()))
                 on:click=on_import_click
             >
                 <Icon icon=id::LuUpload/>
@@ -217,7 +199,7 @@ pub fn TopBar() -> impl IntoView {
             // Save — upserts each entry via the MCP backend.
             <button
                 class="activity-btn"
-                title=move || format!("Save ({})", format_ctrl_hotkey(save_hotkey_key.get()))
+                title=move || with_hotkey(SAVE_TITLE, &format_ctrl_hotkey(save_hotkey_key.get()))
                 on:click=on_save
             >
                 <Icon icon=id::LuSave/>
@@ -225,17 +207,17 @@ pub fn TopBar() -> impl IntoView {
             // Export — save each entry as a standalone HTML file.
             <button
                 class="activity-btn"
-                title=move || format!("Export as HTML ({})", format_ctrl_hotkey(export_hotkey_key.get()))
+                title=move || with_hotkey(EXPORT_HTML_TITLE, &format_ctrl_hotkey(export_hotkey_key.get()))
                 on:click=on_export_html
             >
                 <Icon icon=id::LuFileCode/>
             </button>
             // Export — markdown → HTML (including SVG drawings) → PDF.
-            <button class="activity-btn" title="Export as PDF" on:click=on_export_pdf>
+            <button class="activity-btn" title=EXPORT_PDF_TITLE on:click=on_export_pdf>
                 <Icon icon=id::LuFileDown/>
             </button>
             // Export — save each entry as a markdown file.
-            <button class="activity-btn" title="Export as Markdown" on:click=on_export_markdown>
+            <button class="activity-btn" title=EXPORT_MARKDOWN_TITLE on:click=on_export_markdown>
                 <Icon icon=id::LuFileText/>
             </button>
             // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
@@ -244,11 +226,9 @@ pub fn TopBar() -> impl IntoView {
                 title=move || {
                     let hotkey = format_ctrl_hotkey(toggle_markdown_editing_hotkey_key.get());
                     if state.markdown_editing_enabled.get() {
-                        format!("Edit main text (on) ({hotkey})")
+                        with_hotkey(EDIT_MAIN_TEXT_ON_TITLE, &hotkey)
                     } else {
-                        format!(
-                            "Main text frozen — select and copy without opening the editor ({hotkey})"
-                        )
+                        with_hotkey(EDIT_MAIN_TEXT_FROZEN_TITLE, &hotkey)
                     }
                 }
                 on:click=on_toggle_markdown_editing
@@ -262,10 +242,10 @@ pub fn TopBar() -> impl IntoView {
             // New File — appends a fresh empty entry.
             <button
                 class="activity-btn top-bar-new-block"
-                title=move || format!("New File ({})", format_ctrl_hotkey(new_file_hotkey_key.get()))
+                title=move || with_hotkey(NEW_FILE_TITLE, &format_ctrl_hotkey(new_file_hotkey_key.get()))
                 on:click=on_new_block
             >
-                "＋"
+                {NEW_FILE_BUTTON}
             </button>
         </div>
     }
@@ -276,26 +256,6 @@ mod tests {
     use super::*;
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use leptos::prelude::{GetUntracked, Owner, Set};
-
-    #[test]
-    /// Assert a count of one uses the singular noun and any other count uses the plural.
-    fn file_count_label_picks_singular_or_plural() {
-        assert_eq!(file_count_label(1, "file", "files"), "1 file");
-        assert_eq!(file_count_label(0, "file", "files"), "0 files");
-        assert_eq!(file_count_label(2, "file", "files"), "2 files");
-    }
-
-    #[test]
-    /// Assert the save toast names created and updated files, or is empty when none.
-    fn format_save_summary_describes_created_and_updated() {
-        assert_eq!(format_save_summary(0, 0), "");
-        assert_eq!(format_save_summary(1, 0), "Created 1 file");
-        assert_eq!(format_save_summary(0, 2), "Updated 2 files");
-        assert_eq!(
-            format_save_summary(1, 2),
-            "Created 1 file and updated 2 files"
-        );
-    }
 
     #[test]
     /// Assert a new empty entry is appended and focused when editing is enabled.

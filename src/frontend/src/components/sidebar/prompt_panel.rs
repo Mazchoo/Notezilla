@@ -1,6 +1,9 @@
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::info_messages::{CLIPBOARD_COPY_FAILED_TOAST, ENTER_PROMPT_TOAST, PROMPT_COPIED_TOAST};
+use crate::info_messages::{
+    CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON, COPY_PROMPT_TITLE, ENTER_PROMPT_TOAST,
+    OUTPUT_FILE_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING, PROMPT_PLACEHOLDER, SEND_BUTTON,
+};
 use crate::models::block::EditorEntry;
 use crate::prompting::create_prompt;
 use crate::state::AppState;
@@ -99,12 +102,12 @@ pub fn PromptPanel() -> impl IntoView {
 
     view! {
         <div class="p-3 prompt-panel">
-            <p class="menu-label mt-2">"Send prompt"</p>
+            <p class="menu-label mt-2">{PROMPT_HEADING}</p>
             <div class="field prompt-input-field">
                 <div class="control">
                     <textarea
                         class="textarea prompt-textarea"
-                        placeholder="Write a prompt..."
+                        placeholder=PROMPT_PLACEHOLDER
                         prop:value=move || prompt_text.get()
                         on:input=move |ev| prompt_text.set(event_target_value(&ev))
                     />
@@ -112,7 +115,7 @@ pub fn PromptPanel() -> impl IntoView {
             </div>
             <div class="field mt-2">
                 <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
-                    "output file"
+                    {OUTPUT_FILE_LABEL}
                 </label>
                 <div class="control">
                     <input
@@ -124,17 +127,17 @@ pub fn PromptPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="prompt-actions mt-2">
-                <button class="button is-small is-dark" title="Send" on:click=on_send>
+                <button class="button is-small is-dark" title=SEND_BUTTON on:click=on_send>
                     <Icon icon=id::LuSend/>
-                    "Send"
+                    {SEND_BUTTON}
                 </button>
                 <button
                     class="button is-small is-dark"
-                    title="Copy prompt"
+                    title=COPY_PROMPT_TITLE
                     on:click=on_clipboard
                 >
                     <Icon icon=id::LuClipboard/>
-                    "Copy"
+                    {COPY_BUTTON}
                 </button>
             </div>
         </div>

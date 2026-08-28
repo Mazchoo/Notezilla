@@ -1,3 +1,7 @@
+use crate::info_messages::{
+    ACTIVITY_FILES_TITLE, ACTIVITY_PROMPT_TITLE, ACTIVITY_SEARCH_TITLE, ACTIVITY_SETTINGS_TITLE,
+    ACTIVITY_TEMPLATES_TITLE,
+};
 use crate::state::{ActivePanel, AppState};
 use icondata as id;
 use leptos::prelude::*;
@@ -24,35 +28,35 @@ pub fn ActivityBar() -> impl IntoView {
         <div class="activity-bar">
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Files))
-                title="Files"
+                title=ACTIVITY_FILES_TITLE
                 on:click=move |_| toggle(ActivePanel::Files)
             >
                 <Icon icon=id::LuFiles/>
             </button>
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Templates))
-                title="Templates"
+                title=ACTIVITY_TEMPLATES_TITLE
                 on:click=move |_| toggle(ActivePanel::Templates)
             >
                 <Icon icon=id::LuCopy/>
             </button>
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Search))
-                title="Search"
+                title=ACTIVITY_SEARCH_TITLE
                 on:click=move |_| toggle(ActivePanel::Search)
             >
                 <Icon icon=id::LuSearch/>
             </button>
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Prompt))
-                title="Send prompt"
+                title=ACTIVITY_PROMPT_TITLE
                 on:click=move |_| toggle(ActivePanel::Prompt)
             >
                 <Icon icon=id::LuMessageSquare/>
             </button>
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Settings))
-                title="Settings"
+                title=ACTIVITY_SETTINGS_TITLE
                 on:click=move |_| toggle(ActivePanel::Settings)
             >
                 <Icon icon=id::LuSettings/>

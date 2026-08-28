@@ -8,6 +8,7 @@ mod prompting;
 mod rendering;
 mod state;
 
+use crate::info_messages::PAGE_TITLE;
 use components::app_shell::AppShell;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -25,6 +26,10 @@ fn App() -> impl IntoView {
     let state = AppState::new();
     components::toast::bind_warning_toast(state.warning_toast);
     provide_context(state.clone());
+
+    if let Some(document) = web_sys::window().and_then(|w| w.document()) {
+        document.set_title(PAGE_TITLE);
+    }
 
     let session_id = state.session_id;
     spawn_local(async move {

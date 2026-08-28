@@ -3,6 +3,10 @@ use super::path::{
 };
 use crate::components::toast::show_error_toast;
 use crate::constants::{EXPORT_PDF_TEMPLATE, EXPORT_TEMPLATE};
+use crate::info_messages::{
+    export_failed_toast, export_progress_label, pdf_conversion_failed_toast,
+    pdf_export_failed_toast, EXPORT_METADATA_HEADING,
+};
 use crate::models::block::EditorEntry;
 use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
 use leptos::prelude::*;
@@ -29,7 +33,7 @@ pub fn export_entries_as_html(
             let document = build_html_document(EXPORT_TEMPLATE, &page_title, &body_html);
             download_text_file(filename, &document, "text/html;charset=utf-8")
                 .err()
-                .map(|err| format_export_error("Export failed", filename, err))
+                .map(|err| log_export_error(export_failed_toast(filename, &format!("{err:?}"))))
         },
     );
 }
@@ -49,7 +53,7 @@ pub fn export_entries_as_markdown(
             let content = entry_to_markdown(entry);
             download_text_file(filename, &content, "text/markdown;charset=utf-8")
                 .err()
-                .map(|err| format_export_error("Export failed", filename, err))
+                .map(|err| log_export_error(export_failed_toast(filename, &format!("{err:?}"))))
         },
     );
 }
@@ -73,9 +77,11 @@ pub fn export_entries_as_pdf(
             match html_to_pdf_bytes(&document) {
                 Ok(bytes) => download_bytes_file(filename, &bytes, "application/pdf")
                     .err()
-                    .map(|err| format_export_error("PDF export failed", filename, err)),
+                    .map(|err| {
+                        log_export_error(pdf_export_failed_toast(filename, &format!("{err:?}")))
+                    }),
                 Err(e) => {
-                    let msg = format!("PDF conversion failed for {filename}: {e}");
+                    let msg = pdf_conversion_failed_toast(filename, e);
                     web_sys::console::error_1(&msg.clone().into());
                     Some(msg)
                 }
@@ -85,19 +91,9 @@ pub fn export_entries_as_pdf(
 }
 
 /// Log a download failure and return the toast text.
-fn format_export_error(prefix: &str, filename: &str, err: JsValue) -> String {
-    let msg = format!("{prefix} for {filename}: {err:?}");
-    web_sys::console::error_1(&msg.clone().into());
-    msg
-}
-
-/// Return the overlay label for the file currently being generated.
-fn export_progress_label(filename: &str, index: usize, total: usize) -> String {
-    if total <= 1 {
-        format!("Generating {filename}")
-    } else {
-        format!("Generating {filename} ({} of {total})", index + 1)
-    }
+fn log_export_error(message: String) -> String {
+    web_sys::console::error_1(&message.clone().into());
+    message
 }
 
 /// Generate and download each entry, showing a spinner and yielding so it can paint.
@@ -195,7 +191,9 @@ fn entry_body_html(entry: EditorEntry, render: fn(&str) -> String) -> String {
     if let Some(fm) = entry.front_matter.get_untracked() {
         let raw = fm.raw.get_untracked();
         if !raw.is_empty() {
-            body.push_str("<section class=\"frontmatter\"><h2>Metadata</h2><pre>");
+            body.push_str(&format!(
+                "<section class=\"frontmatter\"><h2>{EXPORT_METADATA_HEADING}</h2><pre>"
+            ));
             body.push_str(&escape_html(&raw));
             body.push_str("</pre></section>");
         }
@@ -258,23 +256,7 @@ fn download_blob(filename: &str, blob: &Blob) -> Result<(), JsValue> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    /// Assert the spinner names the file being generated and the batch position.
-    fn export_progress_label_names_the_file_and_index() {
-        assert_eq!(
-            export_progress_label("hello.pdf", 0, 1),
-            "Generating hello.pdf"
-        );
-        assert_eq!(
-            export_progress_label("hello.pdf", 0, 3),
-            "Generating hello.pdf (1 of 3)"
-        );
-        assert_eq!(
-            export_progress_label("note.html", 2, 3),
-            "Generating note.html (3 of 3)"
-        );
-    }
+    use crate::info_messages::EXPORT_METADATA_HEADING;
 
     #[test]
     /// Assert template placeholders are replaced and the title is HTML-escaped.
@@ -318,7 +300,9 @@ mod tests {
                 .set(Some(FrontMatterBlock::new("title: <x>")));
             let html = entry_body_html(entry, |_| "<p>md</p>".into());
             assert!(
-                html.starts_with("<section class=\"frontmatter\"><h2>Metadata</h2><pre>"),
+                html.starts_with(&format!(
+                    "<section class=\"frontmatter\"><h2>{EXPORT_METADATA_HEADING}</h2><pre>"
+                )),
                 "{html}"
             );
             assert!(html.contains("title: &lt;x&gt;"), "{html}");

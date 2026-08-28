@@ -8,6 +8,9 @@ pub mod search_panel;
 pub mod settings_panel;
 
 use crate::constants::{SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH};
+use crate::info_messages::{
+    NOTES_HEADING, NOTE_FOLDER_ROOT_LABEL, TEMPLATES_HEADING, TEMPLATE_FOLDER_ROOT_LABEL,
+};
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
 use file_tree_backend::FileTreeBackend;
@@ -73,8 +76,8 @@ pub fn Sidebar() -> impl IntoView {
             }>
                 <FileTree
                     backend=FileTreeBackend::Notes
-                    heading="NOTES"
-                    root_label="note folder root"
+                    heading=NOTES_HEADING
+                    root_label=NOTE_FOLDER_ROOT_LABEL
                     epoch=state.file_tree_epoch
                 />
             </div>
@@ -87,8 +90,8 @@ pub fn Sidebar() -> impl IntoView {
             }>
                 <FileTree
                     backend=FileTreeBackend::Templates
-                    heading="TEMPLATE MARKDOWN RESPONSES"
-                    root_label="template folder root"
+                    heading=TEMPLATES_HEADING
+                    root_label=TEMPLATE_FOLDER_ROOT_LABEL
                     epoch=state.template_tree_epoch
                 />
             </div>

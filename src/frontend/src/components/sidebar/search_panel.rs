@@ -1,6 +1,10 @@
 use crate::components::file_io::open_note_at_path;
 use crate::components::toast::show_error_toast;
 use crate::default_settings::DEFAULT_SEARCH_PREVIEW_CHARS;
+use crate::info_messages::{
+    FRONT_MATTER_FILTER_LABEL, FRONT_MATTER_FILTER_PLACEHOLDER, NEXT_BUTTON, PATH_FILTER_LABEL,
+    PATH_FILTER_PLACEHOLDER, PREV_BUTTON, SEARCH_GO_BUTTON, SEARCH_HEADING, SEARCH_PLACEHOLDER,
+};
 use crate::mcp::tools::search_by_text;
 use crate::models::note::NoteFile;
 use crate::state::AppState;
@@ -140,13 +144,13 @@ pub fn SearchPanel() -> impl IntoView {
 
     view! {
         <div class="p-3">
-            <p class="menu-label mt-2">"SEARCH"</p>
+            <p class="menu-label mt-2">{SEARCH_HEADING}</p>
             <div class="field has-addons">
                 <div class="control is-expanded">
                     <input
                         class="input is-small"
                         type="text"
-                        placeholder="Search notes..."
+                        placeholder=SEARCH_PLACEHOLDER
                         prop:value=move || query.get()
                         on:input=move |ev| query.set(event_target_value(&ev))
                         on:keydown=move |ev| search_on_enter(
@@ -164,20 +168,20 @@ pub fn SearchPanel() -> impl IntoView {
                 </div>
                 <div class="control">
                     <button class="button is-small is-dark" on:click=on_search>
-                        "Go"
+                        {SEARCH_GO_BUTTON}
                     </button>
                 </div>
             </div>
 
             <div class="field mt-2">
                 <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
-                    "Path filter"
+                    {PATH_FILTER_LABEL}
                 </label>
                 <div class="control">
                     <input
                         class="input is-small"
                         type="text"
-                        placeholder="2026/02"
+                        placeholder=PATH_FILTER_PLACEHOLDER
                         prop:value=move || path_filter.get()
                         on:input=move |ev| path_filter.set(event_target_value(&ev))
                         on:keydown=move |ev| search_on_enter(
@@ -197,13 +201,13 @@ pub fn SearchPanel() -> impl IntoView {
 
             <div class="field mt-2">
                 <label class="label is-small" style="color:var(--text-muted); font-weight:500;">
-                    "Front matter filter"
+                    {FRONT_MATTER_FILTER_LABEL}
                 </label>
                 <div class="control">
                     <textarea
                         class="textarea is-small"
                         rows="2"
-                        placeholder={"tags: [hello]\ndate: 2025-01-01"}
+                        placeholder=FRONT_MATTER_FILTER_PLACEHOLDER
                         prop:value=move || frontmatter.get()
                         on:input=move |ev| frontmatter.set(event_target_value(&ev))
                     />
@@ -250,7 +254,7 @@ pub fn SearchPanel() -> impl IntoView {
                             prop:disabled=move || !can_prev()
                             on:click=on_prev
                         >
-                            "Prev"
+                            {PREV_BUTTON}
                         </button>
                     </div>
                     <div class="control">
@@ -259,7 +263,7 @@ pub fn SearchPanel() -> impl IntoView {
                             prop:disabled=move || !can_next()
                             on:click=on_next
                         >
-                            "Next"
+                            {NEXT_BUTTON}
                         </button>
                     </div>
                 </div>

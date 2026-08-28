@@ -11,6 +11,12 @@ use crate::components::sidebar::new_folder_modal::{NewFolderModal, NewFolderModa
 use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::constants::DRAG_MIME;
+use crate::info_messages::{
+    create_folder_failed_toast, created_folder_toast, delete_failed_toast,
+    delete_folder_failed_toast, deleted_folder_toast, deleted_toast, move_failed_toast,
+    moved_toast, rename_failed_toast, renamed_toast, CREATE_FOLDER_SEPARATORS_TOAST,
+    NEW_FOLDER_TITLE, RENAME_SEPARATORS_TOAST,
+};
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
 use crate::state::AppState;
@@ -113,11 +119,11 @@ fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: Strin
                 } else {
                     dst.as_str()
                 };
-                show_toast(toast, format!("Moved {name} to {dest_label}"));
+                show_toast(toast, moved_toast(name, dest_label));
             }
             Err(e) => {
                 web_sys::console::error_1(&format!("Move failed for {src} → {dst}: {e}").into());
-                show_error_toast(error_toast, format!("Move failed for {src}: {e}"));
+                show_error_toast(error_toast, move_failed_toast(&src, e));
             }
         }
     });
@@ -171,10 +177,7 @@ fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, n
         return;
     }
     if name.contains('/') || name.contains('\\') {
-        show_error_toast(
-            state.error_toast,
-            "Create folder failed: name cannot contain path separators",
-        );
+        show_error_toast(state.error_toast, CREATE_FOLDER_SEPARATORS_TOAST);
         return;
     }
 
@@ -196,11 +199,11 @@ fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, n
         match backend.new_dir(&sid, &path).await {
             Ok(()) => {
                 epoch.update(|n| *n = n.wrapping_add(1));
-                show_toast(toast, format!("Created folder {path}"));
+                show_toast(toast, created_folder_toast(&path));
             }
             Err(e) => {
                 web_sys::console::error_1(&format!("Create folder failed for {path}: {e}").into());
-                show_error_toast(error_toast, format!("Create folder failed for {path}: {e}"));
+                show_error_toast(error_toast, create_folder_failed_toast(&path, e));
             }
         }
     });
@@ -219,10 +222,7 @@ fn perform_rename(
         return;
     }
     if new_name.contains('/') || new_name.contains('\\') {
-        show_error_toast(
-            state.error_toast,
-            "Rename failed: name cannot contain path separators",
-        );
+        show_error_toast(state.error_toast, RENAME_SEPARATORS_TOAST);
         return;
     }
 
@@ -264,13 +264,13 @@ fn perform_rename(
                     }
                 });
                 epoch.update(|n| *n = n.wrapping_add(1));
-                show_toast(toast, format!("Renamed to {resolved}"));
+                show_toast(toast, renamed_toast(&resolved));
             }
             Err(e) => {
                 web_sys::console::error_1(
                     &format!("Rename failed for {path} → {new_name}: {e}").into(),
                 );
-                show_error_toast(error_toast, format!("Rename failed for {path}: {e}"));
+                show_error_toast(error_toast, rename_failed_toast(&path, e));
             }
         }
     });
@@ -356,7 +356,7 @@ pub fn FileTree(
                 <button
                     class="file-tree-new-folder"
                     type="button"
-                    title="New folder"
+                    title=NEW_FOLDER_TITLE
                     on:click=on_new_root_folder
                 >
                     <Icon icon=id::LuFolderPlus/>
@@ -454,16 +454,13 @@ fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
                 match backend.delete_folder(&sid, &path).await {
                     Ok(()) => {
                         epoch.update(|n| *n = n.wrapping_add(1));
-                        show_toast(toast, format!("Deleted folder {path}"));
+                        show_toast(toast, deleted_folder_toast(&path));
                     }
                     Err(e) => {
                         web_sys::console::error_1(
                             &format!("Delete folder failed for {path}: {e}").into(),
                         );
-                        show_error_toast(
-                            error_toast,
-                            format!("Delete folder failed for {path}: {e}"),
-                        );
+                        show_error_toast(error_toast, delete_folder_failed_toast(&path, e));
                     }
                 }
             });
@@ -643,11 +640,11 @@ fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
                 match backend.delete_file(&sid, &path).await {
                     Ok(()) => {
                         epoch.update(|n| *n = n.wrapping_add(1));
-                        show_toast(toast, format!("Deleted {path}"));
+                        show_toast(toast, deleted_toast(&path));
                     }
                     Err(e) => {
                         web_sys::console::error_1(&format!("Delete failed for {path}: {e}").into());
-                        show_error_toast(error_toast, format!("Delete failed for {path}: {e}"));
+                        show_error_toast(error_toast, delete_failed_toast(&path, e));
                     }
                 }
             });

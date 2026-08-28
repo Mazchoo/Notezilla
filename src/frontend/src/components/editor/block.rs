@@ -2,6 +2,10 @@ use crate::components::editor::actions::{add_front_matter, delete_entry, delete_
 use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };
+use crate::info_messages::{
+    ADD_FRONTMATTER_TITLE, COLLAPSE_SECTION_TITLE, DELETE_BLOCK_TITLE, DELETE_FRONT_MATTER_TITLE,
+    EXPAND_SECTION_TITLE,
+};
 use crate::models::block::{EditorEntry, FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
 use icondata as id;
@@ -99,9 +103,9 @@ pub fn TitleBlockComponent(
                 }
                 title=move || {
                     if title.collapsed.get() {
-                        "Expand section"
+                        EXPAND_SECTION_TITLE
                     } else {
-                        "Collapse section"
+                        COLLAPSE_SECTION_TITLE
                     }
                 }
                 aria-expanded=move || (!title.collapsed.get()).to_string()
@@ -138,7 +142,7 @@ pub fn TitleBlockComponent(
                         Either::Left(view! {
                             <button
                                 class="block-action-btn block-add-frontmatter-btn"
-                                title="Add frontmatter"
+                                title=ADD_FRONTMATTER_TITLE
                                 on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
                                 on:click=move |_| add_front_matter(&s, entry_id)
                             >
@@ -154,7 +158,7 @@ pub fn TitleBlockComponent(
                 }}
                 <button
                     class="block-action-btn block-delete-btn"
-                    title="Delete block"
+                    title=DELETE_BLOCK_TITLE
                     on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
                     on:click=move |_| delete_entry(&state_del, entry_id)
                 >
@@ -233,7 +237,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
             <div class="block-actions">
                 <button
                     class="block-action-btn block-delete-btn"
-                    title="Delete front matter"
+                    title=DELETE_FRONT_MATTER_TITLE
                     on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
                     on:click=move |ev: web_sys::MouseEvent| {
                         ev.stop_propagation();

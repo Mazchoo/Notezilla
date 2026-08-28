@@ -1,4 +1,5 @@
 use crate::components::file_io::path::basename;
+use crate::info_messages::{CANCEL_BUTTON, RENAME_BUTTON, RENAME_FILE_TITLE, RENAME_FOLDER_TITLE};
 use leptos::html::Input;
 use leptos::prelude::*;
 
@@ -64,9 +65,9 @@ where
                     aria-modal="true"
                     aria-label=move || {
                         if ctrl.is_file.get() {
-                            "Rename file".to_string()
+                            RENAME_FILE_TITLE.to_string()
                         } else {
-                            "Rename folder".to_string()
+                            RENAME_FOLDER_TITLE.to_string()
                         }
                     }
                     on:click=|ev: web_sys::MouseEvent| ev.stop_propagation()
@@ -74,9 +75,9 @@ where
                     <p class="rename-modal-title">
                         {move || {
                             if ctrl.is_file.get() {
-                                "Rename file"
+                                RENAME_FILE_TITLE
                             } else {
-                                "Rename folder"
+                                RENAME_FOLDER_TITLE
                             }
                         }}
                     </p>
@@ -111,7 +112,7 @@ where
                             type="button"
                             on:click=move |_| ctrl.close()
                         >
-                            "Cancel"
+                            {CANCEL_BUTTON}
                         </button>
                         <button
                             class="button is-dark is-small rename-modal-confirm"
@@ -129,7 +130,7 @@ where
                                 }
                             }
                         >
-                            "Rename"
+                            {RENAME_BUTTON}
                         </button>
                     </div>
                 </div>
