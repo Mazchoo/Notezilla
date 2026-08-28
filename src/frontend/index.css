@@ -8,6 +8,8 @@
   --text:   #cdd6f4;
   --text-muted: #6c7086;
   --accent: #cba6f7;
+  --status-ok: #a6e3a1;
+  --status-err: #f38ba8;
 }
 html, body {
   background-color: var(--bg-2);
@@ -194,6 +196,31 @@ html, body {
 .prompt-actions .button svg {
   width: 16px;
   height: 16px;
+}
+.ollama-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.ollama-status-badge svg {
+  width: 10px;
+  height: 10px;
+}
+.ollama-status-badge.is-available svg,
+.ollama-status-badge.is-available svg * {
+  fill: var(--status-ok);
+  stroke: none;
+}
+.ollama-status-badge.is-unavailable svg,
+.ollama-status-badge.is-unavailable svg * {
+  fill: var(--status-err);
+  stroke: none;
 }
 .prompt-divider {
   display: block;

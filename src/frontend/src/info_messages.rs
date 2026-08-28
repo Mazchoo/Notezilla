@@ -70,6 +70,9 @@ pub const COPY_PROMPT_TITLE: &str = "Copy prompt";
 pub const ENTER_PROMPT_TOAST: &str = "Enter a prompt";
 pub const PROMPT_COPIED_TOAST: &str = "Copied prompt";
 pub const CLIPBOARD_COPY_FAILED_TOAST: &str = "Clipboard copy failed";
+pub const OLLAMA_STATUS_LABEL: &str = "Ollama";
+pub const OLLAMA_AVAILABLE_TITLE: &str = "Ollama available";
+pub const OLLAMA_UNAVAILABLE_TITLE: &str = "Ollama unavailable";
 
 // --- Settings ---
 
@@ -114,6 +117,15 @@ const FILE_PLURAL: &str = "files";
 /// Return `label` with a parenthetical hotkey for titles and settings.
 pub fn with_hotkey(label: &str, hotkey: &str) -> String {
     format!("{label} ({hotkey})")
+}
+
+/// Return the title for the Ollama availability badge.
+pub fn ollama_status_title(available: bool) -> &'static str {
+    if available {
+        OLLAMA_AVAILABLE_TITLE
+    } else {
+        OLLAMA_UNAVAILABLE_TITLE
+    }
 }
 
 /// Return a count with the matching singular or plural file noun.
@@ -257,5 +269,12 @@ mod tests {
             export_progress_label("note.html", 2, 3),
             "Generating note.html (3 of 3)"
         );
+    }
+
+    #[test]
+    /// Assert the Ollama badge title switches between available and unavailable.
+    fn ollama_status_title_marks_available_or_unavailable() {
+        assert_eq!(ollama_status_title(true), OLLAMA_AVAILABLE_TITLE);
+        assert_eq!(ollama_status_title(false), OLLAMA_UNAVAILABLE_TITLE);
     }
 }
