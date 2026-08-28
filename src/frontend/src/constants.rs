@@ -95,6 +95,7 @@ mod tests {
             ("--text", TEXT),
             ("--text-muted", TEXT_MUTED),
             ("--accent", ACCENT),
+            ("--code", CODE),
         ] {
             let decl = format!("{token}: {hex}");
             assert!(
@@ -102,10 +103,18 @@ mod tests {
                 "missing {decl} in {EXPORT_PDF_TEMPLATE}"
             );
         }
+    }
+
+    #[test]
+    /// Assert inline code color uses the CODE token alias, not a raw hex.
+    fn export_pdf_stylesheet_uses_code_alias() {
         assert!(
-            EXPORT_PDF_TEMPLATE.contains(&format!("color: {CODE}"))
-                || EXPORT_PDF_TEMPLATE.contains(CODE),
-            "stylesheet must use CODE pink for inline code: {EXPORT_PDF_TEMPLATE}"
+            EXPORT_PDF_TEMPLATE.contains("color: var(--code)"),
+            "inline code must use var(--code): {EXPORT_PDF_TEMPLATE}"
+        );
+        assert!(
+            !EXPORT_PDF_TEMPLATE.contains(&format!("color: {CODE}")),
+            "inline code must not hardcode CODE hex: {EXPORT_PDF_TEMPLATE}"
         );
     }
 }
