@@ -23,6 +23,7 @@ Build the logic to send system prompts and context (retrieved from Phase 1) to a
 
 ## Acceptance Criteria
 
+- [ ] Prompt to LLM with context and response template can be copied to clipboard with top bar button
 - [ ] The connector sends well-formed requests to a local Ollama instance and receives generated text.
 - [ ] The Ollama host, model, and generation parameters are configurable.
 - [ ] All open markdown files in the editor as well as open templates are used to create a prompt
