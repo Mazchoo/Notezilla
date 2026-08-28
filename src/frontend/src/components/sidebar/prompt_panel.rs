@@ -134,6 +134,7 @@ pub fn PromptPanel() -> impl IntoView {
                     on:click=on_clipboard
                 >
                     <Icon icon=id::LuClipboard/>
+                    "Copy"
                 </button>
             </div>
         </div>
