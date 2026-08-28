@@ -17,16 +17,17 @@ Build the logic to send system prompts and context (retrieved from Phase 1) to a
 2. Add configuration for Ollama host URL, model name, and generation parameters (temperature, max tokens).
 3. Build a prompt assembly function that combines a system prompt, retrieved context from the vector database, and the rendered template into a single request.
 4. Chat interface sidebar is available, it uses a prompt and uses all open files. The prompt is then followed by open files as context. The prompt ends with a single template markdown given as output format.
-5. Implement streaming response handling so the GUI can display generation progress.
+5. Implement streaming response handling to save response to markdown.
 6. Add a health-check function to verify the Ollama instance is running and the requested model is available.
 7. Write tests using mocked Ollama responses for the client, prompt assembly, and error paths.
 
 ## Acceptance Criteria
 
 - [x] Prompt to LLM with context and response template can be copied to clipboard with top bar button
-- [ ] The connector sends well-formed requests to a local Ollama instance and receives generated text.
+- [x] The connector sends well-formed requests to a local Ollama instance and receives generated text.
+- [x] Option is avaible to simply copy the formulated prompt for use elsewhere
 - [ ] The Ollama host, model, and generation parameters are configurable.
-- [ ] All open markdown files in the editor as well as open templates are used to create a prompt
-- [ ] Streaming responses are supported so partial output can be displayed progressively.
-- [ ] A health-check endpoint returns the connection status and available models.
+- [x] All open markdown files in the editor as well as open templates are used to create a prompt
+- [x] Response is saved as markdown file with provided name
+- [x] A health-check endpoint returns the connection status and available models.
 - [ ] Graceful error handling when Ollama is offline or the model is not found.
