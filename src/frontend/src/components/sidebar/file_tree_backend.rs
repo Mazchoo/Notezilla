@@ -62,6 +62,20 @@ impl FileTreeBackend {
         }
     }
 
+    /// Create or update a file in this tree's MCP folder.
+    pub async fn upsert(
+        self,
+        session_id: &str,
+        path: &str,
+        contents: &str,
+        fields: serde_json::Value,
+    ) -> Result<tools::UpsertNoteResult, String> {
+        match self {
+            Self::Notes => tools::upsert_note(session_id, path, contents, fields).await,
+            Self::Templates => tools::upsert_template(session_id, path, contents, fields).await,
+        }
+    }
+
     /// Delete a file in this tree's MCP folder.
     pub async fn delete_file(self, session_id: &str, path: &str) -> Result<(), String> {
         match self {

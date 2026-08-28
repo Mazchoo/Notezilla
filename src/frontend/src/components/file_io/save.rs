@@ -19,7 +19,7 @@ pub fn display_note_path(relative: &str) -> String {
     format!("./{relative}")
 }
 
-/// Parse YAML front matter into a JSON object for `upsert_note`.
+/// Parse YAML front matter into a JSON object for upsert.
 fn yaml_to_fields(raw: &str) -> Value {
     if raw.trim().is_empty() {
         return json!({});
@@ -41,7 +41,7 @@ fn normalize_markdown_body(text: &str) -> String {
     text.replace("\r\n", "\n")
 }
 
-/// Return the path, markdown body, and front-matter fields for `upsert_note`.
+/// Return the path, markdown body, and front-matter fields for upsert.
 pub fn entry_save_params(entry: EditorEntry) -> (String, String, Value) {
     let path = normalize_note_path(&entry.title.path.get_untracked());
     let contents = normalize_markdown_body(&entry.content.text.get_untracked());

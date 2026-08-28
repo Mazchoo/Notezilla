@@ -10,7 +10,6 @@ use crate::info_messages::{
     EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_TITLE, EXPORT_MARKDOWN_TITLE, EXPORT_PDF_TITLE,
     IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
 };
-use crate::mcp::tools::upsert_note;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use icondata as id;
@@ -19,6 +18,19 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_icons::Icon;
 use web_sys::Event;
+
+/// Return the MCP folder, path, body, and fields to upsert for each entry.
+fn save_entry_items(
+    entries: &[EditorEntry],
+) -> Vec<(FileTreeBackend, String, String, serde_json::Value)> {
+    entries
+        .iter()
+        .map(|entry| {
+            let (path, contents, fields) = entry_save_params(*entry);
+            (entry.backend, path, contents, fields)
+        })
+        .collect()
+}
 
 /// Upsert every open editor entry via the MCP backend.
 pub fn save_all_entries(state: &AppState) {
@@ -33,20 +45,15 @@ pub fn save_all_entries(state: &AppState) {
     let toast = state.toast;
     let error_toast = state.error_toast;
     let file_tree_epoch = state.file_tree_epoch;
-    let items: Vec<_> = state
-        .entries
-        .get_untracked()
-        .iter()
-        .map(|entry| entry_save_params(*entry))
-        .collect();
+    let items = save_entry_items(&state.entries.get_untracked());
 
     spawn_local(async move {
         let mut created = 0usize;
         let mut updated = 0usize;
         let mut errors = Vec::new();
 
-        for (path, contents, fields) in items {
-            match upsert_note(&sid, &path, &contents, fields).await {
+        for (backend, path, contents, fields) in items {
+            match backend.upsert(&sid, &path, &contents, fields).await {
                 Ok(result) => {
                     web_sys::console::log_1(&format!("Saved {path}").into());
                     if result.new_file_created {
@@ -298,6 +305,23 @@ mod tests {
             assert!(!state.markdown_editing_enabled.get_untracked());
             toggle_markdown_editing(&state);
             assert!(state.markdown_editing_enabled.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert save-all upserts templates into the templates folder, not notes.
+    fn save_entry_items_preserves_template_backend() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let note = EditorEntry::new("./n.md", "note");
+            let mut tmpl = EditorEntry::new("./t.md", "tmpl");
+            tmpl.backend = FileTreeBackend::Templates;
+            let items = save_entry_items(&[note, tmpl]);
+            assert_eq!(items.len(), 2);
+            assert_eq!(items[0].0, FileTreeBackend::Notes);
+            assert_eq!(items[0].1, "n.md");
+            assert_eq!(items[1].0, FileTreeBackend::Templates);
+            assert_eq!(items[1].1, "t.md");
         });
     }
 }

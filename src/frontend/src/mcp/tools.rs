@@ -41,16 +41,17 @@ pub async fn search_by_text(
     notes_from_structured(&val)
 }
 
-/// Create or update a note via the MCP `upsert_note` tool.
-pub async fn upsert_note(
+/// Create or update a markdown file via an MCP upsert tool.
+async fn upsert_markdown(
     session_id: &str,
+    tool: &str,
     path: &str,
     contents: &str,
     fields: serde_json::Value,
 ) -> Result<UpsertNoteResult, String> {
     let val = call_tool(
         session_id,
-        "upsert_note",
+        tool,
         json!({ "path": path, "contents": contents, "fields": fields }),
     )
     .await?;
@@ -61,6 +62,26 @@ pub async fn upsert_note(
         .unwrap_or(false);
 
     Ok(UpsertNoteResult { new_file_created })
+}
+
+/// Create or update a note via the MCP `upsert_note` tool.
+pub async fn upsert_note(
+    session_id: &str,
+    path: &str,
+    contents: &str,
+    fields: serde_json::Value,
+) -> Result<UpsertNoteResult, String> {
+    upsert_markdown(session_id, "upsert_note", path, contents, fields).await
+}
+
+/// Create or update a template via the MCP `upsert_template` tool.
+pub async fn upsert_template(
+    session_id: &str,
+    path: &str,
+    contents: &str,
+    fields: serde_json::Value,
+) -> Result<UpsertNoteResult, String> {
+    upsert_markdown(session_id, "upsert_template", path, contents, fields).await
 }
 
 /// Delete a note via the MCP `delete_note` tool.
