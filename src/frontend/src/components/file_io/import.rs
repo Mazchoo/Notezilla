@@ -1,7 +1,7 @@
 use super::save::display_note_path;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::show_toast;
-use crate::constants::FILE_READ_ERROR_TOAST;
+use crate::info_messages::FILE_READ_ERROR_TOAST;
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use serde_json::Value;

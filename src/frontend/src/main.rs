@@ -1,8 +1,10 @@
 mod components;
 mod constants;
 mod default_settings;
+mod info_messages;
 mod mcp;
 mod models;
+mod prompting;
 mod rendering;
 mod state;
 

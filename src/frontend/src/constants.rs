@@ -1,5 +1,4 @@
 pub const DEFAULT_MARKDOWN_PATH: &str = "./example_folder/new_markdown.md";
-pub const DEFAULT_MARKDOWN_TEMPLATE: &str = include_str!("../templates/new_markdown.md");
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
@@ -7,11 +6,11 @@ pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 /// Proxied by Trunk to http://127.0.0.1:8020 in development.
 pub const MCP_URL: &str = "/mcp";
 
-pub const FILE_READ_ERROR_TOAST: &str = "File cannot be read";
 pub const DRAG_MIME: &str = "text/plain";
 
 pub const EXPORT_TEMPLATE: &str = include_str!("../templates/export.html");
 pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../templates/export-pdf.html");
+pub const PROMPT_TEMPLATE: &str = include_str!("../templates/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
 pub const IMAGE_MISSING_SVG: &str = include_str!("../templates/image-missing.svg");

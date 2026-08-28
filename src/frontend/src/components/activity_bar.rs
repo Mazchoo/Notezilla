@@ -44,6 +44,13 @@ pub fn ActivityBar() -> impl IntoView {
                 <Icon icon=id::LuSearch/>
             </button>
             <button
+                class=move || AppState::activity_btn_class(is_active(ActivePanel::Prompt))
+                title="Send prompt"
+                on:click=move |_| toggle(ActivePanel::Prompt)
+            >
+                <Icon icon=id::LuMessageSquare/>
+            </button>
+            <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Settings))
                 title="Settings"
                 on:click=move |_| toggle(ActivePanel::Settings)

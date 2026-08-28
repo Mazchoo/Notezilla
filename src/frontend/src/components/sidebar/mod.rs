@@ -2,6 +2,7 @@ pub mod context_menu;
 pub mod file_tree;
 pub mod file_tree_backend;
 pub mod new_folder_modal;
+pub mod prompt_panel;
 pub mod rename_modal;
 pub mod search_panel;
 pub mod settings_panel;
@@ -11,10 +12,11 @@ use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
 use file_tree_backend::FileTreeBackend;
 use leptos::prelude::*;
+use prompt_panel::PromptPanel;
 use search_panel::SearchPanel;
 use settings_panel::SettingsPanel;
 
-/// Render the resizable sidebar and the active files, templates, search, or settings panel.
+/// Render the resizable sidebar and the active files, templates, search, prompt, or settings panel.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -98,6 +100,15 @@ pub fn Sidebar() -> impl IntoView {
                 }
             }>
                 <SearchPanel/>
+            </div>
+            <div class=move || {
+                if state.active_panel.get() == Some(ActivePanel::Prompt) {
+                    ""
+                } else {
+                    "is-hidden"
+                }
+            }>
+                <PromptPanel/>
             </div>
             <div class=move || {
                 if state.active_panel.get() == Some(ActivePanel::Settings) {

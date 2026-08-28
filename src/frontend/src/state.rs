@@ -2,11 +2,11 @@ mod active_panel;
 
 pub use active_panel::ActivePanel;
 
-use crate::constants::{DEFAULT_MARKDOWN_PATH, DEFAULT_MARKDOWN_TEMPLATE};
+use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_SAVE_HOTKEY_KEY,
-    DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
+    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
@@ -53,6 +53,12 @@ pub struct AppState {
     pub import_file_input: NodeRef<leptos::html::Input>,
     /// Filename currently being generated during export. `None` when idle.
     pub export_progress: RwSignal<Option<String>>,
+    /// User-authored prompt in the Send prompt panel.
+    pub prompt_text: RwSignal<String>,
+    /// Destination path for the prompt response file.
+    pub prompt_output_path: RwSignal<String>,
+    /// TCP port of the local Ollama HTTP API.
+    pub ollama_port: RwSignal<u16>,
 }
 
 impl AppState {
@@ -65,7 +71,7 @@ impl AppState {
             active_panel: RwSignal::new(Some(ActivePanel::Files)),
             entries: RwSignal::new(vec![EditorEntry::new(
                 DEFAULT_MARKDOWN_PATH,
-                DEFAULT_MARKDOWN_TEMPLATE,
+                include_str!("../templates/new_markdown.md"),
             )]),
             current_path: RwSignal::new(None),
             search_query: RwSignal::new(String::new()),
@@ -87,6 +93,9 @@ impl AppState {
             ),
             import_file_input: NodeRef::new(),
             export_progress: RwSignal::new(None),
+            prompt_text: RwSignal::new(String::new()),
+            prompt_output_path: RwSignal::new(DEFAULT_PROMPT_OUTPUT_PATH.to_string()),
+            ollama_port: RwSignal::new(DEFAULT_OLLAMA_PORT),
         }
     }
 
@@ -103,11 +112,11 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::{DEFAULT_MARKDOWN_PATH, DEFAULT_MARKDOWN_TEMPLATE};
+    use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
         DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_SAVE_HOTKEY_KEY,
-        DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_PORT, DEFAULT_PROMPT_OUTPUT_PATH,
+        DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -129,7 +138,7 @@ mod tests {
             assert_eq!(entries[0].title.path.get_untracked(), DEFAULT_MARKDOWN_PATH);
             assert_eq!(
                 entries[0].content.text.get_untracked(),
-                DEFAULT_MARKDOWN_TEMPLATE
+                include_str!("../templates/new_markdown.md")
             );
             assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
             assert!(state.markdown_editing_enabled.get_untracked());
@@ -158,6 +167,12 @@ mod tests {
                 DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY
             );
             assert_eq!(state.sidebar_width.get_untracked(), 250.0);
+            assert_eq!(state.prompt_text.get_untracked(), "");
+            assert_eq!(
+                state.prompt_output_path.get_untracked(),
+                DEFAULT_PROMPT_OUTPUT_PATH
+            );
+            assert_eq!(state.ollama_port.get_untracked(), DEFAULT_OLLAMA_PORT);
         });
     }
 }

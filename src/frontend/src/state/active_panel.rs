@@ -5,5 +5,6 @@ pub enum ActivePanel {
     Files,
     Templates,
     Search,
+    Prompt,
     Settings,
 }

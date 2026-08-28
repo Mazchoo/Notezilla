@@ -342,7 +342,7 @@ mod tests {
     #[test]
     /// Assert the default markdown template keeps header space on page 2.
     fn default_markdown_continuation_keeps_header_inset() {
-        let html = render_markdown_for_pdf(crate::constants::DEFAULT_MARKDOWN_TEMPLATE);
+        let html = render_markdown_for_pdf(include_str!("../../../templates/new_markdown.md"));
         let pdf = export_to_pdf(&html);
         assert_pdf(&pdf);
         let text = String::from_utf8_lossy(&pdf);

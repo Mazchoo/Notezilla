@@ -160,6 +160,42 @@ html, body {
 .file-tree-new-folder:hover { color: var(--text); background: var(--bg-3); }
 .file-tree-new-folder svg { width: 14px; height: 14px; }
 
+/* ── Prompt panel ──────────────────────────────────────────────── */
+.prompt-panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: calc(100vh - 48px);
+}
+.prompt-input-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.prompt-input-field .control {
+  flex: 1;
+  display: flex;
+}
+.prompt-textarea {
+  min-height: 40vh;
+  resize: vertical;
+  flex: 1;
+}
+.prompt-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.prompt-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.prompt-actions .button svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ── Rename modal ──────────────────────────────────────────────── */
 .rename-modal-backdrop {
   position: fixed;
