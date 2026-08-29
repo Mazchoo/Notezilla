@@ -5,7 +5,7 @@ tags: [leptos, wasm, clipboard, integration]
 status: todo
 ---
 
-# 13 - Leptos WASM Component Integration
+# 12 - Leptos WASM Component Integration
 
 **Phase 4: Markdown Rendering**
 
