@@ -9,12 +9,13 @@ use crate::constants::{
 use crate::info_messages::{
     with_hotkey, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL, HOTKEY_SETTINGS_HEADING,
     IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL,
-    OLLAMA_MODEL_PLACEHOLDER, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL,
+    OLLAMA_MODEL_PLACEHOLDER, OLLAMA_MODEL_TITLE, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL,
     OLLAMA_NUM_CTX_TITLE, OLLAMA_NUM_PREDICT_CONSTRAINT, OLLAMA_NUM_PREDICT_LABEL,
-    OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_SETTINGS_HEADING,
-    OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL, OLLAMA_THINK_LABEL,
-    OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT, OLLAMA_TOP_K_LABEL, OLLAMA_TOP_P_CONSTRAINT,
-    OLLAMA_TOP_P_LABEL, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
+    OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_PORT_TITLE,
+    OLLAMA_SETTINGS_HEADING, OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL,
+    OLLAMA_TEMPERATURE_TITLE, OLLAMA_THINK_LABEL, OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT,
+    OLLAMA_TOP_K_LABEL, OLLAMA_TOP_K_TITLE, OLLAMA_TOP_P_CONSTRAINT, OLLAMA_TOP_P_LABEL,
+    OLLAMA_TOP_P_TITLE, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
     SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
 };
 use crate::state::AppState;
@@ -29,9 +30,11 @@ pub fn SettingsPanel() -> impl IntoView {
     let ollama_port = state.ollama_port;
     let ollama_model = state.ollama_model;
     let ollama_temperature = state.ollama_temperature;
+    let temperature_text = RwSignal::new(ollama_temperature.get_untracked().to_string());
     let ollama_num_predict = state.ollama_num_predict;
     let ollama_num_ctx = state.ollama_num_ctx;
     let ollama_top_p = state.ollama_top_p;
+    let top_p_text = RwSignal::new(ollama_top_p.get_untracked().to_string());
     let ollama_top_k = state.ollama_top_k;
     let ollama_think = state.ollama_think;
     let save_hotkey_key = state.save_hotkey_key;
@@ -77,7 +80,7 @@ pub fn SettingsPanel() -> impl IntoView {
             <hr class="settings-divider"/>
             <p class="menu-label mt-2">{OLLAMA_SETTINGS_HEADING}</p>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_PORT_TITLE>
                     {OLLAMA_PORT_LABEL}
                 </label>
                 <div class="control">
@@ -86,6 +89,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="number"
                         min="1"
                         max="65535"
+                        title=OLLAMA_PORT_TITLE
                         prop:value=move || ollama_port.get().to_string()
                         on:input=move |ev| {
                             apply_if_valid(&event_target_value(&ev), parse_ollama_port, ollama_port)
@@ -104,7 +108,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_MODEL_TITLE>
                     {OLLAMA_MODEL_LABEL}
                 </label>
                 <div class="control">
@@ -112,6 +116,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         class="input is-small"
                         type="text"
                         placeholder=OLLAMA_MODEL_PLACEHOLDER
+                        title=OLLAMA_MODEL_TITLE
                         prop:value=move || ollama_model.get()
                         on:input=move |ev| {
                             apply_if_valid(&event_target_value(&ev), parse_ollama_model, ollama_model)
@@ -130,22 +135,27 @@ pub fn SettingsPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_TEMPERATURE_TITLE>
                     {OLLAMA_TEMPERATURE_LABEL}
                 </label>
                 <div class="control">
                     <input
                         class="input is-small"
-                        type="number"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        prop:value=move || ollama_temperature.get().to_string()
+                        type="text"
+                        inputmode="decimal"
+                        title=OLLAMA_TEMPERATURE_TITLE
+                        prop:value=move || temperature_text.get()
                         on:input=move |ev| {
+                            let raw = event_target_value(&ev);
+                            temperature_text.set(raw.clone());
                             apply_if_valid(
-                                &event_target_value(&ev),
+                                &raw,
                                 |raw| {
-                                    parse_bounded_f64(raw, OLLAMA_TEMPERATURE_MIN, OLLAMA_TEMPERATURE_MAX)
+                                    parse_bounded_f64(
+                                        raw,
+                                        OLLAMA_TEMPERATURE_MIN,
+                                        OLLAMA_TEMPERATURE_MAX,
+                                    )
                                 },
                                 ollama_temperature,
                             )
@@ -154,19 +164,24 @@ pub fn SettingsPanel() -> impl IntoView {
                             commit_setting(
                                 ev,
                                 |raw| {
-                                    parse_bounded_f64(raw, OLLAMA_TEMPERATURE_MIN, OLLAMA_TEMPERATURE_MAX)
+                                    parse_bounded_f64(
+                                        raw,
+                                        OLLAMA_TEMPERATURE_MIN,
+                                        OLLAMA_TEMPERATURE_MAX,
+                                    )
                                 },
                                 ollama_temperature,
                                 error_toast,
                                 OLLAMA_TEMPERATURE_LABEL,
                                 OLLAMA_TEMPERATURE_CONSTRAINT,
-                            )
+                            );
+                            temperature_text.set(ollama_temperature.get_untracked().to_string());
                         }
                     />
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_NUM_PREDICT_TITLE>
                     {OLLAMA_NUM_PREDICT_LABEL}
                 </label>
                 <div class="control">
@@ -198,7 +213,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_NUM_CTX_TITLE>
                     {OLLAMA_NUM_CTX_LABEL}
                 </label>
                 <div class="control">
@@ -230,20 +245,21 @@ pub fn SettingsPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_TOP_P_TITLE>
                     {OLLAMA_TOP_P_LABEL}
                 </label>
                 <div class="control">
                     <input
                         class="input is-small"
-                        type="number"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        prop:value=move || ollama_top_p.get().to_string()
+                        type="text"
+                        inputmode="decimal"
+                        title=OLLAMA_TOP_P_TITLE
+                        prop:value=move || top_p_text.get()
                         on:input=move |ev| {
+                            let raw = event_target_value(&ev);
+                            top_p_text.set(raw.clone());
                             apply_if_valid(
-                                &event_target_value(&ev),
+                                &raw,
                                 |raw| parse_bounded_f64(raw, OLLAMA_TOP_P_MIN, OLLAMA_TOP_P_MAX),
                                 ollama_top_p,
                             )
@@ -256,13 +272,14 @@ pub fn SettingsPanel() -> impl IntoView {
                                 error_toast,
                                 OLLAMA_TOP_P_LABEL,
                                 OLLAMA_TOP_P_CONSTRAINT,
-                            )
+                            );
+                            top_p_text.set(ollama_top_p.get_untracked().to_string());
                         }
                     />
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="label is-small" style="color:var(--text-muted);" title=OLLAMA_TOP_K_TITLE>
                     {OLLAMA_TOP_K_LABEL}
                 </label>
                 <div class="control">
@@ -271,6 +288,7 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="number"
                         min="1"
                         step="1"
+                        title=OLLAMA_TOP_K_TITLE
                         prop:value=move || ollama_top_k.get().to_string()
                         on:input=move |ev| {
                             apply_if_valid(&event_target_value(&ev), parse_positive_u32, ollama_top_k)
@@ -289,17 +307,14 @@ pub fn SettingsPanel() -> impl IntoView {
                 </div>
             </div>
             <div class="field">
-                <label class="label is-small" style="color:var(--text-muted);">
+                <label class="settings-checkbox" title=OLLAMA_THINK_TITLE>
                     {OLLAMA_THINK_LABEL}
-                </label>
-                <div class="control">
                     <input
                         type="checkbox"
-                        title=OLLAMA_THINK_TITLE
                         prop:checked=move || ollama_think.get()
                         on:change=move |ev| ollama_think.set(event_target_checked(&ev))
                     />
-                </div>
+                </label>
             </div>
             <hr class="settings-divider"/>
             <p class="menu-label mt-2">{HOTKEY_SETTINGS_HEADING}</p>

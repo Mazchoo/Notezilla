@@ -629,6 +629,44 @@ html, body {
 .input:focus, .textarea:focus { border-color: var(--accent); box-shadow: none; }
 .button.is-dark { background: var(--bg-3); border-color: var(--border); color: var(--text); }
 .button.is-dark:hover { background: var(--border); }
+.settings-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.settings-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--bg-3);
+  cursor: pointer;
+}
+.settings-checkbox input[type="checkbox"]:hover {
+  border-color: var(--text-muted);
+}
+.settings-checkbox input[type="checkbox"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.settings-checkbox input[type="checkbox"]:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2311111b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.button.is-dark:hover { background: var(--border); }
 
 /* ── Export progress overlay ───────────────────────────────────── */
 .export-overlay {

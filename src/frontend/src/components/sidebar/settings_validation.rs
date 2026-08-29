@@ -31,8 +31,26 @@ pub(crate) fn parse_ollama_port(raw: &str) -> Option<u16> {
     (n != 0).then_some(n)
 }
 
+/// Return whether `raw` is a float still being typed, such as `0.` or `1e-`.
+fn is_incomplete_float(raw: &str) -> bool {
+    let raw = raw.trim();
+    raw.is_empty()
+        || raw == "-"
+        || raw == "."
+        || raw == "-."
+        || raw.ends_with('.')
+        || raw.ends_with(['e', 'E'])
+        || raw.ends_with("e-")
+        || raw.ends_with("E-")
+        || raw.ends_with("e+")
+        || raw.ends_with("E+")
+}
+
 /// Parse a finite float in `[min, max]` from a settings input.
 pub(crate) fn parse_bounded_f64(raw: &str, min: f64, max: f64) -> Option<f64> {
+    if is_incomplete_float(raw) {
+        return None;
+    }
     let n = raw.parse::<f64>().ok()?;
     (n.is_finite() && (min..=max).contains(&n)).then_some(n)
 }
@@ -149,6 +167,23 @@ mod tests {
         assert_eq!(parse_ollama_port(""), None);
         assert_eq!(parse_ollama_port("abc"), None);
         assert_eq!(parse_ollama_port("65536"), None);
+    }
+
+    #[test]
+    /// Assert in-progress decimals such as `0.` are not stored as `0`.
+    fn parse_bounded_f64_rejects_incomplete_decimals() {
+        assert_eq!(parse_bounded_f64("0.", 0.0, 2.0), None);
+        assert_eq!(parse_bounded_f64(".", 0.0, 2.0), None);
+        assert_eq!(parse_bounded_f64("1e-", 0.0, 2.0), None);
+        assert_eq!(parse_bounded_f64("0.5", 0.0, 2.0), Some(0.5));
+        assert_eq!(
+            parse_bounded_f64("0.8", 0.0, 2.0),
+            Some(DEFAULT_OLLAMA_TEMPERATURE)
+        );
+        assert_eq!(
+            parse_bounded_f64("0.9", 0.0, 1.0),
+            Some(DEFAULT_OLLAMA_TOP_P)
+        );
     }
 
     #[test]

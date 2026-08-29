@@ -28,6 +28,6 @@ pub const DEFAULT_OLLAMA_TOP_P: f64 = 0.9;
 /// Default Ollama top-K sampling limit (`options.top_k`).
 pub const DEFAULT_OLLAMA_TOP_K: u32 = 40;
 /// Default Ollama thinking flag (`think`) for models that support it.
-pub const DEFAULT_OLLAMA_THINK: bool = false;
+pub const DEFAULT_OLLAMA_THINK: bool = true;
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;

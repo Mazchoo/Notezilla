@@ -86,17 +86,26 @@ pub const OLLAMA_SETTINGS_HEADING: &str = "Ollama";
 pub const HOTKEY_SETTINGS_HEADING: &str = "Hotkeys";
 pub const RESULTS_PER_PAGE_LABEL: &str = "Results per page";
 pub const OLLAMA_PORT_LABEL: &str = "Ollama port";
+pub const OLLAMA_PORT_TITLE: &str = "TCP port of the local Ollama HTTP API (default 11434).";
 pub const OLLAMA_MODEL_LABEL: &str = "Ollama model";
 pub const OLLAMA_MODEL_PLACEHOLDER: &str = "model name";
+pub const OLLAMA_MODEL_TITLE: &str = "Name of an installed Ollama model, for example qwen3:4b.";
 pub const OLLAMA_TEMPERATURE_LABEL: &str = "Temperature";
+pub const OLLAMA_TEMPERATURE_TITLE: &str =
+    "Sampling randomness from 0 to 2; lower is more deterministic.";
 pub const OLLAMA_NUM_PREDICT_LABEL: &str = "Max tokens";
-pub const OLLAMA_NUM_PREDICT_TITLE: &str = "Maximum output tokens (-1 unlimited)";
+pub const OLLAMA_NUM_PREDICT_TITLE: &str = "Maximum response tokens, or -1 for no output limit.";
 pub const OLLAMA_NUM_CTX_LABEL: &str = "Context size";
-pub const OLLAMA_NUM_CTX_TITLE: &str = "Context window size in tokens";
+pub const OLLAMA_NUM_CTX_TITLE: &str =
+    "Maximum token window for prompt plus output; unused capacity is not filled.";
 pub const OLLAMA_TOP_P_LABEL: &str = "Top P";
+pub const OLLAMA_TOP_P_TITLE: &str =
+    "Nucleus sampling from 0 to 1; lower keeps only the most probable tokens.";
 pub const OLLAMA_TOP_K_LABEL: &str = "Top K";
-pub const OLLAMA_THINK_LABEL: &str = "Think";
-pub const OLLAMA_THINK_TITLE: &str = "Enable thinking output for models that support it";
+pub const OLLAMA_TOP_K_TITLE: &str =
+    "Consider only the K most likely next tokens; lower is more conservative, higher is more diverse.";
+pub const OLLAMA_THINK_LABEL: &str = "Thinking mode";
+pub const OLLAMA_THINK_TITLE: &str = "Run a reasoning pass before the answer; keep on for Qwen3.";
 pub const ENTER_OLLAMA_MODEL_TOAST: &str = "Enter an Ollama model";
 pub const RESULTS_PER_PAGE_CONSTRAINT: &str = "an integer of 1 or more";
 pub const OLLAMA_PORT_CONSTRAINT: &str = "an integer from 1 to 65535";
