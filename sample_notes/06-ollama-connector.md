@@ -26,11 +26,12 @@ Build the logic to send system prompts and context (retrieved from Phase 1) to a
 - [x] Prompt to LLM with context and response template can be copied to clipboard with top bar button
 - [x] The connector sends well-formed requests to a local Ollama instance and receives generated text.
 - [x] Option is avaible to simply copy the formulated prompt for use elsewhere
-- [ ] The Ollama host, model, and generation parameters are configurable.
-- [ ] Setting a configuration to invalid value will reject it and return an error toast
+- [x] The Ollama host, model, and generation parameters are configurable.
+- [x] Setting a configuration to invalid value will reject it and return an error toast
 - [x] All open markdown files in the editor as well as open templates are used to create a prompt
 - [x] Response is saved as markdown file with provided name
 - [x] A health-check endpoint returns the connection status and available models.
 - [x] Graceful error handling when Ollama is offline or the model is not found.
+- [ ] Add button to close all open markdowns, there will be warning modal if changes were made
 
 ToDo - check why refining_photogrametry_scenes.md suddenly indents a formula
