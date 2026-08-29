@@ -175,12 +175,11 @@ mod tests {
     #[test]
     /// Assert inline SVG HTML converts to a valid PDF.
     fn inline_svg_converts_to_pdf() {
-        let html = r##"<h1>Diagram</h1>
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
-  <rect x="10" y="10" width="100" height="60" fill="#cba6f7"/>
-  <text x="60" y="48" text-anchor="middle" font-size="16">SVG</text>
-</svg>"##;
-        assert_pdf(&html_to_pdf_bytes(html).unwrap());
+        let html = format!(
+            "<h1>Diagram</h1>\n{}",
+            include_str!("fixtures/inline-diagram.svg")
+        );
+        assert_pdf(&html_to_pdf_bytes(&html).unwrap());
     }
 
     #[test]

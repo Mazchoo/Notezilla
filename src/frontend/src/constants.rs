@@ -22,6 +22,9 @@ pub const PROMPT_TEMPLATE: &str = include_str!("../templates/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
 pub const IMAGE_MISSING_SVG: &str = include_str!("../templates/image-missing.svg");
+/// Checkmark drawn on a checked settings checkbox. Served as a static file.
+#[allow(dead_code)]
+pub const CHECKBOX_CHECK_SVG_HREF: &str = "/checkbox-check.svg";
 
 /// Palette for PDF export. Hex tokens match `templates/export-pdf.html` `:root`.
 /// Tokens unused in the WASM binary are asserted against that stylesheet in tests.
@@ -123,5 +126,23 @@ mod tests {
             !EXPORT_PDF_TEMPLATE.contains(&format!("color: {CODE}")),
             "inline code must not hardcode CODE hex: {EXPORT_PDF_TEMPLATE}"
         );
+    }
+
+    #[test]
+    /// Assert the checkbox checkmark is a file URL, not an embedded SVG string.
+    fn index_css_loads_checkbox_check_from_file() {
+        const CSS: &str = include_str!("../../index.css");
+        assert!(
+            !CSS.contains("data:image/svg+xml"),
+            "CSS must not embed SVG as a data URI: {CSS}"
+        );
+        let url = format!("url(\"{CHECKBOX_CHECK_SVG_HREF}\")");
+        assert!(
+            CSS.contains(&url),
+            "checked checkbox must load {CHECKBOX_CHECK_SVG_HREF}"
+        );
+        let svg = include_str!("../templates/checkbox-check.svg");
+        assert!(svg.contains("<svg"), "{svg}");
+        assert!(svg.contains("</svg>"), "{svg}");
     }
 }
