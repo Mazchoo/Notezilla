@@ -131,7 +131,7 @@ mod tests {
     #[test]
     /// Assert the checkbox checkmark is a file URL, not an embedded SVG string.
     fn index_css_loads_checkbox_check_from_file() {
-        const CSS: &str = include_str!("../../index.css");
+        const CSS: &str = include_str!("../index.css");
         assert!(
             !CSS.contains("data:image/svg+xml"),
             "CSS must not embed SVG as a data URI: {CSS}"
