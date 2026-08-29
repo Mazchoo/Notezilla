@@ -9,6 +9,10 @@ pub const MCP_URL: &str = "/mcp";
 pub const OLLAMA_URL: &str = "/ollama";
 pub const OLLAMA_TAGS_PATH: &str = "/api/tags";
 pub const OLLAMA_GENERATE_PATH: &str = "/api/generate";
+pub const OLLAMA_TEMPERATURE_MIN: f64 = 0.0;
+pub const OLLAMA_TEMPERATURE_MAX: f64 = 2.0;
+pub const OLLAMA_TOP_P_MIN: f64 = 0.0;
+pub const OLLAMA_TOP_P_MAX: f64 = 1.0;
 
 pub const DRAG_MIME: &str = "text/plain";
 

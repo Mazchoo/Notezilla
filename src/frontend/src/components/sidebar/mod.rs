@@ -6,6 +6,7 @@ pub mod prompt_panel;
 pub mod rename_modal;
 pub mod search_panel;
 pub mod settings_panel;
+mod settings_validation;
 
 use crate::constants::{SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH};
 use crate::info_messages::{

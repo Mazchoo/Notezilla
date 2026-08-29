@@ -5,9 +5,10 @@ pub use active_panel::ActivePanel;
 use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
     DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_PORT,
-    DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
-    DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
+    DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
+    DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH,
+    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
@@ -62,6 +63,18 @@ pub struct AppState {
     pub ollama_port: RwSignal<u16>,
     /// Ollama model name used by POST `/api/generate`.
     pub ollama_model: RwSignal<String>,
+    /// Ollama sampling temperature (`options.temperature`).
+    pub ollama_temperature: RwSignal<f64>,
+    /// Ollama max output tokens (`options.num_predict`). `-1` is unlimited.
+    pub ollama_num_predict: RwSignal<i32>,
+    /// Ollama context window size in tokens (`options.num_ctx`).
+    pub ollama_num_ctx: RwSignal<u32>,
+    /// Ollama nucleus-sampling threshold (`options.top_p`).
+    pub ollama_top_p: RwSignal<f64>,
+    /// Ollama top-K sampling limit (`options.top_k`).
+    pub ollama_top_k: RwSignal<u32>,
+    /// Ollama thinking flag (`think`) for models that support it.
+    pub ollama_think: RwSignal<bool>,
 }
 
 impl AppState {
@@ -100,6 +113,12 @@ impl AppState {
             prompt_output_path: RwSignal::new(DEFAULT_PROMPT_OUTPUT_PATH.to_string()),
             ollama_port: RwSignal::new(DEFAULT_OLLAMA_PORT),
             ollama_model: RwSignal::new(DEFAULT_OLLAMA_MODEL.to_string()),
+            ollama_temperature: RwSignal::new(DEFAULT_OLLAMA_TEMPERATURE),
+            ollama_num_predict: RwSignal::new(DEFAULT_OLLAMA_NUM_PREDICT),
+            ollama_num_ctx: RwSignal::new(DEFAULT_OLLAMA_NUM_CTX),
+            ollama_top_p: RwSignal::new(DEFAULT_OLLAMA_TOP_P),
+            ollama_top_k: RwSignal::new(DEFAULT_OLLAMA_TOP_K),
+            ollama_think: RwSignal::new(DEFAULT_OLLAMA_THINK),
         }
     }
 
@@ -119,7 +138,9 @@ mod tests {
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
         DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_PORT,
+        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
+        DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
+        DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
         DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
         DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
@@ -179,6 +200,18 @@ mod tests {
             );
             assert_eq!(state.ollama_port.get_untracked(), DEFAULT_OLLAMA_PORT);
             assert_eq!(state.ollama_model.get_untracked(), DEFAULT_OLLAMA_MODEL);
+            assert_eq!(
+                state.ollama_temperature.get_untracked(),
+                DEFAULT_OLLAMA_TEMPERATURE
+            );
+            assert_eq!(
+                state.ollama_num_predict.get_untracked(),
+                DEFAULT_OLLAMA_NUM_PREDICT
+            );
+            assert_eq!(state.ollama_num_ctx.get_untracked(), DEFAULT_OLLAMA_NUM_CTX);
+            assert_eq!(state.ollama_top_p.get_untracked(), DEFAULT_OLLAMA_TOP_P);
+            assert_eq!(state.ollama_top_k.get_untracked(), DEFAULT_OLLAMA_TOP_K);
+            assert_eq!(state.ollama_think.get_untracked(), DEFAULT_OLLAMA_THINK);
         });
     }
 }

@@ -88,7 +88,25 @@ pub const RESULTS_PER_PAGE_LABEL: &str = "Results per page";
 pub const OLLAMA_PORT_LABEL: &str = "Ollama port";
 pub const OLLAMA_MODEL_LABEL: &str = "Ollama model";
 pub const OLLAMA_MODEL_PLACEHOLDER: &str = "model name";
+pub const OLLAMA_TEMPERATURE_LABEL: &str = "Temperature";
+pub const OLLAMA_NUM_PREDICT_LABEL: &str = "Max tokens";
+pub const OLLAMA_NUM_PREDICT_TITLE: &str = "Maximum output tokens (-1 unlimited)";
+pub const OLLAMA_NUM_CTX_LABEL: &str = "Context size";
+pub const OLLAMA_NUM_CTX_TITLE: &str = "Context window size in tokens";
+pub const OLLAMA_TOP_P_LABEL: &str = "Top P";
+pub const OLLAMA_TOP_K_LABEL: &str = "Top K";
+pub const OLLAMA_THINK_LABEL: &str = "Think";
+pub const OLLAMA_THINK_TITLE: &str = "Enable thinking output for models that support it";
 pub const ENTER_OLLAMA_MODEL_TOAST: &str = "Enter an Ollama model";
+pub const RESULTS_PER_PAGE_CONSTRAINT: &str = "an integer of 1 or more";
+pub const OLLAMA_PORT_CONSTRAINT: &str = "an integer from 1 to 65535";
+pub const OLLAMA_MODEL_CONSTRAINT: &str = "a non-empty model name";
+pub const OLLAMA_TEMPERATURE_CONSTRAINT: &str = "a number from 0 to 2";
+pub const OLLAMA_NUM_PREDICT_CONSTRAINT: &str = "-1 or an integer of 0 or more";
+pub const OLLAMA_TOP_P_CONSTRAINT: &str = "a number from 0 to 1";
+pub const OLLAMA_TOP_K_CONSTRAINT: &str = "an integer of 1 or more";
+pub const OLLAMA_NUM_CTX_CONSTRAINT: &str = "an integer of 1 or more";
+pub const HOTKEY_CONSTRAINT: &str = "a single printable character";
 pub const SAVE_HOTKEY_LABEL: &str = "Save hotkey";
 pub const NEW_FILE_HOTKEY_LABEL: &str = "New file hotkey";
 pub const IMPORT_HOTKEY_LABEL: &str = "Import hotkey";
@@ -127,6 +145,11 @@ const FILE_PLURAL: &str = "files";
 /// Return `label` with a parenthetical hotkey for titles and settings.
 pub fn with_hotkey(label: &str, hotkey: &str) -> String {
     format!("{label} ({hotkey})")
+}
+
+/// Return the toast text when a settings value fails its constraint.
+pub fn invalid_setting_toast(label: &str, constraint: &str) -> String {
+    format!("{label} must be {constraint}")
 }
 
 /// Return the title for the Ollama availability badge.
@@ -313,6 +336,15 @@ mod tests {
         assert_eq!(
             prompt_response_saved_toast("./prompt_response.md"),
             "Saved ./prompt_response.md"
+        );
+    }
+
+    #[test]
+    /// Assert an invalid setting toast names the field and its constraint.
+    fn invalid_setting_toast_names_the_field_and_constraint() {
+        assert_eq!(
+            invalid_setting_toast(OLLAMA_TEMPERATURE_LABEL, OLLAMA_TEMPERATURE_CONSTRAINT),
+            "Temperature must be a number from 0 to 2"
         );
     }
 }

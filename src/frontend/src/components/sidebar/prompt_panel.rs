@@ -9,7 +9,7 @@ use crate::info_messages::{
     SENDING_PROMPT_LABEL, SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
-use crate::prompting::{build_prompt, check_connection, send_prompt};
+use crate::prompting::{build_prompt, check_connection, send_prompt, GenerateOptions};
 use crate::state::AppState;
 use icondata as id;
 use leptos::prelude::*;
@@ -127,12 +127,20 @@ pub fn PromptPanel() -> impl IntoView {
             return;
         };
         let port = state_send.ollama_port.get_untracked();
+        let options = GenerateOptions {
+            temperature: state_send.ollama_temperature.get_untracked(),
+            num_predict: state_send.ollama_num_predict.get_untracked(),
+            num_ctx: state_send.ollama_num_ctx.get_untracked(),
+            top_p: state_send.ollama_top_p.get_untracked(),
+            top_k: state_send.ollama_top_k.get_untracked(),
+            think: state_send.ollama_think.get_untracked(),
+        };
         let toast = state_send.toast;
         let error_toast = state_send.error_toast;
         let file_tree_epoch = state_send.file_tree_epoch;
         sending.set(true);
         spawn_local(async move {
-            match send_prompt(port, &model, &prompt).await {
+            match send_prompt(port, &model, &prompt, &options).await {
                 Ok(text) => {
                     ollama_available.set(true);
                     write_prompt_response(

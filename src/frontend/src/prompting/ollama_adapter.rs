@@ -1,7 +1,35 @@
 use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH, OLLAMA_URL};
+use crate::default_settings::{
+    DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_TEMPERATURE,
+    DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
+};
 use gloo_net::http::Request;
 use serde::Deserialize;
 use serde_json::{json, Value};
+
+/// Generation controls sent with POST `/api/generate`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GenerateOptions {
+    pub temperature: f64,
+    pub num_predict: i32,
+    pub num_ctx: u32,
+    pub top_p: f64,
+    pub top_k: u32,
+    pub think: bool,
+}
+
+impl Default for GenerateOptions {
+    fn default() -> Self {
+        Self {
+            temperature: DEFAULT_OLLAMA_TEMPERATURE,
+            num_predict: DEFAULT_OLLAMA_NUM_PREDICT,
+            num_ctx: DEFAULT_OLLAMA_NUM_CTX,
+            top_p: DEFAULT_OLLAMA_TOP_P,
+            top_k: DEFAULT_OLLAMA_TOP_K,
+            think: DEFAULT_OLLAMA_THINK,
+        }
+    }
+}
 
 #[derive(Deserialize)]
 struct TagsResponse {
@@ -30,11 +58,19 @@ fn ollama_url(port: u16, path: &str) -> String {
 }
 
 /// Return the JSON body for POST `/api/generate` with streaming disabled.
-fn generate_request_body(model: &str, prompt: &str) -> Value {
+fn generate_request_body(model: &str, prompt: &str, options: &GenerateOptions) -> Value {
     json!({
         "model": model,
         "prompt": prompt,
         "stream": false,
+        "think": options.think,
+        "options": {
+            "temperature": options.temperature,
+            "num_predict": options.num_predict,
+            "num_ctx": options.num_ctx,
+            "top_p": options.top_p,
+            "top_k": options.top_k,
+        }
     })
 }
 
@@ -117,11 +153,16 @@ pub async fn check_connection(port: u16) -> Result<(), String> {
 }
 
 /// Confirm the API on `port`, then send `prompt` to `model` via POST `/api/generate`.
-pub async fn send_prompt(port: u16, model: &str, prompt: &str) -> Result<String, String> {
+pub async fn send_prompt(
+    port: u16,
+    model: &str,
+    prompt: &str,
+    options: &GenerateOptions,
+) -> Result<String, String> {
     fetch_tags_body(port).await?;
     let body = ollama_post_json(
         &ollama_url(port, OLLAMA_GENERATE_PATH),
-        &generate_request_body(model, prompt),
+        &generate_request_body(model, prompt, options),
     )
     .await?;
     parse_generate_response(&body)
@@ -131,7 +172,7 @@ pub async fn send_prompt(port: u16, model: &str, prompt: &str) -> Result<String,
 mod tests {
     use super::{
         generate_request_body, ollama_base_url, ollama_url, parse_generate_response,
-        parse_model_names,
+        parse_model_names, GenerateOptions,
     };
     use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH, OLLAMA_URL};
     use crate::default_settings::DEFAULT_OLLAMA_PORT;
@@ -160,15 +201,31 @@ mod tests {
     }
 
     #[test]
-    /// Assert generate JSON names the model, includes the prompt, and disables streaming.
-    fn generate_request_body_sets_model_prompt_and_disables_stream() {
-        let body = generate_request_body("the-model", "Ask this");
+    /// Assert generate JSON names the model, prompt, think flag, options, and disables streaming.
+    fn generate_request_body_sets_model_prompt_options_and_disables_stream() {
+        let options = GenerateOptions {
+            temperature: 0.2,
+            num_predict: 128,
+            num_ctx: 4096,
+            top_p: 0.5,
+            top_k: 10,
+            think: true,
+        };
+        let body = generate_request_body("the-model", "Ask this", &options);
         assert_eq!(
             body,
             json!({
                 "model": "the-model",
                 "prompt": "Ask this",
                 "stream": false,
+                "think": true,
+                "options": {
+                    "temperature": 0.2,
+                    "num_predict": 128,
+                    "num_ctx": 4096,
+                    "top_p": 0.5,
+                    "top_k": 10,
+                }
             })
         );
     }

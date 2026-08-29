@@ -17,5 +17,17 @@ pub const DEFAULT_PROMPT_OUTPUT_PATH: &str = "./prompt_response.md";
 pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
 /// Default Ollama model name shown in Settings.
 pub const DEFAULT_OLLAMA_MODEL: &str = "qwen3:4b";
+/// Default Ollama sampling temperature (`options.temperature`).
+pub const DEFAULT_OLLAMA_TEMPERATURE: f64 = 0.8;
+/// Default Ollama max output tokens (`options.num_predict`). `-1` is unlimited.
+pub const DEFAULT_OLLAMA_NUM_PREDICT: i32 = -1;
+/// Default Ollama context window size in tokens (`options.num_ctx`).
+pub const DEFAULT_OLLAMA_NUM_CTX: u32 = 2048;
+/// Default Ollama nucleus-sampling threshold (`options.top_p`).
+pub const DEFAULT_OLLAMA_TOP_P: f64 = 0.9;
+/// Default Ollama top-K sampling limit (`options.top_k`).
+pub const DEFAULT_OLLAMA_TOP_K: u32 = 40;
+/// Default Ollama thinking flag (`think`) for models that support it.
+pub const DEFAULT_OLLAMA_THINK: bool = false;
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;

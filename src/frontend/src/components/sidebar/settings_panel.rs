@@ -1,60 +1,44 @@
-use crate::components::hotkeys::{format_ctrl_hotkey, normalize_hotkey_key};
+use super::settings_validation::{
+    apply_if_valid, commit_setting, on_hotkey_keydown, parse_bounded_f64, parse_ollama_model,
+    parse_ollama_num_predict, parse_ollama_port, parse_positive_u32, parse_results_per_page,
+};
+use crate::components::hotkeys::format_ctrl_hotkey;
+use crate::constants::{
+    OLLAMA_TEMPERATURE_MAX, OLLAMA_TEMPERATURE_MIN, OLLAMA_TOP_P_MAX, OLLAMA_TOP_P_MIN,
+};
 use crate::info_messages::{
     with_hotkey, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL, HOTKEY_SETTINGS_HEADING,
-    IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_LABEL, OLLAMA_MODEL_PLACEHOLDER,
-    OLLAMA_PORT_LABEL, OLLAMA_SETTINGS_HEADING, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
+    IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL,
+    OLLAMA_MODEL_PLACEHOLDER, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL,
+    OLLAMA_NUM_CTX_TITLE, OLLAMA_NUM_PREDICT_CONSTRAINT, OLLAMA_NUM_PREDICT_LABEL,
+    OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_SETTINGS_HEADING,
+    OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL, OLLAMA_THINK_LABEL,
+    OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT, OLLAMA_TOP_K_LABEL, OLLAMA_TOP_P_CONSTRAINT,
+    OLLAMA_TOP_P_LABEL, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
     SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
 
-/// Capture a printable key press into a hotkey settings signal.
-fn on_hotkey_keydown(ev: web_sys::KeyboardEvent, target: RwSignal<char>) {
-    if ev.key() == "Tab" || ev.key() == "Escape" {
-        return;
-    }
-    ev.prevent_default();
-    if let Some(key) = normalize_hotkey_key(&ev.key()) {
-        target.set(key);
-    }
-}
-
-/// Parse a TCP port from a settings input, rejecting 0 and non-numeric values.
-fn parse_ollama_port(raw: &str) -> Option<u16> {
-    let n = raw.parse::<u16>().ok()?;
-    (n != 0).then_some(n)
-}
-
 /// Render the settings form for display, Ollama, and hotkeys.
 #[component]
 pub fn SettingsPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
+    let error_toast = state.error_toast;
     let number_results_per_page = state.number_results_per_page;
     let ollama_port = state.ollama_port;
     let ollama_model = state.ollama_model;
+    let ollama_temperature = state.ollama_temperature;
+    let ollama_num_predict = state.ollama_num_predict;
+    let ollama_num_ctx = state.ollama_num_ctx;
+    let ollama_top_p = state.ollama_top_p;
+    let ollama_top_k = state.ollama_top_k;
+    let ollama_think = state.ollama_think;
     let save_hotkey_key = state.save_hotkey_key;
     let new_file_hotkey_key = state.new_file_hotkey_key;
     let import_hotkey_key = state.import_hotkey_key;
     let export_hotkey_key = state.export_hotkey_key;
     let toggle_markdown_editing_hotkey_key = state.toggle_markdown_editing_hotkey_key;
-
-    let on_results_input = move |ev| {
-        let raw = event_target_value(&ev);
-        let Ok(n) = raw.parse::<usize>() else {
-            return;
-        };
-        if n == 0 {
-            return;
-        }
-        number_results_per_page.set(n);
-    };
-
-    let on_ollama_port_input = move |ev| {
-        let Some(port) = parse_ollama_port(&event_target_value(&ev)) else {
-            return;
-        };
-        ollama_port.set(port);
-    };
 
     view! {
         <div class="p-3">
@@ -70,7 +54,23 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="number"
                         min="1"
                         prop:value=move || number_results_per_page.get().to_string()
-                        on:input=on_results_input
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                parse_results_per_page,
+                                number_results_per_page,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_results_per_page,
+                                number_results_per_page,
+                                error_toast,
+                                RESULTS_PER_PAGE_LABEL,
+                                RESULTS_PER_PAGE_CONSTRAINT,
+                            )
+                        }
                     />
                 </div>
             </div>
@@ -87,7 +87,19 @@ pub fn SettingsPanel() -> impl IntoView {
                         min="1"
                         max="65535"
                         prop:value=move || ollama_port.get().to_string()
-                        on:input=on_ollama_port_input
+                        on:input=move |ev| {
+                            apply_if_valid(&event_target_value(&ev), parse_ollama_port, ollama_port)
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_ollama_port,
+                                ollama_port,
+                                error_toast,
+                                OLLAMA_PORT_LABEL,
+                                OLLAMA_PORT_CONSTRAINT,
+                            )
+                        }
                     />
                 </div>
             </div>
@@ -101,7 +113,191 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="text"
                         placeholder=OLLAMA_MODEL_PLACEHOLDER
                         prop:value=move || ollama_model.get()
-                        on:input=move |ev| ollama_model.set(event_target_value(&ev))
+                        on:input=move |ev| {
+                            apply_if_valid(&event_target_value(&ev), parse_ollama_model, ollama_model)
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_ollama_model,
+                                ollama_model,
+                                error_toast,
+                                OLLAMA_MODEL_LABEL,
+                                OLLAMA_MODEL_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_TEMPERATURE_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        prop:value=move || ollama_temperature.get().to_string()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                |raw| {
+                                    parse_bounded_f64(raw, OLLAMA_TEMPERATURE_MIN, OLLAMA_TEMPERATURE_MAX)
+                                },
+                                ollama_temperature,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                |raw| {
+                                    parse_bounded_f64(raw, OLLAMA_TEMPERATURE_MIN, OLLAMA_TEMPERATURE_MAX)
+                                },
+                                ollama_temperature,
+                                error_toast,
+                                OLLAMA_TEMPERATURE_LABEL,
+                                OLLAMA_TEMPERATURE_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_NUM_PREDICT_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="number"
+                        min="-1"
+                        step="1"
+                        title=OLLAMA_NUM_PREDICT_TITLE
+                        prop:value=move || ollama_num_predict.get().to_string()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                parse_ollama_num_predict,
+                                ollama_num_predict,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_ollama_num_predict,
+                                ollama_num_predict,
+                                error_toast,
+                                OLLAMA_NUM_PREDICT_LABEL,
+                                OLLAMA_NUM_PREDICT_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_NUM_CTX_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="number"
+                        min="1"
+                        step="1"
+                        title=OLLAMA_NUM_CTX_TITLE
+                        prop:value=move || ollama_num_ctx.get().to_string()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                parse_positive_u32,
+                                ollama_num_ctx,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_positive_u32,
+                                ollama_num_ctx,
+                                error_toast,
+                                OLLAMA_NUM_CTX_LABEL,
+                                OLLAMA_NUM_CTX_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_TOP_P_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        prop:value=move || ollama_top_p.get().to_string()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                |raw| parse_bounded_f64(raw, OLLAMA_TOP_P_MIN, OLLAMA_TOP_P_MAX),
+                                ollama_top_p,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                |raw| parse_bounded_f64(raw, OLLAMA_TOP_P_MIN, OLLAMA_TOP_P_MAX),
+                                ollama_top_p,
+                                error_toast,
+                                OLLAMA_TOP_P_LABEL,
+                                OLLAMA_TOP_P_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_TOP_K_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="number"
+                        min="1"
+                        step="1"
+                        prop:value=move || ollama_top_k.get().to_string()
+                        on:input=move |ev| {
+                            apply_if_valid(&event_target_value(&ev), parse_positive_u32, ollama_top_k)
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_positive_u32,
+                                ollama_top_k,
+                                error_toast,
+                                OLLAMA_TOP_K_LABEL,
+                                OLLAMA_TOP_K_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {OLLAMA_THINK_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        type="checkbox"
+                        title=OLLAMA_THINK_TITLE
+                        prop:checked=move || ollama_think.get()
+                        on:change=move |ev| ollama_think.set(event_target_checked(&ev))
                     />
                 </div>
             </div>
@@ -117,7 +313,9 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="text"
                         maxlength="1"
                         prop:value=move || save_hotkey_key.get().to_string()
-                        on:keydown=move |ev| on_hotkey_keydown(ev, save_hotkey_key)
+                        on:keydown=move |ev| {
+                            on_hotkey_keydown(ev, save_hotkey_key, error_toast, SAVE_HOTKEY_LABEL)
+                        }
                     />
                 </div>
             </div>
@@ -134,7 +332,9 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="text"
                         maxlength="1"
                         prop:value=move || new_file_hotkey_key.get().to_string()
-                        on:keydown=move |ev| on_hotkey_keydown(ev, new_file_hotkey_key)
+                        on:keydown=move |ev| {
+                            on_hotkey_keydown(ev, new_file_hotkey_key, error_toast, NEW_FILE_HOTKEY_LABEL)
+                        }
                     />
                 </div>
             </div>
@@ -151,7 +351,9 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="text"
                         maxlength="1"
                         prop:value=move || import_hotkey_key.get().to_string()
-                        on:keydown=move |ev| on_hotkey_keydown(ev, import_hotkey_key)
+                        on:keydown=move |ev| {
+                            on_hotkey_keydown(ev, import_hotkey_key, error_toast, IMPORT_HOTKEY_LABEL)
+                        }
                     />
                 </div>
             </div>
@@ -168,7 +370,9 @@ pub fn SettingsPanel() -> impl IntoView {
                         type="text"
                         maxlength="1"
                         prop:value=move || export_hotkey_key.get().to_string()
-                        on:keydown=move |ev| on_hotkey_keydown(ev, export_hotkey_key)
+                        on:keydown=move |ev| {
+                            on_hotkey_keydown(ev, export_hotkey_key, error_toast, EXPORT_HOTKEY_LABEL)
+                        }
                     />
                 </div>
             </div>
@@ -186,29 +390,16 @@ pub fn SettingsPanel() -> impl IntoView {
                         maxlength="1"
                         prop:value=move || toggle_markdown_editing_hotkey_key.get().to_string()
                         on:keydown=move |ev| {
-                            on_hotkey_keydown(ev, toggle_markdown_editing_hotkey_key)
+                            on_hotkey_keydown(
+                                ev,
+                                toggle_markdown_editing_hotkey_key,
+                                error_toast,
+                                TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+                            )
                         }
                     />
                 </div>
             </div>
         </div>
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::parse_ollama_port;
-    use crate::default_settings::DEFAULT_OLLAMA_PORT;
-
-    #[test]
-    /// Assert the Ollama port input accepts 1..=65535 and rejects 0 and non-numeric values.
-    fn parse_ollama_port_accepts_valid_tcp_ports() {
-        assert_eq!(parse_ollama_port("11434"), Some(DEFAULT_OLLAMA_PORT));
-        assert_eq!(parse_ollama_port("1"), Some(1));
-        assert_eq!(parse_ollama_port("65535"), Some(65535));
-        assert_eq!(parse_ollama_port("0"), None);
-        assert_eq!(parse_ollama_port(""), None);
-        assert_eq!(parse_ollama_port("abc"), None);
-        assert_eq!(parse_ollama_port("65536"), None);
     }
 }
