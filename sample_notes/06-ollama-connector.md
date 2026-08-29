@@ -30,4 +30,6 @@ Build the logic to send system prompts and context (retrieved from Phase 1) to a
 - [x] All open markdown files in the editor as well as open templates are used to create a prompt
 - [x] Response is saved as markdown file with provided name
 - [x] A health-check endpoint returns the connection status and available models.
-- [ ] Graceful error handling when Ollama is offline or the model is not found.
+- [x] Graceful error handling when Ollama is offline or the model is not found.
+
+ToDo - check why refining_photogrametry_scenes.md suddenly indents a formula
