@@ -78,6 +78,18 @@ pub(crate) fn parse_ollama_model(raw: &str) -> Option<String> {
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
+/// Parse a Gemini API key. Empty is allowed; whitespace inside the key is not.
+pub(crate) fn parse_gemini_api_key(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    (!trimmed.chars().any(char::is_whitespace)).then(|| trimmed.to_string())
+}
+
+/// Parse a Gemini model id for `/v1beta/models/{model}`. Reject empty values and `/`.
+pub(crate) fn parse_gemini_model(raw: &str) -> Option<String> {
+    let trimmed = parse_ollama_model(raw)?;
+    (!trimmed.contains('/')).then_some(trimmed)
+}
+
 /// Return the parsed value, or the invalid-setting toast text.
 pub(crate) fn validate_setting<T>(
     raw: &str,
@@ -136,17 +148,19 @@ pub(crate) fn apply_if_valid<T>(
 #[cfg(test)]
 mod tests {
     use super::{
-        parse_bounded_f64, parse_ollama_model, parse_ollama_num_predict, parse_ollama_port,
-        parse_positive_u32, parse_results_per_page, validate_setting,
+        parse_bounded_f64, parse_gemini_api_key, parse_gemini_model, parse_ollama_model,
+        parse_ollama_num_predict, parse_ollama_port, parse_positive_u32, parse_results_per_page,
+        validate_setting,
     };
     use crate::components::hotkeys::normalize_hotkey_key;
     use crate::constants::{
-        OLLAMA_TEMPERATURE_MAX, OLLAMA_TEMPERATURE_MIN, OLLAMA_TOP_P_MAX, OLLAMA_TOP_P_MIN,
+        gemini_model_url, OLLAMA_TEMPERATURE_MAX, OLLAMA_TEMPERATURE_MIN, OLLAMA_TOP_P_MAX,
+        OLLAMA_TOP_P_MIN,
     };
     use crate::default_settings::{
-        DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT,
-        DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_TOP_K,
-        DEFAULT_OLLAMA_TOP_P,
+        DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL, DEFAULT_OLLAMA_MODEL,
+        DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT,
+        DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
     };
     use crate::info_messages::{
         invalid_setting_toast, HOTKEY_CONSTRAINT, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL,
@@ -365,6 +379,32 @@ mod tests {
                 HOTKEY_CONSTRAINT
             ),
             Err(invalid_setting_toast(SAVE_HOTKEY_LABEL, HOTKEY_CONSTRAINT))
+        );
+    }
+
+    #[test]
+    /// Assert Gemini API key and model accept values that fit `/v1beta/models/{model}?key={api_key}`.
+    fn parse_gemini_settings_accept_key_and_model_for_models_url() {
+        assert_eq!(
+            parse_gemini_api_key(DEFAULT_GEMINI_API_KEY),
+            Some(DEFAULT_GEMINI_API_KEY.to_string())
+        );
+        assert_eq!(
+            parse_gemini_api_key("  AIzaSyExample  "),
+            Some("AIzaSyExample".to_string())
+        );
+        assert_eq!(parse_gemini_api_key("AIza Sy"), None);
+        assert_eq!(
+            parse_gemini_model(DEFAULT_GEMINI_MODEL),
+            Some(DEFAULT_GEMINI_MODEL.to_string())
+        );
+        assert_eq!(parse_gemini_model("  "), None);
+        assert_eq!(parse_gemini_model("models/gemini-2.5-flash"), None);
+        let key = parse_gemini_api_key("AIzaSyExample").expect("valid Gemini API key");
+        let model = parse_gemini_model(DEFAULT_GEMINI_MODEL).expect("valid Gemini model");
+        assert_eq!(
+            gemini_model_url(&model, &key),
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=AIzaSyExample"
         );
     }
 }

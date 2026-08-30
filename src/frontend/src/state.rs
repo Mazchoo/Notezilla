@@ -4,11 +4,12 @@ pub use active_panel::ActivePanel;
 
 use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
-    DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
-    DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
-    DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH,
-    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
+    DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
+    DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT,
+    DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
+    DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
+    DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
 use leptos::prelude::*;
@@ -75,6 +76,10 @@ pub struct AppState {
     pub ollama_top_k: RwSignal<u32>,
     /// Ollama thinking flag (`think`) for models that support it.
     pub ollama_think: RwSignal<bool>,
+    /// Gemini API key passed as the `key` query parameter.
+    pub gemini_api_key: RwSignal<String>,
+    /// Gemini model id used in `/v1beta/models/{model}`.
+    pub gemini_model: RwSignal<String>,
 }
 
 impl AppState {
@@ -119,6 +124,8 @@ impl AppState {
             ollama_top_p: RwSignal::new(DEFAULT_OLLAMA_TOP_P),
             ollama_top_k: RwSignal::new(DEFAULT_OLLAMA_TOP_K),
             ollama_think: RwSignal::new(DEFAULT_OLLAMA_THINK),
+            gemini_api_key: RwSignal::new(DEFAULT_GEMINI_API_KEY.to_string()),
+            gemini_model: RwSignal::new(DEFAULT_GEMINI_MODEL.to_string()),
         }
     }
 
@@ -137,12 +144,12 @@ mod tests {
     use super::*;
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
-        DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
-        DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
-        DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
-        DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
-        DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
+        DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
+        DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT,
+        DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K,
+        DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY,
+        DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -212,6 +219,11 @@ mod tests {
             assert_eq!(state.ollama_top_p.get_untracked(), DEFAULT_OLLAMA_TOP_P);
             assert_eq!(state.ollama_top_k.get_untracked(), DEFAULT_OLLAMA_TOP_K);
             assert_eq!(state.ollama_think.get_untracked(), DEFAULT_OLLAMA_THINK);
+            assert_eq!(
+                state.gemini_api_key.get_untracked(),
+                DEFAULT_GEMINI_API_KEY
+            );
+            assert_eq!(state.gemini_model.get_untracked(), DEFAULT_GEMINI_MODEL);
         });
     }
 }

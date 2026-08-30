@@ -1,27 +1,30 @@
 use super::settings_validation::{
-    apply_if_valid, commit_setting, on_hotkey_keydown, parse_bounded_f64, parse_ollama_model,
-    parse_ollama_num_predict, parse_ollama_port, parse_positive_u32, parse_results_per_page,
+    apply_if_valid, commit_setting, on_hotkey_keydown, parse_bounded_f64, parse_gemini_api_key,
+    parse_gemini_model, parse_ollama_model, parse_ollama_num_predict, parse_ollama_port,
+    parse_positive_u32, parse_results_per_page,
 };
 use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::constants::{
     OLLAMA_TEMPERATURE_MAX, OLLAMA_TEMPERATURE_MIN, OLLAMA_TOP_P_MAX, OLLAMA_TOP_P_MIN,
 };
 use crate::info_messages::{
-    with_hotkey, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL, HOTKEY_SETTINGS_HEADING,
-    IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL,
-    OLLAMA_MODEL_PLACEHOLDER, OLLAMA_MODEL_TITLE, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL,
-    OLLAMA_NUM_CTX_TITLE, OLLAMA_NUM_PREDICT_CONSTRAINT, OLLAMA_NUM_PREDICT_LABEL,
-    OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_PORT_TITLE,
-    OLLAMA_SETTINGS_HEADING, OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL,
-    OLLAMA_TEMPERATURE_TITLE, OLLAMA_THINK_LABEL, OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT,
-    OLLAMA_TOP_K_LABEL, OLLAMA_TOP_K_TITLE, OLLAMA_TOP_P_CONSTRAINT, OLLAMA_TOP_P_LABEL,
-    OLLAMA_TOP_P_TITLE, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
-    SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+    with_hotkey, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL, GEMINI_API_KEY_CONSTRAINT,
+    GEMINI_API_KEY_LABEL, GEMINI_API_KEY_PLACEHOLDER, GEMINI_API_KEY_TITLE, GEMINI_MODEL_CONSTRAINT,
+    GEMINI_MODEL_LABEL, GEMINI_MODEL_PLACEHOLDER, GEMINI_MODEL_TITLE, GEMINI_SETTINGS_HEADING,
+    HOTKEY_SETTINGS_HEADING, IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT,
+    OLLAMA_MODEL_LABEL, OLLAMA_MODEL_PLACEHOLDER, OLLAMA_MODEL_TITLE, OLLAMA_NUM_CTX_CONSTRAINT,
+    OLLAMA_NUM_CTX_LABEL, OLLAMA_NUM_CTX_TITLE, OLLAMA_NUM_PREDICT_CONSTRAINT,
+    OLLAMA_NUM_PREDICT_LABEL, OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL,
+    OLLAMA_PORT_TITLE, OLLAMA_SETTINGS_HEADING, OLLAMA_TEMPERATURE_CONSTRAINT,
+    OLLAMA_TEMPERATURE_LABEL, OLLAMA_TEMPERATURE_TITLE, OLLAMA_THINK_LABEL, OLLAMA_THINK_TITLE,
+    OLLAMA_TOP_K_CONSTRAINT, OLLAMA_TOP_K_LABEL, OLLAMA_TOP_K_TITLE, OLLAMA_TOP_P_CONSTRAINT,
+    OLLAMA_TOP_P_LABEL, OLLAMA_TOP_P_TITLE, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL,
+    SAVE_HOTKEY_LABEL, SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
 
-/// Render the settings form for display, Ollama, and hotkeys.
+/// Render the settings form for display, Ollama, Gemini, and hotkeys.
 #[component]
 pub fn SettingsPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -37,6 +40,8 @@ pub fn SettingsPanel() -> impl IntoView {
     let top_p_text = RwSignal::new(ollama_top_p.get_untracked().to_string());
     let ollama_top_k = state.ollama_top_k;
     let ollama_think = state.ollama_think;
+    let gemini_api_key = state.gemini_api_key;
+    let gemini_model = state.gemini_model;
     let save_hotkey_key = state.save_hotkey_key;
     let new_file_hotkey_key = state.new_file_hotkey_key;
     let import_hotkey_key = state.import_hotkey_key;
@@ -315,6 +320,71 @@ pub fn SettingsPanel() -> impl IntoView {
                         on:change=move |ev| ollama_think.set(event_target_checked(&ev))
                     />
                 </label>
+            </div>
+            <hr class="settings-divider"/>
+            <p class="menu-label mt-2">{GEMINI_SETTINGS_HEADING}</p>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);" title=GEMINI_API_KEY_TITLE>
+                    {GEMINI_API_KEY_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="password"
+                        placeholder=GEMINI_API_KEY_PLACEHOLDER
+                        title=GEMINI_API_KEY_TITLE
+                        autocomplete="off"
+                        prop:value=move || gemini_api_key.get()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                parse_gemini_api_key,
+                                gemini_api_key,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_gemini_api_key,
+                                gemini_api_key,
+                                error_toast,
+                                GEMINI_API_KEY_LABEL,
+                                GEMINI_API_KEY_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);" title=GEMINI_MODEL_TITLE>
+                    {GEMINI_MODEL_LABEL}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="text"
+                        placeholder=GEMINI_MODEL_PLACEHOLDER
+                        title=GEMINI_MODEL_TITLE
+                        prop:value=move || gemini_model.get()
+                        on:input=move |ev| {
+                            apply_if_valid(
+                                &event_target_value(&ev),
+                                parse_gemini_model,
+                                gemini_model,
+                            )
+                        }
+                        on:change=move |ev| {
+                            commit_setting(
+                                ev,
+                                parse_gemini_model,
+                                gemini_model,
+                                error_toast,
+                                GEMINI_MODEL_LABEL,
+                                GEMINI_MODEL_CONSTRAINT,
+                            )
+                        }
+                    />
+                </div>
             </div>
             <hr class="settings-divider"/>
             <p class="menu-label mt-2">{HOTKEY_SETTINGS_HEADING}</p>

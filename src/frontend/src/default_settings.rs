@@ -29,5 +29,9 @@ pub const DEFAULT_OLLAMA_TOP_P: f64 = 0.9;
 pub const DEFAULT_OLLAMA_TOP_K: u32 = 40;
 /// Default Ollama thinking flag (`think`) for models that support it.
 pub const DEFAULT_OLLAMA_THINK: bool = true;
+/// Default Gemini API key. Empty until the user enters one in Settings.
+pub const DEFAULT_GEMINI_API_KEY: &str = "";
+/// Default Gemini model name used in `/v1beta/models/{model}`.
+pub const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;
