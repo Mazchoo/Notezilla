@@ -68,60 +68,62 @@ pub fn Sidebar() -> impl IntoView {
                 }
             }
         >
-            <div class=move || {
-                if state.active_panel.get() == Some(ActivePanel::Files) {
-                    ""
-                } else {
-                    "is-hidden"
-                }
-            }>
-                <FileTree
-                    backend=FileTreeBackend::Notes
-                    heading=NOTES_HEADING
-                    root_label=NOTE_FOLDER_ROOT_LABEL
-                    epoch=state.file_tree_epoch
-                />
-            </div>
-            <div class=move || {
-                if state.active_panel.get() == Some(ActivePanel::Templates) {
-                    ""
-                } else {
-                    "is-hidden"
-                }
-            }>
-                <FileTree
-                    backend=FileTreeBackend::Templates
-                    heading=TEMPLATES_HEADING
-                    root_label=TEMPLATE_FOLDER_ROOT_LABEL
-                    epoch=state.template_tree_epoch
-                />
-            </div>
-            <div class=move || {
-                if state.active_panel.get() == Some(ActivePanel::Search) {
-                    ""
-                } else {
-                    "is-hidden"
-                }
-            }>
-                <SearchPanel/>
-            </div>
-            <div class=move || {
-                if state.active_panel.get() == Some(ActivePanel::Prompt) {
-                    ""
-                } else {
-                    "is-hidden"
-                }
-            }>
-                <PromptPanel/>
-            </div>
-            <div class=move || {
-                if state.active_panel.get() == Some(ActivePanel::Settings) {
-                    ""
-                } else {
-                    "is-hidden"
-                }
-            }>
-                <SettingsPanel/>
+            <div class="sidebar-panel-scroll">
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Files) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <FileTree
+                        backend=FileTreeBackend::Notes
+                        heading=NOTES_HEADING
+                        root_label=NOTE_FOLDER_ROOT_LABEL
+                        epoch=state.file_tree_epoch
+                    />
+                </div>
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Templates) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <FileTree
+                        backend=FileTreeBackend::Templates
+                        heading=TEMPLATES_HEADING
+                        root_label=TEMPLATE_FOLDER_ROOT_LABEL
+                        epoch=state.template_tree_epoch
+                    />
+                </div>
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Search) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <SearchPanel/>
+                </div>
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Prompt) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <PromptPanel/>
+                </div>
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Settings) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <SettingsPanel/>
+                </div>
             </div>
             <Show when=move || state.active_panel.get().is_some()>
                 <div
