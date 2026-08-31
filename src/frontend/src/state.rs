@@ -150,9 +150,9 @@ mod tests {
         DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
         DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
         DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT,
-        DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K,
-        DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY,
-        DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK,
+        DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH,
+        DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -223,10 +223,7 @@ mod tests {
             assert_eq!(state.ollama_top_p.get_untracked(), DEFAULT_OLLAMA_TOP_P);
             assert_eq!(state.ollama_top_k.get_untracked(), DEFAULT_OLLAMA_TOP_K);
             assert_eq!(state.ollama_think.get_untracked(), DEFAULT_OLLAMA_THINK);
-            assert_eq!(
-                state.gemini_api_key.get_untracked(),
-                DEFAULT_GEMINI_API_KEY
-            );
+            assert_eq!(state.gemini_api_key.get_untracked(), DEFAULT_GEMINI_API_KEY);
             assert_eq!(state.gemini_model.get_untracked(), DEFAULT_GEMINI_MODEL);
         });
     }

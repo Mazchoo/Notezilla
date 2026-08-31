@@ -1,11 +1,12 @@
 use crate::components::file_io::{display_note_path, normalize_note_path};
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
-    gemini_status_title, ollama_send_failed_toast, ollama_status_title, prompt_response_saved_toast,
-    save_failed_toast, CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON, COPY_PROMPT_TITLE,
-    ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL,
-    MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING,
-    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL, SEND_BUTTON,
+    gemini_status_title, ollama_send_failed_toast, ollama_status_title,
+    prompt_response_saved_toast, save_failed_toast, CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON,
+    COPY_PROMPT_TITLE, ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST,
+    GEMINI_STATUS_LABEL, MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST,
+    PROMPT_HEADING, PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL,
+    SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
 use crate::prompting::{build_prompt, send_prompt, GenerateOptions};
@@ -258,10 +259,7 @@ mod tests {
     #[test]
     /// Assert the badge class switches between available and unavailable.
     fn status_badge_class_marks_available_or_unavailable() {
-        assert_eq!(
-            status_badge_class(true),
-            "ollama-status-badge is-available"
-        );
+        assert_eq!(status_badge_class(true), "ollama-status-badge is-available");
         assert_eq!(
             status_badge_class(false),
             "ollama-status-badge is-unavailable"
