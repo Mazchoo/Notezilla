@@ -65,14 +65,17 @@ pub const NEXT_BUTTON: &str = "Next";
 pub const PROMPT_HEADING: &str = "Send prompt";
 pub const PROMPT_PLACEHOLDER: &str = "Write a prompt...";
 pub const SEND_BUTTON: &str = "Send";
-pub const COPY_BUTTON: &str = "Copy";
-pub const COPY_PROMPT_TITLE: &str = "Copy prompt";
+pub const COPY_BUTTON: &str = "Copy Full Prompt";
+pub const COPY_PROMPT_TITLE: &str = "Copy Full Prompt";
 pub const ENTER_PROMPT_TOAST: &str = "Enter a prompt";
 pub const PROMPT_COPIED_TOAST: &str = "Copied prompt";
 pub const CLIPBOARD_COPY_FAILED_TOAST: &str = "Clipboard copy failed";
 pub const OLLAMA_STATUS_LABEL: &str = "Ollama";
 pub const OLLAMA_AVAILABLE_TITLE: &str = "Ollama available";
 pub const OLLAMA_UNAVAILABLE_TITLE: &str = "Ollama unavailable";
+pub const GEMINI_STATUS_LABEL: &str = "Gemini";
+pub const GEMINI_AVAILABLE_TITLE: &str = "Gemini available";
+pub const GEMINI_UNAVAILABLE_TITLE: &str = "Gemini unavailable";
 pub const PROMPT_OUTPUT_PATH_TITLE: &str = "Save response to";
 pub const SENDING_PROMPT_LABEL: &str = "Sending prompt";
 pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
@@ -178,6 +181,15 @@ pub fn ollama_status_title(available: bool) -> &'static str {
         OLLAMA_AVAILABLE_TITLE
     } else {
         OLLAMA_UNAVAILABLE_TITLE
+    }
+}
+
+/// Return the title for the Gemini availability badge.
+pub fn gemini_status_title(available: bool) -> &'static str {
+    if available {
+        GEMINI_AVAILABLE_TITLE
+    } else {
+        GEMINI_UNAVAILABLE_TITLE
     }
 }
 
@@ -339,6 +351,13 @@ mod tests {
     fn ollama_status_title_marks_available_or_unavailable() {
         assert_eq!(ollama_status_title(true), OLLAMA_AVAILABLE_TITLE);
         assert_eq!(ollama_status_title(false), OLLAMA_UNAVAILABLE_TITLE);
+    }
+
+    #[test]
+    /// Assert the Gemini badge title switches between available and unavailable.
+    fn gemini_status_title_marks_available_or_unavailable() {
+        assert_eq!(gemini_status_title(true), GEMINI_AVAILABLE_TITLE);
+        assert_eq!(gemini_status_title(false), GEMINI_UNAVAILABLE_TITLE);
     }
 
     #[test]

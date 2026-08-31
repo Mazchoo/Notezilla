@@ -1,15 +1,14 @@
 use crate::components::file_io::{display_note_path, normalize_note_path};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::constants::OLLAMA_URL;
 use crate::info_messages::{
-    ollama_send_failed_toast, ollama_status_title, prompt_response_saved_toast, save_failed_toast,
-    CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON, COPY_PROMPT_TITLE, ENTER_OLLAMA_MODEL_TOAST,
-    ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL,
-    PROMPT_COPIED_TOAST, PROMPT_HEADING, PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER,
-    SENDING_PROMPT_LABEL, SEND_BUTTON,
+    gemini_status_title, ollama_send_failed_toast, ollama_status_title, prompt_response_saved_toast,
+    save_failed_toast, CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON, COPY_PROMPT_TITLE,
+    ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL,
+    MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING,
+    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL, SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
-use crate::prompting::{build_prompt, check_connection, send_prompt, GenerateOptions};
+use crate::prompting::{build_prompt, send_prompt, GenerateOptions};
 use crate::state::AppState;
 use icondata as id;
 use leptos::prelude::*;
@@ -52,18 +51,13 @@ fn copy_text_to_clipboard(
     });
 }
 
-/// Return the CSS class for the Ollama availability badge.
-fn ollama_status_class(available: bool) -> &'static str {
+/// Return the CSS class for an LLM availability badge.
+fn status_badge_class(available: bool) -> &'static str {
     if available {
         "ollama-status-badge is-available"
     } else {
         "ollama-status-badge is-unavailable"
     }
-}
-
-/// Return the console message for a successful Ollama connection.
-fn ollama_ready_log() -> String {
-    format!("Ollama connection ready: {OLLAMA_URL}")
 }
 
 /// Return the normalised save path when it is non-empty.
@@ -72,37 +66,14 @@ fn prompt_save_path(raw: &str) -> Option<String> {
     (!path.is_empty()).then_some(path)
 }
 
-/// Probe Ollama on `port` and store whether the API responded.
-fn probe_ollama(port: u16, available: RwSignal<bool>) {
-    spawn_local(async move {
-        match check_connection(port).await {
-            Ok(()) => {
-                web_sys::console::log_1(&ollama_ready_log().into());
-                available.set(true);
-            }
-            Err(e) => {
-                web_sys::console::warn_1(
-                    &format!("Ollama init failed: {e}. Prompt send will be unavailable.").into(),
-                );
-                available.set(false);
-            }
-        }
-    });
-}
-
 /// Render the Send prompt form: prompt text, copy, output path, and send.
 #[component]
 pub fn PromptPanel() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let prompt_text = state.prompt_text;
     let prompt_output_path = state.prompt_output_path;
-    let ollama_port = state.ollama_port;
-    let ollama_available = RwSignal::new(false);
+    let ollama_available = state.ollama_available;
     let sending = RwSignal::new(false);
-
-    Effect::new(move |_| {
-        probe_ollama(ollama_port.get(), ollama_available);
-    });
 
     let state_send = state.clone();
     let on_send = move |_| {
@@ -217,12 +188,24 @@ pub fn PromptPanel() -> impl IntoView {
                     {SEND_BUTTON}
                 </button>
                 <span
-                    class=move || ollama_status_class(ollama_available.get())
+                    class=move || status_badge_class(ollama_available.get())
                     title=move || ollama_status_title(ollama_available.get())
                     role="status"
                 >
                     <Icon icon=id::LuCircle/>
                     {OLLAMA_STATUS_LABEL}
+                </span>
+                <button class="button is-small is-dark" title=SEND_BUTTON>
+                    <Icon icon=id::LuSend/>
+                    {SEND_BUTTON}
+                </button>
+                <span
+                    class=status_badge_class(false)
+                    title=gemini_status_title(false)
+                    role="status"
+                >
+                    <Icon icon=id::LuCircle/>
+                    {GEMINI_STATUS_LABEL}
                 </span>
                 <Show when=move || sending.get()>
                     <span
@@ -259,8 +242,7 @@ async fn write_prompt_response(
 
 #[cfg(test)]
 mod tests {
-    use super::{ollama_ready_log, ollama_status_class, prompt_save_path};
-    use crate::constants::OLLAMA_URL;
+    use super::{prompt_save_path, status_badge_class};
     use crate::default_settings::DEFAULT_PROMPT_OUTPUT_PATH;
 
     #[test]
@@ -274,23 +256,23 @@ mod tests {
     }
 
     #[test]
-    /// Assert a successful Ollama probe logs the same-origin proxy path.
-    fn ollama_ready_log_names_the_proxy_path() {
+    /// Assert the badge class switches between available and unavailable.
+    fn status_badge_class_marks_available_or_unavailable() {
         assert_eq!(
-            ollama_ready_log(),
-            format!("Ollama connection ready: {OLLAMA_URL}")
+            status_badge_class(true),
+            "ollama-status-badge is-available"
+        );
+        assert_eq!(
+            status_badge_class(false),
+            "ollama-status-badge is-unavailable"
         );
     }
 
     #[test]
-    /// Assert the Ollama badge class switches between available and unavailable.
-    fn ollama_status_class_marks_available_or_unavailable() {
+    /// Assert the Gemini send-row badge uses the unavailable class.
+    fn gemini_status_badge_is_unavailable() {
         assert_eq!(
-            ollama_status_class(true),
-            "ollama-status-badge is-available"
-        );
-        assert_eq!(
-            ollama_status_class(false),
+            status_badge_class(false),
             "ollama-status-badge is-unavailable"
         );
     }

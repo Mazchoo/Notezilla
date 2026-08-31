@@ -62,6 +62,8 @@ pub struct AppState {
     pub prompt_output_path: RwSignal<String>,
     /// TCP port of the local Ollama HTTP API.
     pub ollama_port: RwSignal<u16>,
+    /// Whether the Ollama HTTP API responded to the startup probe.
+    pub ollama_available: RwSignal<bool>,
     /// Ollama model name used by POST `/api/generate`.
     pub ollama_model: RwSignal<String>,
     /// Ollama sampling temperature (`options.temperature`).
@@ -117,6 +119,7 @@ impl AppState {
             prompt_text: RwSignal::new(String::new()),
             prompt_output_path: RwSignal::new(DEFAULT_PROMPT_OUTPUT_PATH.to_string()),
             ollama_port: RwSignal::new(DEFAULT_OLLAMA_PORT),
+            ollama_available: RwSignal::new(false),
             ollama_model: RwSignal::new(DEFAULT_OLLAMA_MODEL.to_string()),
             ollama_temperature: RwSignal::new(DEFAULT_OLLAMA_TEMPERATURE),
             ollama_num_predict: RwSignal::new(DEFAULT_OLLAMA_NUM_PREDICT),
@@ -206,6 +209,7 @@ mod tests {
                 DEFAULT_PROMPT_OUTPUT_PATH
             );
             assert_eq!(state.ollama_port.get_untracked(), DEFAULT_OLLAMA_PORT);
+            assert!(!state.ollama_available.get_untracked());
             assert_eq!(state.ollama_model.get_untracked(), DEFAULT_OLLAMA_MODEL);
             assert_eq!(
                 state.ollama_temperature.get_untracked(),

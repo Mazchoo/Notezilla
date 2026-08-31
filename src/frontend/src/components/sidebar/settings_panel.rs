@@ -330,7 +330,7 @@ pub fn SettingsPanel() -> impl IntoView {
                 <div class="control">
                     <input
                         class="input is-small"
-                        type="password"
+                        type="text"
                         placeholder=GEMINI_API_KEY_PLACEHOLDER
                         title=GEMINI_API_KEY_TITLE
                         autocomplete="off"

@@ -1,3 +1,5 @@
+use crate::utils::env::key_from_env;
+
 pub const TOAST_DISMISS_MS: i32 = 2000;
 pub const DEFAULT_NUMBER_RESULTS_PER_PAGE: usize = 20;
 pub const DEFAULT_SEARCH_PREVIEW_CHARS: usize = 50;
@@ -29,8 +31,8 @@ pub const DEFAULT_OLLAMA_TOP_P: f64 = 0.9;
 pub const DEFAULT_OLLAMA_TOP_K: u32 = 40;
 /// Default Ollama thinking flag (`think`) for models that support it.
 pub const DEFAULT_OLLAMA_THINK: bool = true;
-/// Default Gemini API key. Empty until the user enters one in Settings.
-pub const DEFAULT_GEMINI_API_KEY: &str = "";
+/// Default Gemini API key from `GEMINI_API_KEY` at compile time. Empty when unset.
+pub const DEFAULT_GEMINI_API_KEY: &str = key_from_env!("GEMINI_API_KEY");
 /// Default Gemini model name used in `/v1beta/models/{model}`.
 pub const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
 /// Default sidebar panel width in CSS pixels.

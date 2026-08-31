@@ -4,6 +4,8 @@ use crate::default_settings::{
     DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
 };
 use gloo_net::http::Request;
+use leptos::prelude::{Effect, Get, RwSignal, Set};
+use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -147,9 +149,36 @@ async fn fetch_tags_body(port: u16) -> Result<String, String> {
     Ok(body)
 }
 
+/// Return the console message for a successful Ollama connection.
+fn ollama_ready_log() -> String {
+    format!("Ollama connection ready: {OLLAMA_URL}")
+}
+
 /// Probe whether the Ollama HTTP API on `port` responds with `/api/tags`.
-pub async fn check_connection(port: u16) -> Result<(), String> {
+async fn check_connection(port: u16) -> Result<(), String> {
     fetch_tags_body(port).await.map(|_| ())
+}
+
+/// Probe Ollama when `port` changes and store whether the API responded.
+pub fn probe_ollama(port: RwSignal<u16>, available: RwSignal<bool>) {
+    Effect::new(move |_| {
+        let port = port.get();
+        spawn_local(async move {
+            match check_connection(port).await {
+                Ok(()) => {
+                    web_sys::console::log_1(&ollama_ready_log().into());
+                    available.set(true);
+                }
+                Err(e) => {
+                    web_sys::console::warn_1(
+                        &format!("Ollama init failed: {e}. Prompt send will be unavailable.")
+                            .into(),
+                    );
+                    available.set(false);
+                }
+            }
+        });
+    });
 }
 
 /// Confirm the API on `port`, then send `prompt` to `model` via POST `/api/generate`.
@@ -171,12 +200,21 @@ pub async fn send_prompt(
 #[cfg(test)]
 mod tests {
     use super::{
-        generate_request_body, ollama_base_url, ollama_url, parse_generate_response,
-        parse_model_names, GenerateOptions,
+        generate_request_body, ollama_base_url, ollama_ready_log, ollama_url,
+        parse_generate_response, parse_model_names, GenerateOptions,
     };
     use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH, OLLAMA_URL};
     use crate::default_settings::DEFAULT_OLLAMA_PORT;
     use serde_json::json;
+
+    #[test]
+    /// Assert a successful Ollama probe logs the same-origin proxy path.
+    fn ollama_ready_log_names_the_proxy_path() {
+        assert_eq!(
+            ollama_ready_log(),
+            format!("Ollama connection ready: {OLLAMA_URL}")
+        );
+    }
 
     #[test]
     /// Assert the origin is the same-origin proxy path, not a cross-origin loopback URL.
