@@ -11,9 +11,7 @@ status: done
 
 Make a population job that will populate the database with all defined yaml fields and populates the database.
 
-## Steps (ToDo - needs reworking)
-
-1. Design a canonical JSON schema for a note including fields: `id`, `title`, `path`, `tags`, `content`, `created_at`, `updated_at`.
+1. Design a canonical JSON schema for a note including fields: `id`, `title`, `path`, `tags`, `content`
 2. Define the Markdown frontmatter format that maps bidirectionally to the JSON schema.
 3. Implement serialization: JSON to Markdown file (with frontmatter + body).
 4. Implement deserialization: Markdown file (frontmatter + body) to JSON.

@@ -23,7 +23,7 @@ Build the logic to send system prompts and context to the Gemini API. The user s
 
 ## Acceptance Criteria
 
-- [ ] The connector sends well-formed requests to Gemini and receives generated text.
+- [x] The connector sends well-formed requests to Gemini and receives generated text.
 - [ ] The Gemini API key, model, and generation parameters are configurable.
 - [ ] Setting a configuration to an invalid value will reject it and return an error toast.
 - [ ] All open markdown files in the editor as well as open templates are used to create a prompt.
