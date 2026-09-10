@@ -77,7 +77,6 @@ pub const GEMINI_STATUS_LABEL: &str = "Gemini";
 pub const GEMINI_AVAILABLE_TITLE: &str = "Gemini available";
 pub const GEMINI_UNAVAILABLE_TITLE: &str = "Gemini unavailable";
 pub const PROMPT_OUTPUT_PATH_TITLE: &str = "Save response to";
-pub const SENDING_PROMPT_LABEL: &str = "Sending prompt";
 pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
 pub const MCP_SESSION_NOT_READY_TOAST: &str = "MCP session not ready";
 pub const ENTER_GEMINI_API_KEY_TOAST: &str = "Enter a Gemini API key";
@@ -161,6 +160,11 @@ pub const CTRL_HOTKEY_PREFIX: &str = "Ctrl+";
 // --- Page ---
 
 pub const PAGE_TITLE: &str = "Notezilla";
+
+// --- Toast ---
+
+pub const ERROR_TOAST_COPY_TITLE: &str = "Click to copy";
+pub const ERROR_COPIED_TOAST: &str = "Copied error";
 
 // --- Formatted messages ---
 

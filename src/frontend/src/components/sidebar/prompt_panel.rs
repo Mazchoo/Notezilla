@@ -6,7 +6,7 @@ use crate::info_messages::{
     COPY_PROMPT_TITLE, ENTER_GEMINI_API_KEY_TOAST, ENTER_GEMINI_MODEL_TOAST,
     ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL,
     MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING,
-    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL, SEND_BUTTON,
+    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
 use crate::prompting::{build_prompt, send_gemini_prompt, send_prompt, GenerateOptions};
@@ -286,13 +286,6 @@ pub fn PromptPanel() -> impl IntoView {
                     <Icon icon=id::LuCircle/>
                     {GEMINI_STATUS_LABEL}
                 </span>
-                <Show when=move || sending_ollama.get() || sending_gemini.get()>
-                    <span
-                        class="prompt-send-spinner"
-                        role="status"
-                        aria-label=SENDING_PROMPT_LABEL
-                    ></span>
-                </Show>
             </div>
         </div>
     }

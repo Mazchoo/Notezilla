@@ -1,11 +1,17 @@
 use crate::default_settings::TOAST_DISMISS_MS;
+use crate::info_messages::{
+    CLIPBOARD_COPY_FAILED_TOAST, ERROR_COPIED_TOAST, ERROR_TOAST_COPY_TITLE,
+};
 use crate::state::AppState;
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use std::cell::Cell;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::JsFuture;
 
 thread_local! {
     static WARNING_TOAST: Cell<Option<RwSignal<Option<String>>>> = const { Cell::new(None) };
+    static ERROR_DISMISS_TIMEOUT: Cell<Option<i32>> = const { Cell::new(None) };
 }
 
 /// Bind the warning toast signal so MCP responses can display `warnings` from async tasks.
@@ -20,7 +26,63 @@ pub fn show_toast(toast: RwSignal<Option<String>>, message: impl Into<String>) {
 
 /// Show a short-lived error toast above the main toast.
 pub fn show_error_toast(error_toast: RwSignal<Option<String>>, message: impl Into<String>) {
-    set_timed_toast(error_toast, message);
+    error_toast.set(Some(message.into()));
+    schedule_error_dismiss(error_toast);
+}
+
+/// Return the status-toast text after copying an error toast.
+fn error_toast_copy_feedback(succeeded: bool) -> &'static str {
+    if succeeded {
+        ERROR_COPIED_TOAST
+    } else {
+        CLIPBOARD_COPY_FAILED_TOAST
+    }
+}
+
+/// Copy an error toast without replacing the error message on failure.
+fn copy_error_toast_text(text: String, toast: RwSignal<Option<String>>) {
+    let Some(window) = web_sys::window() else {
+        web_sys::console::error_1(&"Clipboard unavailable: no window".into());
+        show_toast(toast, error_toast_copy_feedback(false));
+        return;
+    };
+    let clipboard = window.navigator().clipboard();
+    spawn_local(async move {
+        match JsFuture::from(clipboard.write_text(&text)).await {
+            Ok(_) => show_toast(toast, error_toast_copy_feedback(true)),
+            Err(e) => {
+                web_sys::console::error_1(&e);
+                show_toast(toast, error_toast_copy_feedback(false));
+            }
+        }
+    });
+}
+
+/// Cancel the pending error-toast dismiss timeout.
+fn clear_error_dismiss_timeout() {
+    let Some(id) = ERROR_DISMISS_TIMEOUT.take() else {
+        return;
+    };
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    window.clear_timeout_with_handle(id);
+}
+
+/// Dismiss the error toast after the timeout, replacing any pending dismiss.
+fn schedule_error_dismiss(error_toast: RwSignal<Option<String>>) {
+    clear_error_dismiss_timeout();
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let closure = Closure::once(move || error_toast.set(None));
+    if let Ok(id) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+        closure.as_ref().unchecked_ref(),
+        TOAST_DISMISS_MS,
+    ) {
+        ERROR_DISMISS_TIMEOUT.set(Some(id));
+    }
+    closure.forget();
 }
 
 /// Show MCP `warnings` when the list is non-empty. No-op if none are bound or all are empty.
@@ -66,8 +128,17 @@ pub fn Toast() -> impl IntoView {
         <div class="toast-stack">
             {move || {
                 error_toast.get().map(|msg| {
+                    let copy_msg = msg.clone();
                     view! {
-                        <div class="toast toast-error" role="alert" aria-live="assertive">
+                        <div
+                            class="toast toast-error"
+                            role="alert"
+                            aria-live="assertive"
+                            title=ERROR_TOAST_COPY_TITLE
+                            on:click=move |_| copy_error_toast_text(copy_msg.clone(), toast)
+                            on:mouseenter=move |_| clear_error_dismiss_timeout()
+                            on:mouseleave=move |_| schedule_error_dismiss(error_toast)
+                        >
                             {msg}
                         </div>
                     }
@@ -93,7 +164,8 @@ pub fn Toast() -> impl IntoView {
 
 #[cfg(test)]
 mod tests {
-    use super::show_mcp_warnings;
+    use super::{error_toast_copy_feedback, show_mcp_warnings};
+    use crate::info_messages::{CLIPBOARD_COPY_FAILED_TOAST, ERROR_COPIED_TOAST};
 
     #[test]
     /// Assert unbound or empty warnings do not require a toast signal.
@@ -101,5 +173,12 @@ mod tests {
         show_mcp_warnings(&[]);
         show_mcp_warnings(&[String::new(), String::new()]);
         show_mcp_warnings(&["warn".into()]);
+    }
+
+    #[test]
+    /// Assert copying an error toast reports on the status toast and keeps the error.
+    fn error_toast_copy_feedback_uses_status_copy() {
+        assert_eq!(error_toast_copy_feedback(true), ERROR_COPIED_TOAST);
+        assert_eq!(error_toast_copy_feedback(false), CLIPBOARD_COPY_FAILED_TOAST);
     }
 }
