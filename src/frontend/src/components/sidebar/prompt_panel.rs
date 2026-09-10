@@ -1,15 +1,15 @@
 use crate::components::file_io::{display_note_path, normalize_note_path};
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
-    gemini_status_title, ollama_send_failed_toast, ollama_status_title,
+    gemini_send_failed_toast, gemini_status_title, ollama_send_failed_toast, ollama_status_title,
     prompt_response_saved_toast, save_failed_toast, CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON,
-    COPY_PROMPT_TITLE, ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST,
-    GEMINI_STATUS_LABEL, MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST,
-    PROMPT_HEADING, PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL,
-    SEND_BUTTON,
+    COPY_PROMPT_TITLE, ENTER_GEMINI_API_KEY_TOAST, ENTER_GEMINI_MODEL_TOAST,
+    ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL,
+    MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING,
+    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SENDING_PROMPT_LABEL, SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
-use crate::prompting::{build_prompt, send_prompt, GenerateOptions};
+use crate::prompting::{build_prompt, send_gemini_prompt, send_prompt, GenerateOptions};
 use crate::state::AppState;
 use icondata as id;
 use leptos::prelude::*;
@@ -61,6 +61,21 @@ fn status_badge_class(available: bool) -> &'static str {
     }
 }
 
+/// Return the CSS class for a Send button, with a spinner while the request is in flight.
+fn send_button_class(sending: bool) -> &'static str {
+    if sending {
+        "button is-small is-dark is-loading"
+    } else {
+        "button is-small is-dark"
+    }
+}
+
+/// Return the trimmed Gemini API key when it is non-empty.
+fn prompt_gemini_api_key(raw: &str) -> Option<String> {
+    let key = raw.trim();
+    (!key.is_empty()).then(|| key.to_string())
+}
+
 /// Return the normalised save path when it is non-empty.
 fn prompt_save_path(raw: &str) -> Option<String> {
     let path = normalize_note_path(raw);
@@ -74,11 +89,13 @@ pub fn PromptPanel() -> impl IntoView {
     let prompt_text = state.prompt_text;
     let prompt_output_path = state.prompt_output_path;
     let ollama_available = state.ollama_available;
-    let sending = RwSignal::new(false);
+    let gemini_available = state.gemini_available;
+    let sending_ollama = RwSignal::new(false);
+    let sending_gemini = RwSignal::new(false);
 
     let state_send = state.clone();
     let on_send = move |_| {
-        if sending.get_untracked() {
+        if sending_ollama.get_untracked() || sending_gemini.get_untracked() {
             return;
         }
         let Some(prompt) = assembled_prompt(&state_send) else {
@@ -110,7 +127,7 @@ pub fn PromptPanel() -> impl IntoView {
         let toast = state_send.toast;
         let error_toast = state_send.error_toast;
         let file_tree_epoch = state_send.file_tree_epoch;
-        sending.set(true);
+        sending_ollama.set(true);
         spawn_local(async move {
             match send_prompt(port, &model, &prompt, &options).await {
                 Ok(text) => {
@@ -131,7 +148,63 @@ pub fn PromptPanel() -> impl IntoView {
                     show_error_toast(error_toast, ollama_send_failed_toast(e));
                 }
             }
-            sending.set(false);
+            sending_ollama.set(false);
+        });
+    };
+
+    let state_send_gemini = state.clone();
+    let on_send_gemini = move |_| {
+        if sending_ollama.get_untracked() || sending_gemini.get_untracked() {
+            return;
+        }
+        let Some(prompt) = assembled_prompt(&state_send_gemini) else {
+            return;
+        };
+        let Some(api_key) = prompt_gemini_api_key(&state_send_gemini.gemini_api_key.get_untracked())
+        else {
+            show_error_toast(state_send_gemini.error_toast, ENTER_GEMINI_API_KEY_TOAST);
+            return;
+        };
+        let model = state_send_gemini.gemini_model.get_untracked();
+        if model.trim().is_empty() {
+            show_error_toast(state_send_gemini.error_toast, ENTER_GEMINI_MODEL_TOAST);
+            return;
+        }
+        let Some(path) = prompt_save_path(&state_send_gemini.prompt_output_path.get_untracked())
+        else {
+            show_error_toast(state_send_gemini.error_toast, ENTER_OUTPUT_PATH_TOAST);
+            return;
+        };
+        let Some(session_id) = state_send_gemini.session_id.get_untracked() else {
+            web_sys::console::warn_1(&"MCP session not ready".into());
+            show_error_toast(state_send_gemini.error_toast, MCP_SESSION_NOT_READY_TOAST);
+            return;
+        };
+        let toast = state_send_gemini.toast;
+        let error_toast = state_send_gemini.error_toast;
+        let file_tree_epoch = state_send_gemini.file_tree_epoch;
+        sending_gemini.set(true);
+        spawn_local(async move {
+            match send_gemini_prompt(&api_key, &model, &prompt).await {
+                Ok(text) => {
+                    gemini_available.set(true);
+                    write_prompt_response(
+                        &session_id,
+                        &path,
+                        &text,
+                        toast,
+                        error_toast,
+                        file_tree_epoch,
+                    )
+                    .await;
+                }
+                Err(e) => {
+                    gemini_available.set(false);
+                    web_sys::console::error_1(&e.clone().into());
+                    show_error_toast(error_toast, gemini_send_failed_toast(e));
+                }
+            }
+            sending_gemini.set(false);
         });
     };
 
@@ -180,9 +253,9 @@ pub fn PromptPanel() -> impl IntoView {
             </div>
             <div class="prompt-actions mt-2">
                 <button
-                    class="button is-small is-dark"
+                    class=move || send_button_class(sending_ollama.get())
                     title=SEND_BUTTON
-                    prop:disabled=move || sending.get()
+                    prop:disabled=move || sending_ollama.get() || sending_gemini.get()
                     on:click=on_send
                 >
                     <Icon icon=id::LuSend/>
@@ -196,19 +269,24 @@ pub fn PromptPanel() -> impl IntoView {
                     <Icon icon=id::LuCircle/>
                     {OLLAMA_STATUS_LABEL}
                 </span>
-                <button class="button is-small is-dark" title=SEND_BUTTON>
+                <button
+                    class=move || send_button_class(sending_gemini.get())
+                    title=SEND_BUTTON
+                    prop:disabled=move || sending_ollama.get() || sending_gemini.get()
+                    on:click=on_send_gemini
+                >
                     <Icon icon=id::LuSend/>
                     {SEND_BUTTON}
                 </button>
                 <span
-                    class=status_badge_class(false)
-                    title=gemini_status_title(false)
+                    class=move || status_badge_class(gemini_available.get())
+                    title=move || gemini_status_title(gemini_available.get())
                     role="status"
                 >
                     <Icon icon=id::LuCircle/>
                     {GEMINI_STATUS_LABEL}
                 </span>
-                <Show when=move || sending.get()>
+                <Show when=move || sending_ollama.get() || sending_gemini.get()>
                     <span
                         class="prompt-send-spinner"
                         role="status"
@@ -220,7 +298,7 @@ pub fn PromptPanel() -> impl IntoView {
     }
 }
 
-/// Write the Ollama completion to `path` and toast when the note is saved.
+/// Write the prompt completion to `path` and toast when the note is saved.
 async fn write_prompt_response(
     session_id: &str,
     path: &str,
@@ -243,7 +321,7 @@ async fn write_prompt_response(
 
 #[cfg(test)]
 mod tests {
-    use super::{prompt_save_path, status_badge_class};
+    use super::{prompt_gemini_api_key, prompt_save_path, send_button_class, status_badge_class};
     use crate::default_settings::DEFAULT_PROMPT_OUTPUT_PATH;
 
     #[test]
@@ -273,5 +351,30 @@ mod tests {
             status_badge_class(false),
             "ollama-status-badge is-unavailable"
         );
+    }
+
+    #[test]
+    /// Assert Send uses `is-loading` while a request is in flight.
+    fn send_button_class_marks_loading_while_sending() {
+        assert_eq!(send_button_class(false), "button is-small is-dark");
+        assert_eq!(
+            send_button_class(true),
+            "button is-small is-dark is-loading"
+        );
+    }
+
+    #[test]
+    /// Assert Gemini send rejects an empty API key and keeps a trimmed key.
+    fn prompt_gemini_api_key_requires_a_non_empty_key() {
+        assert_eq!(
+            prompt_gemini_api_key("AIzaSyExample").as_deref(),
+            Some("AIzaSyExample")
+        );
+        assert_eq!(
+            prompt_gemini_api_key("  AIzaSyExample  ").as_deref(),
+            Some("AIzaSyExample")
+        );
+        assert_eq!(prompt_gemini_api_key("").as_deref(), None);
+        assert_eq!(prompt_gemini_api_key("   ").as_deref(), None);
     }
 }

@@ -10,7 +10,7 @@ mod state;
 mod utils;
 
 use crate::info_messages::PAGE_TITLE;
-use crate::prompting::probe_ollama;
+use crate::prompting::{probe_gemini, probe_ollama};
 use crate::utils::url::redirect_trailing_dot_hostname;
 use components::app_shell::AppShell;
 use leptos::prelude::*;
@@ -25,7 +25,7 @@ fn main() {
     mount_to_body(|| view! { <App/> });
 }
 
-/// Provide app state, probe MCP and Ollama, and render the shell.
+/// Provide app state, probe MCP, Ollama, and Gemini, and render the shell.
 #[component]
 fn App() -> impl IntoView {
     let state = AppState::new();
@@ -38,6 +38,11 @@ fn App() -> impl IntoView {
 
     mcp::client::probe_mcp(state.session_id);
     probe_ollama(state.ollama_port, state.ollama_available);
+    probe_gemini(
+        state.gemini_api_key,
+        state.gemini_model,
+        state.gemini_available,
+    );
 
     view! { <AppShell/> }
 }

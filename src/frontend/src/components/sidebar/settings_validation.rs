@@ -404,7 +404,7 @@ mod tests {
         let model = parse_gemini_model(DEFAULT_GEMINI_MODEL).expect("valid Gemini model");
         assert_eq!(
             gemini_model_url(&model, &key),
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=AIzaSyExample"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash?key=AIzaSyExample"
         );
     }
 }

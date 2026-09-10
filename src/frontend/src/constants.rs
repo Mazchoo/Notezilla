@@ -14,14 +14,13 @@ pub const OLLAMA_TEMPERATURE_MAX: f64 = 2.0;
 pub const OLLAMA_TOP_P_MIN: f64 = 0.0;
 pub const OLLAMA_TOP_P_MAX: f64 = 1.0;
 /// Gemini Generative Language API origin.
-#[allow(dead_code)]
 pub const GEMINI_API_ORIGIN: &str = "https://generativelanguage.googleapis.com";
 /// Path prefix for Gemini model metadata: `/v1beta/models/{model}`.
-#[allow(dead_code)]
 pub const GEMINI_MODELS_PATH: &str = "/v1beta/models";
+/// Action suffix for POST `{model}:generateContent`.
+pub const GEMINI_GENERATE_CONTENT_ACTION: &str = "generateContent";
 
 /// Return the Gemini model metadata URL for `model` and `api_key`.
-#[allow(dead_code)]
 pub fn gemini_model_url(model: &str, api_key: &str) -> String {
     format!("{GEMINI_API_ORIGIN}{GEMINI_MODELS_PATH}/{model}?key={api_key}")
 }

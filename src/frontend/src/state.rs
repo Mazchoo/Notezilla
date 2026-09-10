@@ -82,6 +82,8 @@ pub struct AppState {
     pub gemini_api_key: RwSignal<String>,
     /// Gemini model id used in `/v1beta/models/{model}`.
     pub gemini_model: RwSignal<String>,
+    /// Whether GET `/v1beta/models/{model}` accepted the Gemini API key.
+    pub gemini_available: RwSignal<bool>,
 }
 
 impl AppState {
@@ -129,6 +131,7 @@ impl AppState {
             ollama_think: RwSignal::new(DEFAULT_OLLAMA_THINK),
             gemini_api_key: RwSignal::new(DEFAULT_GEMINI_API_KEY.to_string()),
             gemini_model: RwSignal::new(DEFAULT_GEMINI_MODEL.to_string()),
+            gemini_available: RwSignal::new(false),
         }
     }
 
@@ -225,6 +228,7 @@ mod tests {
             assert_eq!(state.ollama_think.get_untracked(), DEFAULT_OLLAMA_THINK);
             assert_eq!(state.gemini_api_key.get_untracked(), DEFAULT_GEMINI_API_KEY);
             assert_eq!(state.gemini_model.get_untracked(), DEFAULT_GEMINI_MODEL);
+            assert!(!state.gemini_available.get_untracked());
         });
     }
 }

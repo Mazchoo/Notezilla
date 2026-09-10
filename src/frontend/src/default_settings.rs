@@ -34,6 +34,6 @@ pub const DEFAULT_OLLAMA_THINK: bool = true;
 /// Default Gemini API key from `GEMINI_API_KEY` at compile time. Empty when unset.
 pub const DEFAULT_GEMINI_API_KEY: &str = key_from_env!("GEMINI_API_KEY");
 /// Default Gemini model name used in `/v1beta/models/{model}`.
-pub const DEFAULT_GEMINI_MODEL: &str = "gemini-2.5-flash";
+pub const DEFAULT_GEMINI_MODEL: &str = "gemini-3.6-flash";
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;

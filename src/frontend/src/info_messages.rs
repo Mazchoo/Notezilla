@@ -80,6 +80,8 @@ pub const PROMPT_OUTPUT_PATH_TITLE: &str = "Save response to";
 pub const SENDING_PROMPT_LABEL: &str = "Sending prompt";
 pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
 pub const MCP_SESSION_NOT_READY_TOAST: &str = "MCP session not ready";
+pub const ENTER_GEMINI_API_KEY_TOAST: &str = "Enter a Gemini API key";
+pub const ENTER_GEMINI_MODEL_TOAST: &str = "Enter a Gemini model";
 
 // --- Settings ---
 
@@ -118,7 +120,7 @@ pub const GEMINI_API_KEY_TITLE: &str =
 pub const GEMINI_MODEL_LABEL: &str = "Gemini model";
 pub const GEMINI_MODEL_PLACEHOLDER: &str = "model name";
 pub const GEMINI_MODEL_TITLE: &str =
-    "Model id for /v1beta/models/{model}, for example gemini-2.5-flash.";
+    "Model id for /v1beta/models/{model}, for example gemini-3.6-flash.";
 pub const RESULTS_PER_PAGE_CONSTRAINT: &str = "an integer of 1 or more";
 pub const OLLAMA_PORT_CONSTRAINT: &str = "an integer from 1 to 65535";
 pub const OLLAMA_MODEL_CONSTRAINT: &str = "a non-empty model name";
@@ -196,6 +198,11 @@ pub fn gemini_status_title(available: bool) -> &'static str {
 /// Return the toast text when an Ollama request fails.
 pub fn ollama_send_failed_toast(error: impl std::fmt::Display) -> String {
     format!("Ollama request failed: {error}")
+}
+
+/// Return the toast text when a Gemini request fails.
+pub fn gemini_send_failed_toast(error: impl std::fmt::Display) -> String {
+    format!("Gemini request failed: {error}")
 }
 
 /// Return the toast text after writing the prompt response to `path`.
