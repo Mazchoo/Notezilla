@@ -24,9 +24,9 @@ Build the logic to send system prompts and context to the Gemini API. The user s
 ## Acceptance Criteria
 
 - [x] The connector sends well-formed requests to Gemini and receives generated text.
-- [ ] The Gemini API key, model, and generation parameters are configurable.
-- [ ] Setting a configuration to an invalid value will reject it and return an error toast.
-- [ ] All open markdown files in the editor as well as open templates are used to create a prompt.
-- [ ] Response is saved as markdown file with provided name.
-- [ ] A health-check of `GET https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=YOUR_API_KEY` returns okay when the model is valid.
-- [ ] Graceful error handling when the API key is rejected or the model is not found.
+- [x] The Gemini API key, model, and generation parameters are configurable.
+- [x] Setting a configuration to an invalid value will reject it and return an error toast.
+- [x] All open markdown files in the editor as well as open templates are used to create a prompt.
+- [x] Response is saved as markdown file with provided name.
+- [x] A health-check of `GET https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=YOUR_API_KEY` returns okay when the model is valid.
+- [x] Graceful error handling when the API key is rejected or the model is not found.

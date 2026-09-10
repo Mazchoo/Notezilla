@@ -128,8 +128,10 @@ pub const OLLAMA_NUM_PREDICT_CONSTRAINT: &str = "-1 or an integer of 0 or more";
 pub const OLLAMA_TOP_P_CONSTRAINT: &str = "a number from 0 to 1";
 pub const OLLAMA_TOP_K_CONSTRAINT: &str = "an integer of 1 or more";
 pub const OLLAMA_NUM_CTX_CONSTRAINT: &str = "an integer of 1 or more";
-pub const GEMINI_API_KEY_CONSTRAINT: &str = "empty or a key with no whitespace";
-pub const GEMINI_MODEL_CONSTRAINT: &str = "a non-empty model name without /";
+pub const GEMINI_API_KEY_CONSTRAINT: &str =
+    "empty or a key of letters, digits, -, ., _, or ~";
+pub const GEMINI_MODEL_CONSTRAINT: &str =
+    "a non-empty model name of letters, digits, -, ., _, or ~";
 pub const HOTKEY_CONSTRAINT: &str = "a single printable character";
 pub const SAVE_HOTKEY_LABEL: &str = "Save hotkey";
 pub const NEW_FILE_HOTKEY_LABEL: &str = "New file hotkey";

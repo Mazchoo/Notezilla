@@ -78,16 +78,23 @@ pub(crate) fn parse_ollama_model(raw: &str) -> Option<String> {
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
-/// Parse a Gemini API key. Empty is allowed; whitespace inside the key is not.
-pub(crate) fn parse_gemini_api_key(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    (!trimmed.chars().any(char::is_whitespace)).then(|| trimmed.to_string())
+/// Return whether every character of `value` is RFC 3986 unreserved.
+fn is_url_unreserved_token(value: &str) -> bool {
+    value
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '.' | '_' | '~'))
 }
 
-/// Parse a Gemini model id for `/v1beta/models/{model}`. Reject empty values and `/`.
+/// Parse a Gemini API key. Empty is allowed; otherwise RFC 3986 unreserved only.
+pub(crate) fn parse_gemini_api_key(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    is_url_unreserved_token(trimmed).then(|| trimmed.to_string())
+}
+
+/// Parse a Gemini model id for `/v1beta/models/{model}`. Reject empty and reserved URL characters.
 pub(crate) fn parse_gemini_model(raw: &str) -> Option<String> {
     let trimmed = parse_ollama_model(raw)?;
-    (!trimmed.contains('/')).then_some(trimmed)
+    is_url_unreserved_token(&trimmed).then_some(trimmed)
 }
 
 /// Return the parsed value, or the invalid-setting toast text.
@@ -383,7 +390,7 @@ mod tests {
     }
 
     #[test]
-    /// Assert Gemini API key and model accept values that fit `/v1beta/models/{model}?key={api_key}`.
+    /// Assert Gemini API key and model accept RFC 3986 unreserved values for `/v1beta/models/{model}?key={api_key}`.
     fn parse_gemini_settings_accept_key_and_model_for_models_url() {
         assert_eq!(
             parse_gemini_api_key(DEFAULT_GEMINI_API_KEY),
@@ -393,13 +400,19 @@ mod tests {
             parse_gemini_api_key("  AIzaSyExample  "),
             Some("AIzaSyExample".to_string())
         );
+        assert_eq!(parse_gemini_api_key(""), Some(String::new()));
         assert_eq!(parse_gemini_api_key("AIza Sy"), None);
+        assert_eq!(parse_gemini_api_key("AIza?Sy"), None);
+        assert_eq!(parse_gemini_api_key("AIza&Sy"), None);
         assert_eq!(
             parse_gemini_model(DEFAULT_GEMINI_MODEL),
             Some(DEFAULT_GEMINI_MODEL.to_string())
         );
         assert_eq!(parse_gemini_model("  "), None);
         assert_eq!(parse_gemini_model("models/gemini-2.5-flash"), None);
+        assert_eq!(parse_gemini_model("gemini:flash"), None);
+        assert_eq!(parse_gemini_model("gemini?flash"), None);
+        assert_eq!(parse_gemini_model("gemini#flash"), None);
         let key = parse_gemini_api_key("AIzaSyExample").expect("valid Gemini API key");
         let model = parse_gemini_model(DEFAULT_GEMINI_MODEL).expect("valid Gemini model");
         assert_eq!(
