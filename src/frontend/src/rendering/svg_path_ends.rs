@@ -127,6 +127,13 @@ fn tokenize_path(d: &str) -> Vec<String> {
             if !cur.is_empty() {
                 out.push(std::mem::take(&mut cur));
             }
+        } else if (c == '-' || c == '+')
+            && !cur.is_empty()
+            && !cur.ends_with(['e', 'E'])
+        {
+            // A sign starts a new number unless it belongs to an exponent.
+            out.push(std::mem::take(&mut cur));
+            cur.push(c);
         } else {
             cur.push(c);
         }
@@ -162,6 +169,13 @@ mod tests {
             tokenize_path("M0,0 L10 -5"),
             vec!["M", "0", "0", "L", "10", "-5"]
         );
+    }
+
+    #[test]
+    /// Assert a sign that starts the next number separates coordinates.
+    fn minus_separates_coordinates() {
+        let ends = path_ends("M0,0L10-5").expect("path ends");
+        assert_eq!(ends.end, (10.0, -5.0));
     }
 
     #[test]
