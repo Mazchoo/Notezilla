@@ -142,6 +142,22 @@ impl EditorEntry {
     pub fn empty(path: impl Into<String>) -> Self {
         Self::new(path, "")
     }
+
+    /// Return the raw markdown source, wrapping non-empty front matter in `---` delimiters.
+    pub fn to_markdown(self) -> String {
+        let body = self.content.text.get_untracked();
+        match self.front_matter.get_untracked() {
+            Some(fm) => {
+                let raw = fm.raw.get_untracked();
+                if raw.is_empty() {
+                    body
+                } else {
+                    format!("---\n{raw}\n---\n{body}")
+                }
+            }
+            None => body,
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,10 +1,12 @@
-use crate::components::editor::actions::{add_front_matter, delete_entry, delete_front_matter};
+use crate::components::editor::actions::{
+    add_front_matter, copy_markdown, delete_entry, delete_front_matter,
+};
 use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };
 use crate::info_messages::{
-    ADD_FRONTMATTER_TITLE, COLLAPSE_SECTION_TITLE, DELETE_BLOCK_TITLE, DELETE_FRONT_MATTER_TITLE,
-    EXPAND_SECTION_TITLE,
+    ADD_FRONTMATTER_TITLE, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE, DELETE_BLOCK_TITLE,
+    DELETE_FRONT_MATTER_TITLE, EXPAND_SECTION_TITLE,
 };
 use crate::models::block::{EditorEntry, FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
@@ -83,6 +85,7 @@ pub fn TitleBlockComponent(
 
     // Clone state into signals so closures can be Fn (not FnOnce).
     let state_add = state.clone();
+    let state_copy = state.clone();
     let state_del = state.clone();
 
     let on_toggle_collapse = move |ev: web_sys::MouseEvent| {
@@ -153,6 +156,14 @@ pub fn TitleBlockComponent(
                         Either::Right(view! { <span/> })
                     }
                 }}
+                <button
+                    class="block-action-btn block-copy-markdown-btn"
+                    title=COPY_MARKDOWN_TITLE
+                    on:mousedown=|ev: web_sys::MouseEvent| ev.prevent_default()
+                    on:click=move |_| copy_markdown(&state_copy, entry_id)
+                >
+                    <Icon icon=id::LuCopy/>
+                </button>
                 <button
                     class="block-action-btn block-delete-btn"
                     title=DELETE_BLOCK_TITLE

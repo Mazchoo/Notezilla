@@ -144,6 +144,8 @@ pub const TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL: &str = "Toggle markdown editing"
 pub const EXPAND_SECTION_TITLE: &str = "Expand section";
 pub const COLLAPSE_SECTION_TITLE: &str = "Collapse section";
 pub const ADD_FRONTMATTER_TITLE: &str = "Add frontmatter";
+pub const COPY_MARKDOWN_TITLE: &str = "Copy markdown";
+pub const MARKDOWN_COPIED_TOAST: &str = "Copied markdown";
 pub const DELETE_BLOCK_TITLE: &str = "Delete block";
 pub const DELETE_FRONT_MATTER_TITLE: &str = "Delete front matter";
 
