@@ -45,42 +45,28 @@ pub const CHECKBOX_CHECK_SVG_HREF: &str = "/checkbox-check.svg";
 pub const CHECKBOX_CHECK_DAY_SVG_HREF: &str = "/checkbox-check-day.svg";
 
 /// Night palette. Hex tokens match `night.css`.
-/// Tokens unused in the WASM binary are asserted against that stylesheet in tests.
-#[allow(dead_code)]
 pub const BG_0: &str = "#11111b";
-#[allow(dead_code)]
 pub const BG_1: &str = "#181825";
-#[allow(dead_code)]
 pub const BG_2: &str = "#1e1e2e";
 pub const BG_3: &str = "#313244";
-#[allow(dead_code)]
 pub const BORDER: &str = "#45475a";
 pub const TEXT: &str = "#cdd6f4";
-#[allow(dead_code)]
 pub const TEXT_MUTED: &str = "#6c7086";
 /// Mermaid arrow fallback when a marker URL has no hex suffix (`--subtext0`).
 pub const TEXT_SUBTLE: &str = "#a6adc8";
-#[allow(dead_code)]
 pub const ACCENT: &str = "#cba6f7";
-#[allow(dead_code)]
 pub const CODE: &str = "#f38ba8";
 
 /// Day palette. Hex tokens match `day.css`. Dark text on a light page.
-#[allow(dead_code)]
 pub const DAY_BG_0: &str = "#dce0e8";
-#[allow(dead_code)]
 pub const DAY_BG_1: &str = "#e6e9ef";
 pub const DAY_BG_2: &str = "#eff1f5";
 pub const DAY_BG_3: &str = "#ccd0da";
-#[allow(dead_code)]
 pub const DAY_BORDER: &str = "#bcc0cc";
 pub const DAY_TEXT: &str = "#4c4f69";
-#[allow(dead_code)]
 pub const DAY_TEXT_MUTED: &str = "#9ca0b0";
 pub const DAY_TEXT_SUBTLE: &str = "#6c6f85";
-#[allow(dead_code)]
 pub const DAY_ACCENT: &str = "#8839ef";
-#[allow(dead_code)]
 pub const DAY_CODE: &str = "#d20f39";
 
 /// [`TEXT`] as PDF DeviceRGB fill. Ironpress math letters inherit this and

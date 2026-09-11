@@ -20,7 +20,12 @@ pub enum ColorTheme {
 }
 
 /// Hex tokens and PDF paint operators for one color theme.
+///
+/// Fields match `--bg-0`…`--bg-3` and the other tokens in `night.css` /
+/// `day.css`. Rendering currently reads a subset; the rest stay so the
+/// numbered scale is complete.
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 pub struct Palette {
     pub bg_0: &'static str,
     pub bg_1: &'static str,
@@ -72,14 +77,6 @@ impl ColorTheme {
         match self {
             Self::Night => "dark",
             Self::Day => "light",
-        }
-    }
-
-    /// Return the other theme.
-    pub fn toggled(self) -> Self {
-        match self {
-            Self::Night => Self::Day,
-            Self::Day => Self::Night,
         }
     }
 
@@ -144,10 +141,12 @@ pub fn fill_export_template(template: &str, title: &str, body_html: &str) -> Str
 }
 
 /// Restore `current_theme` when dropped. Used by tests that switch theme.
+#[cfg(test)]
 pub struct ThemeGuard {
     previous: ColorTheme,
 }
 
+#[cfg(test)]
 impl ThemeGuard {
     /// Set `theme` as current and restore the previous theme on drop.
     pub fn set(theme: ColorTheme) -> Self {
@@ -157,6 +156,7 @@ impl ThemeGuard {
     }
 }
 
+#[cfg(test)]
 impl Drop for ThemeGuard {
     fn drop(&mut self) {
         set_current_theme(self.previous);
@@ -168,18 +168,21 @@ mod tests {
     use super::{
         current_theme, fill_export_template, ColorTheme, ThemeGuard, DAY_PALETTE, NIGHT_PALETTE,
     };
-    use crate::constants::{DAY_BG_2, DAY_TEXT, NIGHT_CSS};
+    use crate::constants::{BG_0, BG_1, BG_2, BG_3, DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3, DAY_TEXT, NIGHT_CSS};
 
     #[test]
     /// Assert night is the default and day uses dark text on a light page.
     fn night_is_default_and_day_is_dark_on_light() {
         assert_eq!(current_theme(), ColorTheme::Night);
         assert_eq!(ColorTheme::Night.as_attr(), "dark");
-        assert_eq!(ColorTheme::Night.toggled(), ColorTheme::Day);
-        assert_eq!(ColorTheme::Night.palette().bg_2, NIGHT_PALETTE.bg_2);
+        let night = ColorTheme::Night.palette();
+        assert_eq!([night.bg_0, night.bg_1, night.bg_2, night.bg_3], [BG_0, BG_1, BG_2, BG_3]);
+        assert_eq!(night.bg_2, NIGHT_PALETTE.bg_2);
         assert_eq!(ColorTheme::Day.as_attr(), "light");
-        assert_eq!(ColorTheme::Day.palette().text, DAY_TEXT);
-        assert_eq!(ColorTheme::Day.palette().bg_2, DAY_BG_2);
+        let day = ColorTheme::Day.palette();
+        assert_eq!([day.bg_0, day.bg_1, day.bg_2, day.bg_3], [DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3]);
+        assert_eq!(day.text, DAY_TEXT);
+        assert_eq!(day.bg_2, DAY_BG_2);
         assert_eq!(DAY_PALETTE.text, "#4c4f69");
         assert_eq!(DAY_PALETTE.bg_2, "#eff1f5");
 

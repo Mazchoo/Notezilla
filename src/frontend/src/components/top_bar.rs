@@ -150,11 +150,6 @@ pub fn set_color_theme(state: &AppState, theme: ColorTheme) {
     apply_document_theme(theme);
 }
 
-/// Toggle between the night and day color themes.
-pub fn toggle_color_theme(state: &AppState) {
-    set_color_theme(state, state.color_theme.get_untracked().toggled());
-}
-
 /// Render the top-bar import, save, export, edit-toggle, and new-file actions.
 #[component]
 pub fn TopBar() -> impl IntoView {
@@ -379,16 +374,16 @@ mod tests {
     }
 
     #[test]
-    /// Assert the color theme starts at night and flips to day.
-    fn toggle_color_theme_starts_at_night_and_flips() {
+    /// Assert set_color_theme writes Day and Night onto app state.
+    fn set_color_theme_writes_day_and_night() {
         let owner = Owner::new();
         owner.with(|| {
             let _guard = crate::theme::ThemeGuard::set(ColorTheme::Night);
             let state = AppState::new();
             assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
-            toggle_color_theme(&state);
+            set_color_theme(&state, ColorTheme::Day);
             assert_eq!(state.color_theme.get_untracked(), ColorTheme::Day);
-            toggle_color_theme(&state);
+            set_color_theme(&state, ColorTheme::Night);
             assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
         });
     }
