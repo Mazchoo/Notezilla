@@ -1,6 +1,6 @@
 //! Fallback HTML for a render that could not process its source.
 
-use crate::rendering::escape_html;
+use crate::rendering::{escape_html, escape_html_comment};
 
 /// Return a fenced fallback block showing `source` and the failure cause.
 ///
@@ -9,6 +9,7 @@ use crate::rendering::escape_html;
 /// readable in exported HTML.
 pub fn render_error_html(class: &str, source: &str, error: &str) -> String {
     let escaped = escape_html(source);
+    let error = escape_html_comment(error);
     format!("<pre class=\"{class}\"><code>{escaped}</code></pre><!-- {class}: {error} -->")
 }
 

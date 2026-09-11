@@ -8,6 +8,11 @@ pub(crate) fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Escape `s` so it can sit inside `<!-- … -->` without closing the comment.
+pub(crate) fn escape_html_comment(s: &str) -> String {
+    escape_html(s).replace("--", "- -")
+}
+
 #[cfg(test)]
 mod tests {
     use super::escape_html;

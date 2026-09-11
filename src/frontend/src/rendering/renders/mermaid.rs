@@ -200,6 +200,19 @@ mod tests {
     }
 
     #[test]
+    /// Assert a parse-error snippet cannot close the fallback HTML comment.
+    fn parse_error_snippet_cannot_break_out_of_html_comment() {
+        let source = "--><b>x</b><!--";
+        assert!(MermaidRender.render_svg(source).is_err());
+        let html = MermaidRender.render(source);
+        assert!(
+            html.contains(&format!("class=\"{MERMAID_ERROR_CLASS}\"")),
+            "{html}"
+        );
+        assert!(!html.contains("<b>x</b>"), "{html}");
+    }
+
+    #[test]
     /// Assert PDF export reuses the editor SVG.
     fn pdf_html_matches_editor_html() {
         let source = "graph LR\n    A --> B\n";

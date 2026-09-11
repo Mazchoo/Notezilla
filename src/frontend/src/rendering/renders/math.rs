@@ -2,7 +2,7 @@
 
 use super::{Render, RenderPdf};
 use crate::constants::TEXT;
-use crate::rendering::escape_html;
+use crate::rendering::{escape_html, escape_html_comment};
 use latex2mathml::{latex_to_mathml, DisplayStyle};
 
 /// LaTeX render for one display style.
@@ -26,6 +26,7 @@ impl MathRender {
             DisplayStyle::Inline => "math-error math-error-inline",
             DisplayStyle::Block => "math-error math-error-block",
         };
+        let error = escape_html_comment(error);
         format!("<code class=\"{class}\">{escaped}</code><!-- math error: {error} -->")
     }
 }
