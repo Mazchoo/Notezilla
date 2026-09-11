@@ -1,11 +1,12 @@
 //! Escapes text for insertion into HTML.
 
-/// Escape `&`, `<`, `>`, and `"` for safe insertion into HTML text or attributes.
+/// Escape `&`, `<`, `>`, `"`, and `'` for safe insertion into HTML text or attributes.
 pub(crate) fn escape_html(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 /// Escape `s` so it can sit inside `<!-- … -->` without closing the comment.
@@ -37,5 +38,11 @@ mod tests {
     /// Assert text without markup characters is unchanged.
     fn plain_text_is_unchanged() {
         assert_eq!(escape_html("x = 1"), "x = 1");
+    }
+
+    #[test]
+    /// Assert `'` is encoded for attribute use.
+    fn escapes_apostrophe() {
+        assert_eq!(escape_html("it's"), "it&#39;s");
     }
 }
