@@ -343,6 +343,14 @@ mod tests {
     }
 
     #[test]
+    /// Assert ` ```graphviz extra ` still uses the graphviz render.
+    fn graphviz_info_string_suffix_is_ignored() {
+        let html = render_markdown("```graphviz extra_info\ndigraph { A -> B }\n```\n");
+        assert!(html.contains("<svg"), "{html}");
+        assert!(!html.contains("<pre"), "{html}");
+    }
+
+    #[test]
     /// Assert a mermaid fence is intercepted by the mermaid render.
     fn mermaid_fence_uses_the_mermaid_render() {
         let html = render_markdown("```mermaid\ngraph LR\n    A --> B\n```\n");

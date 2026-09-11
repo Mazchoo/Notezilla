@@ -9,9 +9,9 @@ pub(super) enum BlockKind {
 }
 
 impl BlockKind {
-    /// Classify a fence by its language token.
+    /// Classify a fence by the first token of its info string.
     pub(super) fn from_fence_language(language: &str) -> Self {
-        match language {
+        match language.split_ascii_whitespace().next().unwrap_or("") {
             "graphviz" => BlockKind::Graphviz,
             "mermaid" => BlockKind::Mermaid,
             other => BlockKind::Code(other.to_string()),
@@ -32,6 +32,19 @@ mod tests {
         ));
         assert!(matches!(
             BlockKind::from_fence_language("mermaid"),
+            BlockKind::Mermaid
+        ));
+    }
+
+    #[test]
+    /// Assert the fence language is the first info-string token.
+    fn diagram_fence_uses_the_first_info_token() {
+        assert!(matches!(
+            BlockKind::from_fence_language("graphviz title"),
+            BlockKind::Graphviz
+        ));
+        assert!(matches!(
+            BlockKind::from_fence_language("mermaid extra_info"),
             BlockKind::Mermaid
         ));
     }
