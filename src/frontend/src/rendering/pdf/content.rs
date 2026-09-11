@@ -4,7 +4,8 @@
 //! and math glyph runs emit no fill at all and so inherit black. Both are
 //! repainted with the page text color so equations match body text.
 
-use crate::constants::{MATH_FONTS, PDF_BLACK_FILL, PDF_BLACK_STROKE, TEXT_FILL, TEXT_STROKE};
+use crate::constants::{MATH_FONTS, PDF_BLACK_FILL, PDF_BLACK_STROKE};
+use crate::theme::current_theme;
 
 /// Recolor black paint operators and add a fill to math text objects.
 pub fn recolor_content(content: &[u8]) -> Vec<u8> {
@@ -20,7 +21,11 @@ fn replace_black_operators(content: &[u8]) -> Vec<u8> {
         let is_fill = content[i..].starts_with(PDF_BLACK_FILL);
         let is_stroke = content[i..].starts_with(PDF_BLACK_STROKE);
         if is_operator_start(content, i) && (is_fill || is_stroke) {
-            let replacement = if is_fill { TEXT_FILL } else { TEXT_STROKE };
+            let replacement = if is_fill {
+                current_theme().palette().text_fill
+            } else {
+                current_theme().palette().text_stroke
+            };
             out.extend_from_slice(replacement.trim_ascii_end());
             i += PDF_BLACK_FILL.len();
             continue;
@@ -51,7 +56,7 @@ fn insert_fill_after_bt(content: &[u8]) -> Vec<u8> {
         }
         out.extend_from_slice(b"BT\n");
         if !has_text_fill(&content[after_bt..]) {
-            out.extend_from_slice(TEXT_FILL);
+            out.extend_from_slice(current_theme().palette().text_fill);
         }
         i = after_bt;
     }
@@ -82,7 +87,8 @@ fn starts_math_font(body: &[u8]) -> bool {
 
 /// Return whether a text object body already sets the page text fill.
 fn has_text_fill(body: &[u8]) -> bool {
-    body.starts_with(TEXT_FILL) || body.starts_with(TEXT_FILL.trim_ascii_end())
+    let fill = current_theme().palette().text_fill;
+    body.starts_with(fill) || body.starts_with(fill.trim_ascii_end())
 }
 
 /// Return whether index `i` starts a PDF operator token.

@@ -3,10 +3,9 @@
 //! Ironpress ignores `dominant-baseline` and `<tspan>` positioning, so every
 //! label line becomes its own `<text>` element with an absolute baseline.
 
-use crate::constants::{
-    BASELINE_FROM_CENTER, DEFAULT_FONT_SIZE, GRAPHVIZ_LABEL_FONT_FAMILY, TEXT as LABEL_FILL,
-};
+use crate::constants::{BASELINE_FROM_CENTER, DEFAULT_FONT_SIZE, GRAPHVIZ_LABEL_FONT_FAMILY};
 use crate::rendering::svg_attr::{svg_attr, svg_attr_f64};
+use crate::theme::current_theme;
 use std::collections::HashMap;
 
 /// Parse the `.aN` CSS font-size classes layout-rs emits, keyed by class name.
@@ -75,9 +74,10 @@ fn line_baseline(y: f64, font_size: f64, index: usize, count: usize) -> f64 {
 
 /// Build one `<text>` element for a label line.
 fn label_text_element(x: f64, baseline: f64, font_size: f64, text: &str) -> String {
+    let fill = current_theme().palette().text;
     format!(
         "<text text-anchor=\"middle\" x=\"{x}\" y=\"{baseline}\" font-size=\"{font_size}px\" \
-         font-family=\"{GRAPHVIZ_LABEL_FONT_FAMILY}\" fill=\"{LABEL_FILL}\">{text}</text>"
+         font-family=\"{GRAPHVIZ_LABEL_FONT_FAMILY}\" fill=\"{fill}\">{text}</text>"
     )
 }
 
@@ -113,8 +113,9 @@ fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
 mod tests {
     use super::{
         flatten_node_label, line_baseline, parse_font_classes, tspan_lines, BASELINE_FROM_CENTER,
-        GRAPHVIZ_LABEL_FONT_FAMILY, LABEL_FILL,
+        GRAPHVIZ_LABEL_FONT_FAMILY,
     };
+    use crate::constants::TEXT;
     use std::collections::HashMap;
 
     #[test]
@@ -177,7 +178,7 @@ mod tests {
         let mut fonts = HashMap::new();
         fonts.insert("a14".to_string(), 14);
         let html = flatten_node_label(r#"<text x="10" y="20" class="a14">A</text>"#, &fonts);
-        assert!(html.contains(&format!("fill=\"{LABEL_FILL}\"")), "{html}");
+        assert!(html.contains(&format!("fill=\"{TEXT}\"")), "{html}");
         assert!(html.contains("font-size=\"14px\""), "{html}");
         assert!(
             html.contains(&format!("font-family=\"{GRAPHVIZ_LABEL_FONT_FAMILY}\"")),

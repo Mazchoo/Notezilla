@@ -9,9 +9,11 @@ use crate::info_messages::{
     format_save_summary, save_failed_toast, with_hotkey, EDIT_MAIN_TEXT_FROZEN_TITLE,
     EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_TITLE, EXPORT_MARKDOWN_TITLE, EXPORT_PDF_TITLE,
     EXPORT_SVG_TITLE, IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
+    SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
 };
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
+use crate::theme::{apply_document_theme, set_current_theme, ColorTheme};
 use icondata as id;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -141,6 +143,18 @@ pub fn toggle_markdown_editing(state: &AppState) {
         .update(|enabled| *enabled = !*enabled);
 }
 
+/// Apply `theme` to app state, document CSS, and subsequent renders/exports.
+pub fn set_color_theme(state: &AppState, theme: ColorTheme) {
+    set_current_theme(theme);
+    state.color_theme.set(theme);
+    apply_document_theme(theme);
+}
+
+/// Toggle between the night and day color themes.
+pub fn toggle_color_theme(state: &AppState) {
+    set_color_theme(state, state.color_theme.get_untracked().toggled());
+}
+
 /// Render the top-bar import, save, export, edit-toggle, and new-file actions.
 #[component]
 pub fn TopBar() -> impl IntoView {
@@ -197,6 +211,16 @@ pub fn TopBar() -> impl IntoView {
     let state_toggle = state.clone();
     let on_toggle_markdown_editing = move |_| {
         toggle_markdown_editing(&state_toggle);
+    };
+
+    let state_theme = state.clone();
+    let on_theme_change = move |ev: Event| {
+        let theme = if event_target_checked(&ev) {
+            ColorTheme::Day
+        } else {
+            ColorTheme::Night
+        };
+        set_color_theme(&state_theme, theme);
     };
 
     view! {
@@ -272,6 +296,34 @@ pub fn TopBar() -> impl IntoView {
             >
                 {NEW_FILE_BUTTON}
             </button>
+            <label
+                class="theme-slider"
+                title=move || {
+                    if state.color_theme.get() == ColorTheme::Day {
+                        SWITCH_TO_NIGHT_TITLE
+                    } else {
+                        SWITCH_TO_DAY_TITLE
+                    }
+                }
+            >
+                <span class="theme-slider-night" aria-hidden="true">
+                    <Icon icon=id::LuMoon/>
+                </span>
+                <input
+                    class="theme-slider-input"
+                    type="checkbox"
+                    role="switch"
+                    aria-label=THEME_SLIDER_ARIA
+                    prop:checked=move || state.color_theme.get() == ColorTheme::Day
+                    on:change=on_theme_change
+                />
+                <span class="theme-slider-track" aria-hidden="true">
+                    <span class="theme-slider-thumb"></span>
+                </span>
+                <span class="theme-slider-day" aria-hidden="true">
+                    <Icon icon=id::LuSun/>
+                </span>
+            </label>
         </div>
     }
 }
@@ -323,6 +375,21 @@ mod tests {
             assert!(!state.markdown_editing_enabled.get_untracked());
             toggle_markdown_editing(&state);
             assert!(state.markdown_editing_enabled.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert the color theme starts at night and flips to day.
+    fn toggle_color_theme_starts_at_night_and_flips() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let _guard = crate::theme::ThemeGuard::set(ColorTheme::Night);
+            let state = AppState::new();
+            assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
+            toggle_color_theme(&state);
+            assert_eq!(state.color_theme.get_untracked(), ColorTheme::Day);
+            toggle_color_theme(&state);
+            assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
         });
     }
 

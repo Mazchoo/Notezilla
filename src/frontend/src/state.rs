@@ -4,7 +4,7 @@ pub use active_panel::ActivePanel;
 
 use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
-    DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
+    DEFAULT_COLOR_THEME, DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
     DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
     DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT,
     DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
@@ -12,6 +12,7 @@ use crate::default_settings::{
     DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::models::{block::EditorEntry, note::NoteFile};
+use crate::theme::ColorTheme;
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -28,6 +29,8 @@ pub struct AppState {
     pub search_results: RwSignal<Vec<NoteFile>>,
     /// When false, clicking the main markdown block does not enter edit mode.
     pub markdown_editing_enabled: RwSignal<bool>,
+    /// Night (default) or day color theme. Drives CSS, rendering, and exports.
+    pub color_theme: RwSignal<ColorTheme>,
     /// Transient user-facing message (e.g. save summary). Cleared automatically.
     pub toast: RwSignal<Option<String>>,
     /// Transient MCP warning messages. Cleared automatically.
@@ -102,6 +105,7 @@ impl AppState {
             search_query: RwSignal::new(String::new()),
             search_results: RwSignal::new(vec![]),
             markdown_editing_enabled: RwSignal::new(true),
+            color_theme: RwSignal::new(DEFAULT_COLOR_THEME),
             toast: RwSignal::new(None),
             warning_toast: RwSignal::new(None),
             error_toast: RwSignal::new(None),
@@ -150,7 +154,7 @@ mod tests {
     use super::*;
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
-        DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
+        DEFAULT_COLOR_THEME, DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
         DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
         DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT,
         DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK,
@@ -181,6 +185,8 @@ mod tests {
             );
             assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
             assert!(state.markdown_editing_enabled.get_untracked());
+            assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
+            assert_eq!(state.color_theme.get_untracked(), DEFAULT_COLOR_THEME);
             assert_eq!(
                 state.number_results_per_page.get_untracked(),
                 DEFAULT_NUMBER_RESULTS_PER_PAGE

@@ -21,6 +21,9 @@ pub const EDIT_MAIN_TEXT_FROZEN_TITLE: &str =
     "Main text frozen — select and copy without opening the editor";
 pub const NEW_FILE_TITLE: &str = "New File";
 pub const NEW_FILE_BUTTON: &str = "＋";
+pub const SWITCH_TO_DAY_TITLE: &str = "Switch to day theme";
+pub const SWITCH_TO_NIGHT_TITLE: &str = "Switch to night theme";
+pub const THEME_SLIDER_ARIA: &str = "Night and day theme";
 
 // --- File tree ---
 

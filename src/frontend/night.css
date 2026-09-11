@@ -1,0 +1,21 @@
+/* Night palette (Catppuccin Mocha). Default theme. */
+:root,
+html[data-theme="dark"] {
+  --bg-0: #11111b;
+  --bg-1: #181825;
+  --bg-2: #1e1e2e;
+  --bg-3: #313244;
+  --border: #45475a;
+  --text: #cdd6f4;
+  --text-muted: #6c7086;
+  --text-subtle: #a6adc8;
+  --accent: #cba6f7;
+  --status-ok: #a6e3a1;
+  --status-err: #f38ba8;
+  --code: #f38ba8;
+  --status-warn: #f9e2af;
+  --status-warn-border: #df8e1d;
+  --status-error-text: #ffb4a8;
+  --status-error-border: #c0392b;
+  color-scheme: dark;
+}

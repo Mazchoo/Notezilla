@@ -1,27 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{THEME}}">
 <head>
   <meta charset="UTF-8" />
   <title>{{TITLE}}</title>
   <style>
-    :root {
-      --bg-0: #11111b;
-      --bg-1: #181825;
-      --bg-2: #1e1e2e;
-      --bg-3: #313244;
-      --border: #45475a;
-      --text: #cdd6f4;
-      --text-muted: #6c7086;
-      --accent: #cba6f7;
-      --code: #f38ba8;
-    }
+    {{THEME_CSS}}
     /* @page margin repeats on every sheet. Body padding only insets page 1
        (and the last page's bottom), so continuation pages would otherwise
        start at the sheet edge with no header space. The @page background
        paints the full sheet, including the margin area. */
     @page {
       margin: 72pt;
-      background-color: #1e1e2e;
+      background-color: {{PAGE_BG}};
     }
     html, body {
       background-color: var(--bg-2);

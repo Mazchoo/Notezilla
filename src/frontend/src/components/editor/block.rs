@@ -264,6 +264,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
     let markdown_editing_enabled = state.markdown_editing_enabled;
+    let color_theme = state.color_theme;
     let textarea_ref = NodeRef::<Textarea>::new();
     let enter_scroll_top = RwSignal::new(None::<i32>);
 
@@ -291,6 +292,20 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
                 block.rerender();
             }
         });
+    });
+
+    // Re-render highlighted code and diagrams when the color theme changes.
+    Effect::new(move |_| {
+        let _theme = color_theme.get();
+        if block
+            .html
+            .try_get_untracked()
+            .unwrap_or_default()
+            .is_empty()
+        {
+            return;
+        }
+        block.rerender();
     });
 
     // Leave edit mode when main-text editing is turned off.

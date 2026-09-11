@@ -1,8 +1,8 @@
 //! Renders a fenced code block with syntect syntax highlighting.
 
 use super::{Render, RenderPdf};
-use crate::constants::CODE_THEME;
 use crate::rendering::escape_html;
+use crate::theme::current_theme;
 use std::sync::LazyLock;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Theme, ThemeSet};
@@ -85,7 +85,7 @@ impl RenderPdf for CodeRender {}
 
 /// Return the syntax highlighting theme used for every code block.
 fn theme() -> &'static Theme {
-    &THEME_SET.themes[CODE_THEME]
+    &THEME_SET.themes[current_theme().code_theme()]
 }
 
 /// Return highlighted HTML for one line, escaping it if highlighting fails.
@@ -100,6 +100,9 @@ fn highlight_line(highlighter: &mut HighlightLines<'_>, line: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{CodeRender, Render, RenderPdf};
+    use crate::constants::{CODE_THEME, DAY_CODE_THEME};
+    use crate::theme::{current_theme, ColorTheme, ThemeGuard};
+    use syntect::highlighting::ThemeSet;
 
     #[test]
     /// Assert a known language token resolves to that syntax.
@@ -142,6 +145,24 @@ mod tests {
     fn highlights_tokens_with_inline_styles() {
         let html = CodeRender::new("rust").render("fn main() {}\n");
         assert!(html.contains("<span style=\"color:"), "{html}");
+    }
+
+    #[test]
+    /// Assert night and day syntect keys exist and day highlighting differs.
+    fn day_theme_uses_the_light_syntect_theme() {
+        let themes = ThemeSet::load_defaults();
+        assert!(themes.themes.contains_key(CODE_THEME), "{CODE_THEME}");
+        assert!(
+            themes.themes.contains_key(DAY_CODE_THEME),
+            "{DAY_CODE_THEME}"
+        );
+        assert_eq!(current_theme().code_theme(), CODE_THEME);
+        let night = CodeRender::new("rust").render("fn main() {}\n");
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        assert_eq!(current_theme().code_theme(), DAY_CODE_THEME);
+        let day = CodeRender::new("rust").render("fn main() {}\n");
+        assert_ne!(day, night);
+        assert!(day.contains("<span style=\"color:"), "{day}");
     }
 
     #[test]

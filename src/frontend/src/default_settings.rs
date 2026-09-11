@@ -37,3 +37,5 @@ pub const DEFAULT_GEMINI_API_KEY: &str = key_from_env!("GEMINI_API_KEY");
 pub const DEFAULT_GEMINI_MODEL: &str = "gemini-3.6-flash";
 /// Default sidebar panel width in CSS pixels.
 pub const DEFAULT_SIDEBAR_WIDTH: f64 = 400.0;
+/// Default color theme. Night is dark-on-dark; day is dark-on-light.
+pub const DEFAULT_COLOR_THEME: crate::theme::ColorTheme = crate::theme::ColorTheme::Night;

@@ -7,10 +7,12 @@ mod models;
 mod prompting;
 mod rendering;
 mod state;
+mod theme;
 mod utils;
 
 use crate::info_messages::PAGE_TITLE;
 use crate::prompting::{probe_gemini, probe_ollama};
+use crate::theme::apply_document_theme;
 use crate::utils::url::redirect_trailing_dot_hostname;
 use components::app_shell::AppShell;
 use leptos::prelude::*;
@@ -35,6 +37,7 @@ fn App() -> impl IntoView {
     if let Some(document) = web_sys::window().and_then(|w| w.document()) {
         document.set_title(PAGE_TITLE);
     }
+    apply_document_theme(state.color_theme.get_untracked());
 
     mcp::client::probe_mcp(state.session_id);
     probe_ollama(state.ollama_port, state.ollama_available);

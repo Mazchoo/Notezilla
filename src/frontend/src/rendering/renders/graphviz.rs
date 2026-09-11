@@ -3,10 +3,9 @@
 use super::graphviz_label::{flatten_node_label, parse_font_classes};
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
-use crate::constants::{
-    BG_3 as NODE_FILL, GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION, TEXT as STROKE,
-};
+use crate::constants::{GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
+use crate::theme::current_theme;
 use layout::backends::svg::SVGWriter;
 use layout::gv::{DotParser, GraphBuilder};
 
@@ -64,18 +63,25 @@ fn strip_xml_declaration(raw: &str) -> &str {
 
 /// Replace layout-rs default paints with the editor palette.
 fn recolor_default_paints(svg: &str) -> String {
-    svg.replace("fill=\"#ffffffff\"", &format!("fill=\"{NODE_FILL}\""))
-        .replace("stroke=\"#000000ff\"", &format!("stroke=\"{STROKE}\""))
-        .replace("fill=\"context-stroke\"", &format!("fill=\"{STROKE}\""))
+    let palette = current_theme().palette();
+    svg.replace("fill=\"#ffffffff\"", &format!("fill=\"{}\"", palette.bg_3))
+        .replace(
+            "stroke=\"#000000ff\"",
+            &format!("stroke=\"{}\"", palette.text),
+        )
+        .replace(
+            "fill=\"context-stroke\"",
+            &format!("fill=\"{}\"", palette.text),
+        )
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         recolor_default_paints, strip_xml_declaration, GraphvizRender, Render, RenderPdf,
-        GRAPHVIZ_ERROR_CLASS, NODE_FILL, STROKE, SVG_XML_DECLARATION,
+        GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION,
     };
-    use crate::constants::BASELINE_FROM_CENTER;
+    use crate::constants::{BASELINE_FROM_CENTER, BG_3 as NODE_FILL, TEXT as STROKE};
 
     #[test]
     /// Assert the XML declaration is removed so the SVG can be inlined.

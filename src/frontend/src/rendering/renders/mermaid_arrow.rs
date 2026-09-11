@@ -3,9 +3,10 @@
 //! Ironpress does not resolve `marker-start` / `marker-end` references, so each
 //! marked path keeps its geometry and gains an explicit arrowhead polygon.
 
-use crate::constants::{ARROW_SIZE, TEXT_SUBTLE};
+use crate::constants::ARROW_SIZE;
 use crate::rendering::svg_attr::{strip_svg_attr, svg_attr};
 use crate::rendering::svg_path_ends::path_ends;
+use crate::theme::current_theme;
 
 /// Replace marker references on every path with painted arrow polygons.
 pub fn expand_path_markers(svg: &str) -> String {
@@ -76,7 +77,9 @@ fn marker_color(url: &str, stroke: Option<&str>) -> String {
             return format!("#{hex}");
         }
     }
-    stroke.unwrap_or(TEXT_SUBTLE).to_string()
+    stroke
+        .unwrap_or(current_theme().palette().text_subtle)
+        .to_string()
 }
 
 /// Build an SVG polygon for an arrowhead with its tip at `tip` facing `dir`.

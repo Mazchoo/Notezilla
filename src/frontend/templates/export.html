@@ -1,21 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{THEME}}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{TITLE}}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
   <style>
-    :root {
-      --bg-0: #11111b;
-      --bg-1: #181825;
-      --bg-2: #1e1e2e;
-      --bg-3: #313244;
-      --border: #45475a;
-      --text: #cdd6f4;
-      --text-muted: #6c7086;
-      --accent: #cba6f7;
-    }
+    {{THEME_CSS}}
     html, body {
       background-color: var(--bg-2);
       color: var(--text);
@@ -56,7 +47,7 @@
     .content hr { background-color: var(--border); }
     .content code {
       background: var(--bg-3);
-      color: #f38ba8;
+      color: var(--code);
       border-radius: 3px;
       padding: 0.1em 0.3em;
     }
@@ -79,6 +70,7 @@
       line-height: 1.6;
     }
     .content svg { max-width: 100%; }
+    .content math { color: var(--text); }
     .content blockquote {
       background: var(--bg-3);
       border-left: 3px solid var(--accent);

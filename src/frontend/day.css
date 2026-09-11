@@ -1,0 +1,67 @@
+/* Day palette (Catppuccin Latte). Dark text on a light background.
+   `data-theme="light"` also selects Bulma's light scheme so menu rows
+   are not painted with the OS dark-mode background. */
+html[data-theme="light"] {
+  --bg-0: #dce0e8;
+  --bg-1: #e6e9ef;
+  --bg-2: #eff1f5;
+  --bg-3: #ccd0da;
+  --border: #bcc0cc;
+  --text: #4c4f69;
+  --text-muted: #9ca0b0;
+  --text-subtle: #6c6f85;
+  --accent: #8839ef;
+  --status-ok: #40a02b;
+  --status-err: #d20f39;
+  --code: #d20f39;
+  --status-warn: #df8e1d;
+  --status-warn-border: #df8e1d;
+  --status-error-text: #d20f39;
+  --status-error-border: #d20f39;
+  color-scheme: light;
+}
+
+html[data-theme="light"] .settings-checkbox input[type="checkbox"]:checked {
+  background-image: url("/checkbox-check-day.svg");
+}
+
+html[data-theme="light"] .sidebar-panel,
+html[data-theme="light"] .sidebar-panel .file-tree-root,
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu,
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list,
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list li,
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list ul {
+  background-color: #fff;
+  background-image: none;
+  color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-label,
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list a,
+html[data-theme="light"] .sidebar-panel .file-tree-root .file-tree-new-folder {
+  background-color: #fff;
+  background-image: none;
+  color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list a:hover,
+html[data-theme="light"] .sidebar-panel .file-tree-root .file-tree-new-folder:hover {
+  background-color: #f0f0f0;
+  background-image: none;
+  color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list a.active {
+  background-color: #f0f0f0;
+  background-image: none;
+  color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list ul {
+  border-left-color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list a.drag-over {
+  background-color: #f0f0f0;
+  background-image: none;
+  color: #000;
+  outline-color: #000;
+}
+html[data-theme="light"] .sidebar-panel .file-tree-root.drag-over {
+  outline-color: #000;
+}

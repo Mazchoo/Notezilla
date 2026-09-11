@@ -79,9 +79,7 @@ mod tests {
 
     /// Convert an export document with `body` to PDF bytes.
     fn export_to_pdf(body: &str) -> Vec<u8> {
-        let document = EXPORT_PDF_TEMPLATE
-            .replace("{{TITLE}}", "t")
-            .replace("{{BODY}}", body);
+        let document = crate::theme::fill_export_template(EXPORT_PDF_TEMPLATE, "t", body);
         html_to_pdf_bytes(&document).expect("PDF conversion")
     }
 
@@ -280,16 +278,17 @@ mod tests {
     /// Assert the PDF export stylesheet sets the editor page background.
     fn pdf_export_stylesheet_sets_page_background() {
         use crate::constants::BG_2;
+        let document = crate::theme::fill_export_template(EXPORT_PDF_TEMPLATE, "t", "<p>Hi</p>");
         assert!(
-            EXPORT_PDF_TEMPLATE.contains("background-color: var(--bg-2)"),
+            document.contains("background-color: var(--bg-2)"),
             "PDF export stylesheet must set the editor page background"
         );
         assert!(
-            EXPORT_PDF_TEMPLATE.contains(&format!("background-color: {BG_2}")),
+            document.contains(&format!("background-color: {BG_2}")),
             "PDF @page background must use the editor token hex so the margin area is painted"
         );
         assert!(
-            EXPORT_PDF_TEMPLATE.contains(&format!("--bg-2: {BG_2}")),
+            document.contains(&format!("--bg-2: {BG_2}")),
             "PDF export stylesheet must keep the editor background token"
         );
         assert_pdf(&export_to_pdf("<p>Hi</p>"));

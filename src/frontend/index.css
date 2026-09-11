@@ -1,16 +1,4 @@
-/* ── Dark base ─────────────────────────────────────────────────── */
-:root {
-  --bg-0: #11111b;
-  --bg-1: #181825;
-  --bg-2: #1e1e2e;
-  --bg-3: #313244;
-  --border: #45475a;
-  --text:   #cdd6f4;
-  --text-muted: #6c7086;
-  --accent: #cba6f7;
-  --status-ok: #a6e3a1;
-  --status-err: #f38ba8;
-}
+/* Layout. Palettes live in night.css and day.css. */
 html, body {
   background-color: var(--bg-2);
   color: var(--text);
@@ -43,6 +31,63 @@ html, body {
   padding: 0 0.5rem;
   gap: 0.25rem;
   z-index: 10;
+}
+.theme-slider {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.theme-slider:hover { color: var(--text); }
+.theme-slider svg { width: 16px; height: 16px; }
+.theme-slider-night,
+.theme-slider-day {
+  display: flex;
+  align-items: center;
+}
+html[data-theme="dark"] .theme-slider-night { color: var(--accent); }
+html[data-theme="light"] .theme-slider-day { color: var(--accent); }
+.theme-slider-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.theme-slider-track {
+  width: 36px;
+  height: 20px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  position: relative;
+  flex-shrink: 0;
+}
+.theme-slider-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform 0.15s ease;
+}
+.theme-slider-input:checked + .theme-slider-track .theme-slider-thumb {
+  transform: translateX(16px);
+}
+.theme-slider-input:focus-visible + .theme-slider-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ── Activity bar ──────────────────────────────────────────────── */
@@ -467,7 +512,7 @@ html, body {
 }
 .block-action-btn:hover { color: var(--text); background: var(--bg-3); }
 .block-action-btn svg  { width: 14px; height: 14px; }
-.block-delete-btn:hover { color: #f38ba8; }
+.block-delete-btn:hover { color: var(--status-err); }
 .block-textarea {
   width: 100%;
   resize: none;
@@ -493,7 +538,7 @@ html, body {
   border: 1px solid transparent;
   font-size: 0.95rem;
 }
-.block-render:hover { background: rgba(49, 50, 68, 0.4); }
+.block-render:hover { background: color-mix(in srgb, var(--bg-3) 40%, transparent); }
 
 /* Bulma .content dark overrides (markdown output) */
 .content h1, .content h2, .content h3,
@@ -503,7 +548,7 @@ html, body {
 .content hr { background-color: var(--border); }
 .content code {
   background: var(--bg-3);
-  color: #f38ba8;
+  color: var(--code);
   border-radius: 3px;
   padding: 0.1em 0.3em;
 }
@@ -563,7 +608,7 @@ html, body {
   line-height: normal;
 }
 .content .math-error {
-  color: #f38ba8;
+  color: var(--status-err);
   background: var(--bg-3);
 }
 .content .math-error-block {
@@ -729,13 +774,13 @@ html, body {
 }
 
 .toast-warning {
-  border-color: #df8e1d;
-  color: #f9e2af;
+  border-color: var(--status-warn-border);
+  color: var(--status-warn);
 }
 
 .toast-error {
-  border-color: #c0392b;
-  color: #ffb4a8;
+  border-color: var(--status-error-border);
+  color: var(--status-error-text);
   pointer-events: auto;
   cursor: pointer;
   user-select: text;

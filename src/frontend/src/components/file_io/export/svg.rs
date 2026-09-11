@@ -1,10 +1,11 @@
 use super::super::path::diagram_svg_filename;
 use super::{download_text_file, log_export_error, yield_for_paint};
 use crate::components::toast::show_error_toast;
-use crate::constants::{BG_2, SVG_MIME};
+use crate::constants::SVG_MIME;
 use crate::info_messages::{export_failed_toast, export_progress_label};
 use crate::models::block::EditorEntry;
 use crate::rendering::{diagram_fences, DiagramKind};
+use crate::theme::current_theme;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -83,7 +84,8 @@ fn with_page_background(svg: &str) -> String {
         return svg.to_string();
     }
     let insert_at = open_end + 1;
-    let rect = format!(r#"<rect width="100%" height="100%" fill="{BG_2}"/>"#);
+    let fill = current_theme().palette().bg_2;
+    let rect = format!(r#"<rect width="100%" height="100%" fill="{fill}"/>"#);
     let mut out = String::with_capacity(svg.len() + rect.len());
     out.push_str(&svg[..insert_at]);
     out.push_str(&rect);
@@ -94,6 +96,7 @@ fn with_page_background(svg: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::BG_2;
 
     #[test]
     /// Assert diagram exports are named `{stem}_{type}_{index}.svg` in document order.
@@ -124,5 +127,16 @@ mod tests {
         let rect = format!(r#"<rect width="100%" height="100%" fill="{BG_2}"/>"#);
         assert_eq!(out, format!(r#"<svg viewBox="0 0 10 10">{rect}<g/></svg>"#));
         assert_eq!(with_page_background("<g/>"), "<g/>");
+
+        let _guard = crate::theme::ThemeGuard::set(crate::theme::ColorTheme::Day);
+        let day = with_page_background(r#"<svg viewBox="0 0 10 10"><g/></svg>"#);
+        let day_rect = format!(
+            r#"<rect width="100%" height="100%" fill="{}"/>"#,
+            crate::constants::DAY_BG_2
+        );
+        assert_eq!(
+            day,
+            format!(r#"<svg viewBox="0 0 10 10">{day_rect}<g/></svg>"#)
+        );
     }
 }

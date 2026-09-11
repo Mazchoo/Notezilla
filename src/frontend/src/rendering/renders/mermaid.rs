@@ -6,6 +6,7 @@ use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{MERMAID_ERROR_CLASS, MERMAID_STROKE_SLOP};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
+use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
 use rusty_mermaid::{render, Color, Primitive, Scene, Theme};
 
@@ -21,7 +22,7 @@ impl MermaidRender {
         let scene = render(source, &theme).map_err(|e| e.to_string())?;
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
-        Ok(prepare_svg(&svg))
+        Ok(prepare_svg(&svg, source))
     }
 }
 
@@ -35,16 +36,39 @@ impl Render for MermaidRender {
 
 impl RenderPdf for MermaidRender {}
 
-/// Return the diagram theme: the dark palette with the background suppressed.
+/// Return the diagram theme for the current night or day palette.
 ///
-/// The dark theme's text matches the editor text color, so labels read
-/// correctly both on shape fills and on the diagram background. A white
-/// `background` suppresses the background `<rect>` (the renderer skips it for
-/// white), letting the editor surface show through.
+/// Night is `Theme::dark()` with a white `background` so the renderer omits
+/// the background `<rect>` and the editor surface shows through. Day uses
+/// black strokes and labels on `Theme::light()`. Night ink is otherwise
+/// unchanged from the original dark palette.
 fn diagram_theme() -> Theme {
-    Theme {
-        background: Color::WHITE,
-        ..Theme::dark()
+    match current_theme() {
+        ColorTheme::Night => Theme {
+            background: Color::WHITE,
+            ..Theme::dark()
+        },
+        ColorTheme::Day => {
+            let mut theme = Theme::light();
+            theme.background = Color::WHITE;
+            theme.node_stroke = Color::BLACK;
+            theme.subgraph_stroke = Color::BLACK;
+            theme.composite_stroke = Color::BLACK;
+            theme.region_stroke = Color::BLACK;
+            theme.node_text = Color::BLACK;
+            theme.edge_stroke = Color::BLACK;
+            theme.edge_label_text = Color::BLACK;
+            theme.muted_text = Color::BLACK;
+            theme.subgraph_label = Color::BLACK;
+            theme.composite_label = Color::BLACK;
+            theme.note_text = Color::BLACK;
+            theme.divider_stroke = Color::BLACK;
+            theme.grid_stroke = Color::BLACK;
+            theme.detail_stroke = Color::BLACK;
+            theme.activation_stroke = Color::BLACK;
+            theme.lifeline_stroke = Color::BLACK;
+            theme
+        }
     }
 }
 
@@ -117,9 +141,31 @@ fn content_mins(scene: &Scene) -> (f64, f64) {
 }
 
 /// Flatten diagram labels and expand marker arrows for ironpress layout.
-fn prepare_svg(svg: &str) -> String {
+fn prepare_svg(svg: &str, source: &str) -> String {
     let labeled = rewrite_text_elements(svg, flatten_label);
-    expand_path_markers(&labeled)
+    let expanded = expand_path_markers(&labeled);
+    recolor_day_pie_separators(source, &expanded)
+}
+
+/// Return whether `source` is a mermaid pie diagram.
+fn is_pie_diagram(source: &str) -> bool {
+    source
+        .trim_start()
+        .lines()
+        .next()
+        .is_some_and(|line| line.trim_start().to_ascii_lowercase().starts_with("pie"))
+}
+
+/// Recolor pie slice separators from white (theme background) to black in day mode.
+///
+/// rusty-mermaid strokes pie slices with `theme.background`. That field is
+/// forced to white so the SVG background rect is omitted, which would leave
+/// white separators on a light page.
+fn recolor_day_pie_separators(source: &str, svg: &str) -> String {
+    if current_theme() != ColorTheme::Day || !is_pie_diagram(source) {
+        return svg.to_string();
+    }
+    svg.replace("stroke=\"#ffffff\"", "stroke=\"#000000\"")
 }
 
 #[cfg(test)]
@@ -128,15 +174,49 @@ mod tests {
         diagram_theme, padded_theme, MermaidRender, Render, RenderPdf, MERMAID_ERROR_CLASS,
     };
     use crate::constants::PDF_FONT_FAMILY;
-    use rusty_mermaid::{render, Color};
+    use crate::theme::{ColorTheme, ThemeGuard};
+    use rusty_mermaid::{render, Color, Theme};
 
     #[test]
     /// Assert the diagram theme suppresses the background rect.
     fn diagram_theme_suppresses_background() {
         // The SVG renderer omits the background rect when it is white.
-        assert_eq!(diagram_theme().background, Color::WHITE);
-        let svg = MermaidRender.render_svg("graph LR\n    A --> B\n").unwrap();
+        let theme = diagram_theme();
+        assert_eq!(theme.background, Color::WHITE);
+        assert_eq!(theme.node_stroke, Theme::dark().node_stroke);
+        assert_eq!(theme.node_text, Theme::dark().node_text);
+        let svg = MermaidRender
+            .render_svg("graph LR\n    A[Square Rect] --> B((Circle))\n")
+            .unwrap();
         assert!(svg.contains("<svg"), "{svg}");
+        assert!(
+            svg.to_ascii_lowercase().contains("#7c6fbd"),
+            "night node borders must keep the original dark stroke: {svg}"
+        );
+    }
+
+    #[test]
+    /// Assert day diagrams use black strokes and labels on the light palette.
+    fn diagram_theme_follows_color_theme() {
+        let night_stroke = diagram_theme().node_stroke;
+        assert_eq!(night_stroke, Theme::dark().node_stroke);
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        let day = diagram_theme();
+        assert_eq!(day.background, Color::WHITE);
+        assert_eq!(day.node_text, Color::BLACK);
+        assert_eq!(day.edge_stroke, Color::BLACK);
+        assert_eq!(day.node_stroke, Color::BLACK);
+        assert_eq!(day.subgraph_stroke, Color::BLACK);
+        assert_eq!(day.composite_stroke, Color::BLACK);
+        assert_eq!(day.region_stroke, Color::BLACK);
+        let svg = MermaidRender
+            .render_svg("graph LR\n    A[Square Rect] --> B((Circle))\n")
+            .unwrap();
+        let lower = svg.to_ascii_lowercase();
+        assert!(
+            !lower.contains("stroke=\"#9370db\"") && !lower.contains("stroke=\"#7c6fbd\""),
+            "day node borders must not be purple: {svg}"
+        );
     }
 
     #[test]
@@ -183,6 +263,22 @@ mod tests {
         assert!(
             svg.contains(&format!("font-family=\"{PDF_FONT_FAMILY}\"")),
             "{svg}"
+        );
+    }
+
+    #[test]
+    /// Assert day pie charts use black labels and black slice separators.
+    fn day_pie_uses_black_text_and_slice_strokes() {
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        let svg = MermaidRender.render(
+            "pie title What Voldemort doesn't have?\n\"FRIENDS\" : 2\n\"FAMILY\" : 3\n\"NOSE\" : 4\n",
+        );
+        assert!(svg.contains("FRIENDS"), "{svg}");
+        assert!(svg.contains("fill=\"#000000\""), "{svg}");
+        assert!(svg.contains("stroke=\"#000000\""), "{svg}");
+        assert!(
+            !svg.to_ascii_lowercase().contains("stroke=\"#ffffff\""),
+            "pie separators must not stay white: {svg}"
         );
     }
 

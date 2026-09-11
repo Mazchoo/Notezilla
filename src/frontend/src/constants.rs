@@ -31,6 +31,8 @@ pub const SVG_MIME: &str = "image/svg+xml;charset=utf-8";
 
 pub const EXPORT_TEMPLATE: &str = include_str!("../templates/export.html");
 pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../templates/export-pdf.html");
+pub const NIGHT_CSS: &str = include_str!("../night.css");
+pub const DAY_CSS: &str = include_str!("../day.css");
 pub const PROMPT_TEMPLATE: &str = include_str!("../templates/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
@@ -38,8 +40,11 @@ pub const IMAGE_MISSING_SVG: &str = include_str!("../templates/image-missing.svg
 /// Checkmark drawn on a checked settings checkbox. Served as a static file.
 #[allow(dead_code)]
 pub const CHECKBOX_CHECK_SVG_HREF: &str = "/checkbox-check.svg";
+/// Checkmark for the day theme, painted against the light-theme accent fill.
+#[allow(dead_code)]
+pub const CHECKBOX_CHECK_DAY_SVG_HREF: &str = "/checkbox-check-day.svg";
 
-/// Palette for PDF export. Hex tokens match `templates/export-pdf.html` `:root`.
+/// Night palette. Hex tokens match `night.css`.
 /// Tokens unused in the WASM binary are asserted against that stylesheet in tests.
 #[allow(dead_code)]
 pub const BG_0: &str = "#11111b";
@@ -60,10 +65,30 @@ pub const ACCENT: &str = "#cba6f7";
 #[allow(dead_code)]
 pub const CODE: &str = "#f38ba8";
 
+/// Day palette. Hex tokens match `day.css`. Dark text on a light page.
+#[allow(dead_code)]
+pub const DAY_BG_0: &str = "#dce0e8";
+#[allow(dead_code)]
+pub const DAY_BG_1: &str = "#e6e9ef";
+pub const DAY_BG_2: &str = "#eff1f5";
+pub const DAY_BG_3: &str = "#ccd0da";
+#[allow(dead_code)]
+pub const DAY_BORDER: &str = "#bcc0cc";
+pub const DAY_TEXT: &str = "#4c4f69";
+#[allow(dead_code)]
+pub const DAY_TEXT_MUTED: &str = "#9ca0b0";
+pub const DAY_TEXT_SUBTLE: &str = "#6c6f85";
+#[allow(dead_code)]
+pub const DAY_ACCENT: &str = "#8839ef";
+#[allow(dead_code)]
+pub const DAY_CODE: &str = "#d20f39";
+
 /// [`TEXT`] as PDF DeviceRGB fill. Ironpress math letters inherit this and
 /// never emit `rg`; fraction rules emit hardcoded `0 0 0 rg`.
 pub const TEXT_FILL: &[u8] = &crate::rendering::pdf_rgb_operator(TEXT, true);
 pub const TEXT_STROKE: &[u8] = &crate::rendering::pdf_rgb_operator(TEXT, false);
+pub const DAY_TEXT_FILL: &[u8] = &crate::rendering::pdf_rgb_operator(DAY_TEXT, true);
+pub const DAY_TEXT_STROKE: &[u8] = &crate::rendering::pdf_rgb_operator(DAY_TEXT, false);
 
 pub const DEFAULT_FONT_SIZE: usize = 14;
 /// Alphabetic baseline below the node center so Latin caps sit in the box.
@@ -80,8 +105,10 @@ pub const GRAPHVIZ_LABEL_FONT_FAMILY: &str = "Helvetica, Arial, sans-serif";
 /// Extra mermaid padding so a stroke centered on the viewBox edge is not clipped.
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 
-/// Syntect theme applied to fenced code blocks.
+/// Syntect theme applied to fenced code blocks in the night theme.
 pub const CODE_THEME: &str = "base16-ocean.dark";
+/// Syntect theme applied to fenced code blocks in the day theme.
+pub const DAY_CODE_THEME: &str = "base16-ocean.light";
 /// Item marker of an unordered list rewritten for PDF export.
 pub const LIST_BULLET: &str = "•";
 
@@ -107,25 +134,55 @@ mod tests {
     use super::*;
 
     #[test]
-    /// Assert the PDF export stylesheet matches the editor palette tokens.
-    fn export_pdf_stylesheet_matches_palette() {
-        for (token, hex) in [
-            ("--bg-0", BG_0),
-            ("--bg-1", BG_1),
-            ("--bg-2", BG_2),
-            ("--bg-3", BG_3),
-            ("--border", BORDER),
-            ("--text", TEXT),
-            ("--text-muted", TEXT_MUTED),
-            ("--accent", ACCENT),
-            ("--code", CODE),
+    /// Assert the night and day stylesheets match the editor palette tokens.
+    fn theme_stylesheets_match_palette() {
+        for (css, tokens) in [
+            (
+                NIGHT_CSS,
+                [
+                    ("--bg-0", BG_0),
+                    ("--bg-1", BG_1),
+                    ("--bg-2", BG_2),
+                    ("--bg-3", BG_3),
+                    ("--border", BORDER),
+                    ("--text", TEXT),
+                    ("--text-muted", TEXT_MUTED),
+                    ("--accent", ACCENT),
+                    ("--code", CODE),
+                ],
+            ),
+            (
+                DAY_CSS,
+                [
+                    ("--bg-0", DAY_BG_0),
+                    ("--bg-1", DAY_BG_1),
+                    ("--bg-2", DAY_BG_2),
+                    ("--bg-3", DAY_BG_3),
+                    ("--border", DAY_BORDER),
+                    ("--text", DAY_TEXT),
+                    ("--text-muted", DAY_TEXT_MUTED),
+                    ("--accent", DAY_ACCENT),
+                    ("--code", DAY_CODE),
+                ],
+            ),
         ] {
-            let decl = format!("{token}: {hex}");
-            assert!(
-                EXPORT_PDF_TEMPLATE.contains(&decl),
-                "missing {decl} in {EXPORT_PDF_TEMPLATE}"
-            );
+            for (token, hex) in tokens {
+                let decl = format!("{token}: {hex}");
+                assert!(css.contains(&decl), "missing {decl} in {css}");
+            }
         }
+        assert!(
+            EXPORT_PDF_TEMPLATE.contains("{{THEME_CSS}}"),
+            "PDF export must inject the active theme stylesheet: {EXPORT_PDF_TEMPLATE}"
+        );
+        assert!(
+            EXPORT_PDF_TEMPLATE.contains("{{PAGE_BG}}"),
+            "PDF @page background must use the active page token: {EXPORT_PDF_TEMPLATE}"
+        );
+        assert!(
+            EXPORT_TEMPLATE.contains("{{THEME_CSS}}"),
+            "HTML export must inject the active theme stylesheet: {EXPORT_TEMPLATE}"
+        );
     }
 
     #[test]
@@ -154,8 +211,16 @@ mod tests {
             CSS.contains(&url),
             "checked checkbox must load {CHECKBOX_CHECK_SVG_HREF}"
         );
-        let svg = include_str!("../templates/checkbox-check.svg");
-        assert!(svg.contains("<svg"), "{svg}");
-        assert!(svg.contains("</svg>"), "{svg}");
+        let day_url = format!("url(\"{CHECKBOX_CHECK_DAY_SVG_HREF}\")");
+        assert!(
+            DAY_CSS.contains(&day_url),
+            "day checked checkbox must load {CHECKBOX_CHECK_DAY_SVG_HREF}"
+        );
+        let night = include_str!("../templates/checkbox-check.svg");
+        let day = include_str!("../templates/checkbox-check-day.svg");
+        for svg in [night, day] {
+            assert!(svg.contains("<svg"), "{svg}");
+            assert!(svg.contains("</svg>"), "{svg}");
+        }
     }
 }

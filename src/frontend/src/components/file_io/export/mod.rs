@@ -109,9 +109,7 @@ fn entry_body_html(entry: EditorEntry, render: fn(&str) -> String) -> String {
 
 /// Fill an export HTML template with a title and body.
 fn build_html_document(template: &str, title: &str, body_html: &str) -> String {
-    template
-        .replace("{{TITLE}}", &escape_html(title))
-        .replace("{{BODY}}", body_html)
+    crate::theme::fill_export_template(template, &escape_html(title), body_html)
 }
 
 /// Trigger a browser download of a text file.
@@ -167,6 +165,23 @@ mod tests {
     fn build_html_document_fills_title_and_body() {
         let html = build_html_document("<title>{{TITLE}}</title>{{BODY}}", "A & B", "<p>ok</p>");
         assert_eq!(html, "<title>A &amp; B</title><p>ok</p>");
+    }
+
+    #[test]
+    /// Assert HTML export embeds the active color theme stylesheet.
+    fn build_html_document_embeds_the_active_theme() {
+        use crate::constants::{DAY_TEXT, EXPORT_TEMPLATE};
+        use crate::theme::{ColorTheme, ThemeGuard};
+
+        let night = build_html_document(EXPORT_TEMPLATE, "n", "<p>ok</p>");
+        assert!(night.contains(r#"data-theme="dark""#), "{night}");
+        assert!(night.contains("--text: #cdd6f4"), "{night}");
+
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        let day = build_html_document(EXPORT_TEMPLATE, "n", "<p>ok</p>");
+        assert!(day.contains(r#"data-theme="light""#), "{day}");
+        assert!(day.contains(&format!("--text: {DAY_TEXT}")), "{day}");
+        assert!(day.contains("--bg-2: #eff1f5"), "{day}");
     }
 
     #[test]
