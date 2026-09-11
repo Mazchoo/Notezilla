@@ -26,6 +26,8 @@ pub fn gemini_model_url(model: &str, api_key: &str) -> String {
 }
 
 pub const DRAG_MIME: &str = "text/plain";
+/// MIME type of downloaded mermaid and graphviz SVG files.
+pub const SVG_MIME: &str = "image/svg+xml;charset=utf-8";
 
 pub const EXPORT_TEMPLATE: &str = include_str!("../templates/export.html");
 pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../templates/export-pdf.html");

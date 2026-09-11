@@ -1,6 +1,6 @@
 use crate::components::file_io::{
     entry_save_params, export_entries_as_html, export_entries_as_markdown, export_entries_as_pdf,
-    load_markdown_file,
+    export_entries_as_svg_diagrams, load_markdown_file,
 };
 use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
@@ -8,7 +8,7 @@ use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
     format_save_summary, save_failed_toast, with_hotkey, EDIT_MAIN_TEXT_FROZEN_TITLE,
     EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_TITLE, EXPORT_MARKDOWN_TITLE, EXPORT_PDF_TITLE,
-    IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
+    EXPORT_SVG_TITLE, IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
 };
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
@@ -125,6 +125,15 @@ pub fn export_all_as_markdown(state: &AppState) {
     );
 }
 
+/// Export every mermaid and graphviz diagram in the open files as SVG.
+pub fn export_all_as_svg_diagrams(state: &AppState) {
+    export_entries_as_svg_diagrams(
+        state.entries.get_untracked(),
+        state.export_progress,
+        state.error_toast,
+    );
+}
+
 /// Toggle whether main markdown blocks can enter edit mode.
 pub fn toggle_markdown_editing(state: &AppState) {
     state
@@ -173,6 +182,11 @@ pub fn TopBar() -> impl IntoView {
     let state_export_markdown = state.clone();
     let on_export_markdown = move |_| {
         export_all_as_markdown(&state_export_markdown);
+    };
+
+    let state_export_svg = state.clone();
+    let on_export_svg = move |_| {
+        export_all_as_svg_diagrams(&state_export_svg);
     };
 
     let state_new = state.clone();
@@ -226,6 +240,10 @@ pub fn TopBar() -> impl IntoView {
             // Export — save each entry as a markdown file.
             <button class="activity-btn" title=EXPORT_MARKDOWN_TITLE on:click=on_export_markdown>
                 <Icon icon=id::LuFileText/>
+            </button>
+            // Export — save each mermaid and graphviz diagram as an SVG file.
+            <button class="activity-btn" title=EXPORT_SVG_TITLE on:click=on_export_svg>
+                <Icon icon=id::LuFileImage/>
             </button>
             // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
             <button

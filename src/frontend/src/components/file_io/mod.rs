@@ -5,7 +5,10 @@ mod open;
 pub(crate) mod path;
 mod save;
 
-pub use export::{export_entries_as_html, export_entries_as_markdown, export_entries_as_pdf};
+pub use export::{
+    export_entries_as_html, export_entries_as_markdown, export_entries_as_pdf,
+    export_entries_as_svg_diagrams,
+};
 pub use fetch_directories::fetch_dir_contents;
 pub use import::load_markdown_file;
 pub use open::{open_file_at_path, open_note_at_path};

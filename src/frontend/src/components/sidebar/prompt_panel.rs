@@ -160,7 +160,8 @@ pub fn PromptPanel() -> impl IntoView {
         let Some(prompt) = assembled_prompt(&state_send_gemini) else {
             return;
         };
-        let Some(api_key) = prompt_gemini_api_key(&state_send_gemini.gemini_api_key.get_untracked())
+        let Some(api_key) =
+            prompt_gemini_api_key(&state_send_gemini.gemini_api_key.get_untracked())
         else {
             show_error_toast(state_send_gemini.error_toast, ENTER_GEMINI_API_KEY_TOAST);
             return;

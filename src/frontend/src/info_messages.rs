@@ -15,6 +15,7 @@ pub const SAVE_TITLE: &str = "Save";
 pub const EXPORT_HTML_TITLE: &str = "Export as HTML";
 pub const EXPORT_PDF_TITLE: &str = "Export as PDF";
 pub const EXPORT_MARKDOWN_TITLE: &str = "Export as Markdown";
+pub const EXPORT_SVG_TITLE: &str = "Export diagrams as SVG";
 pub const EDIT_MAIN_TEXT_ON_TITLE: &str = "Edit main text (on)";
 pub const EDIT_MAIN_TEXT_FROZEN_TITLE: &str =
     "Main text frozen — select and copy without opening the editor";
@@ -128,8 +129,7 @@ pub const OLLAMA_NUM_PREDICT_CONSTRAINT: &str = "-1 or an integer of 0 or more";
 pub const OLLAMA_TOP_P_CONSTRAINT: &str = "a number from 0 to 1";
 pub const OLLAMA_TOP_K_CONSTRAINT: &str = "an integer of 1 or more";
 pub const OLLAMA_NUM_CTX_CONSTRAINT: &str = "an integer of 1 or more";
-pub const GEMINI_API_KEY_CONSTRAINT: &str =
-    "empty or a key of letters, digits, -, ., _, or ~";
+pub const GEMINI_API_KEY_CONSTRAINT: &str = "empty or a key of letters, digits, -, ., _, or ~";
 pub const GEMINI_MODEL_CONSTRAINT: &str =
     "a non-empty model name of letters, digits, -, ., _, or ~";
 pub const HOTKEY_CONSTRAINT: &str = "a single printable character";

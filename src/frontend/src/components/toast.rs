@@ -179,6 +179,9 @@ mod tests {
     /// Assert copying an error toast reports on the status toast and keeps the error.
     fn error_toast_copy_feedback_uses_status_copy() {
         assert_eq!(error_toast_copy_feedback(true), ERROR_COPIED_TOAST);
-        assert_eq!(error_toast_copy_feedback(false), CLIPBOARD_COPY_FAILED_TOAST);
+        assert_eq!(
+            error_toast_copy_feedback(false),
+            CLIPBOARD_COPY_FAILED_TOAST
+        );
     }
 }

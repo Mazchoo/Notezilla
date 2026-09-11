@@ -171,11 +171,7 @@ async fn check_connection(model: &str, api_key: &str) -> Result<(), String> {
 }
 
 /// Probe Gemini when the API key or model changes and store whether GET succeeded.
-pub fn probe_gemini(
-    api_key: RwSignal<String>,
-    model: RwSignal<String>,
-    available: RwSignal<bool>,
-) {
+pub fn probe_gemini(api_key: RwSignal<String>, model: RwSignal<String>, available: RwSignal<bool>) {
     Effect::new(move |_| {
         let api_key = api_key.get();
         let model = model.get();
@@ -216,7 +212,7 @@ pub async fn send_gemini_prompt(
 #[cfg(test)]
 mod tests {
     use super::{
-        generate_request_body, gemini_generate_url, gemini_ready_log, gemini_unreachable_log,
+        gemini_generate_url, gemini_ready_log, gemini_unreachable_log, generate_request_body,
         parse_generate_response, parse_model_metadata,
     };
     use crate::constants::{
@@ -298,8 +294,8 @@ mod tests {
     #[test]
     /// Assert a Gemini `error.message` is returned and missing text is an error.
     fn parse_generate_response_prefers_error_and_requires_text() {
-        let err = parse_generate_response(r#"{"error":{"message":"API key not valid"}}"#)
-            .unwrap_err();
+        let err =
+            parse_generate_response(r#"{"error":{"message":"API key not valid"}}"#).unwrap_err();
         assert_eq!(err, "API key not valid");
         let err = parse_generate_response(r#"{"candidates":[]}"#).unwrap_err();
         assert!(err.contains("Missing text"), "{err}");

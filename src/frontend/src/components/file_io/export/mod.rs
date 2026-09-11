@@ -1,100 +1,24 @@
-use super::path::{
-    html_page_title, path_to_html_filename, path_to_markdown_filename, path_to_pdf_filename,
-};
+mod export_interface;
+mod html;
+mod markdown;
+mod pdf;
+mod svg;
+
 use crate::components::toast::show_error_toast;
-use crate::constants::{EXPORT_PDF_TEMPLATE, EXPORT_TEMPLATE};
-use crate::info_messages::{
-    export_failed_toast, export_progress_label, pdf_conversion_failed_toast,
-    pdf_export_failed_toast, EXPORT_METADATA_HEADING,
-};
+use crate::info_messages::{export_progress_label, EXPORT_METADATA_HEADING};
 use crate::models::block::EditorEntry;
-use crate::rendering::{escape_html, html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
+use crate::rendering::escape_html;
+use export_interface::ExportOne;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Blob, BlobPropertyBag, HtmlAnchorElement};
 
-/// Prompt the browser to save each editor entry as a standalone HTML file.
-pub fn export_entries_as_html(
-    entries: Vec<EditorEntry>,
-    progress: RwSignal<Option<String>>,
-    error_toast: RwSignal<Option<String>>,
-) {
-    run_export(
-        entries,
-        progress,
-        error_toast,
-        path_to_html_filename,
-        |entry, filename| {
-            let path = entry.title.path.get_untracked();
-            let page_title = html_page_title(&path);
-            let body_html = entry_to_html_body(entry);
-            let document = build_html_document(EXPORT_TEMPLATE, &page_title, &body_html);
-            download_text_file(filename, &document, "text/html;charset=utf-8")
-                .err()
-                .map(|err| log_export_error(export_failed_toast(filename, &format!("{err:?}"))))
-        },
-    );
-}
-
-/// Prompt the browser to save each editor entry as a markdown file.
-pub fn export_entries_as_markdown(
-    entries: Vec<EditorEntry>,
-    progress: RwSignal<Option<String>>,
-    error_toast: RwSignal<Option<String>>,
-) {
-    run_export(
-        entries,
-        progress,
-        error_toast,
-        path_to_markdown_filename,
-        |entry, filename| {
-            let content = entry_to_markdown(entry);
-            download_text_file(filename, &content, "text/markdown;charset=utf-8")
-                .err()
-                .map(|err| log_export_error(export_failed_toast(filename, &format!("{err:?}"))))
-        },
-    );
-}
-
-/// Convert each editor entry to PDF and download the files.
-pub fn export_entries_as_pdf(
-    entries: Vec<EditorEntry>,
-    progress: RwSignal<Option<String>>,
-    error_toast: RwSignal<Option<String>>,
-) {
-    run_export(
-        entries,
-        progress,
-        error_toast,
-        path_to_pdf_filename,
-        |entry, filename| {
-            let path = entry.title.path.get_untracked();
-            let page_title = html_page_title(&path);
-            let body_html = entry_to_pdf_body(entry);
-            let document = build_html_document(EXPORT_PDF_TEMPLATE, &page_title, &body_html);
-            match html_to_pdf_bytes(&document) {
-                Ok(bytes) => download_bytes_file(filename, &bytes, "application/pdf")
-                    .err()
-                    .map(|err| {
-                        log_export_error(pdf_export_failed_toast(filename, &format!("{err:?}")))
-                    }),
-                Err(e) => {
-                    let msg = pdf_conversion_failed_toast(filename, e);
-                    web_sys::console::error_1(&msg.clone().into());
-                    Some(msg)
-                }
-            }
-        },
-    );
-}
-
-/// Log a download failure and return the toast text.
-fn log_export_error(message: String) -> String {
-    web_sys::console::error_1(&message.clone().into());
-    message
-}
+pub use html::export_entries_as_html;
+pub use markdown::export_entries_as_markdown;
+pub use pdf::export_entries_as_pdf;
+pub use svg::export_entries_as_svg_diagrams;
 
 /// Generate and download each entry, showing a spinner and yielding so it can paint.
 fn run_export(
@@ -102,7 +26,7 @@ fn run_export(
     progress: RwSignal<Option<String>>,
     error_toast: RwSignal<Option<String>>,
     filename_for: fn(&str) -> String,
-    export_one: impl Fn(EditorEntry, &str) -> Option<String> + 'static,
+    export_one: impl ExportOne,
 ) {
     if progress.get_untracked().is_some() || entries.is_empty() {
         return;
@@ -158,30 +82,10 @@ async fn yield_for_paint() {
     let _ = wasm_bindgen_futures::JsFuture::from(frame).await;
 }
 
-/// Serialize an editor entry to markdown, including front matter when present.
-fn entry_to_markdown(entry: EditorEntry) -> String {
-    let body = entry.content.text.get_untracked();
-    match entry.front_matter.get_untracked() {
-        Some(fm) => {
-            let raw = fm.raw.get_untracked();
-            if raw.is_empty() {
-                body
-            } else {
-                format!("---\n{raw}\n---\n{body}")
-            }
-        }
-        None => body,
-    }
-}
-
-/// Render an editor entry's body HTML for browser export.
-fn entry_to_html_body(entry: EditorEntry) -> String {
-    entry_body_html(entry, render_markdown)
-}
-
-/// Render an editor entry's body HTML for PDF export.
-fn entry_to_pdf_body(entry: EditorEntry) -> String {
-    entry_body_html(entry, render_markdown_for_pdf)
+/// Log a download failure and return the toast text.
+fn log_export_error(message: String) -> String {
+    web_sys::console::error_1(&message.clone().into());
+    message
 }
 
 /// Render front matter and markdown body with the given markdown renderer.
@@ -263,27 +167,6 @@ mod tests {
     fn build_html_document_fills_title_and_body() {
         let html = build_html_document("<title>{{TITLE}}</title>{{BODY}}", "A & B", "<p>ok</p>");
         assert_eq!(html, "<title>A &amp; B</title><p>ok</p>");
-    }
-
-    #[test]
-    /// Assert markdown export wraps non-empty front matter in `---` delimiters.
-    fn entry_to_markdown_includes_front_matter() {
-        use crate::models::block::{EditorEntry, FrontMatterBlock};
-        use leptos::prelude::{Owner, Set};
-
-        let owner = Owner::new();
-        owner.with(|| {
-            let entry = EditorEntry::new("./a.md", "body");
-            assert_eq!(entry_to_markdown(entry), "body");
-
-            entry
-                .front_matter
-                .set(Some(FrontMatterBlock::new("title: x")));
-            assert_eq!(entry_to_markdown(entry), "---\ntitle: x\n---\nbody");
-
-            entry.front_matter.set(Some(FrontMatterBlock::new("")));
-            assert_eq!(entry_to_markdown(entry), "body");
-        });
     }
 
     #[test]

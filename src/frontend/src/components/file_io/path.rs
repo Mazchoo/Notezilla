@@ -33,6 +33,14 @@ pub(crate) fn path_to_pdf_filename(path: &str) -> String {
     format!("{}.pdf", strip_md_ext(basename(path)))
 }
 
+/// Return an SVG download filename for a diagram in `path`.
+pub(crate) fn diagram_svg_filename(path: &str, diagram_type: &str, index: usize) -> String {
+    format!(
+        "{}_{diagram_type}_{index}.svg",
+        strip_md_ext(basename(path))
+    )
+}
+
 /// Return the HTML page title derived from `path`.
 pub(crate) fn html_page_title(path: &str) -> String {
     strip_md_ext(basename(path)).to_string()
@@ -159,6 +167,19 @@ mod tests {
         assert_eq!(path_to_pdf_filename("notes/hello.markdown"), "hello.pdf");
         assert_eq!(path_to_pdf_filename("notes\\windows.md"), "windows.pdf");
         assert_eq!(path_to_pdf_filename("no-ext"), "no-ext.pdf");
+    }
+
+    #[test]
+    /// Assert diagram SVG names use `{stem}_{type}_{index}.svg`.
+    fn diagram_svg_filename_uses_stem_type_and_index() {
+        assert_eq!(
+            diagram_svg_filename("folder/new-markdown.md", "mermaid", 0),
+            "new-markdown_mermaid_0.svg"
+        );
+        assert_eq!(
+            diagram_svg_filename("folder/new-markdown.md", "graphviz", 1),
+            "new-markdown_graphviz_1.svg"
+        );
     }
 
     #[test]

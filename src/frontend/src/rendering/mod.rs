@@ -25,6 +25,31 @@ use renders::{
 };
 use std::collections::VecDeque;
 
+/// Kind of fenced diagram that renders to a standalone SVG file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DiagramKind {
+    Graphviz,
+    Mermaid,
+}
+
+impl DiagramKind {
+    /// Return the fence language token used in export filenames.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Graphviz => "graphviz",
+            Self::Mermaid => "mermaid",
+        }
+    }
+
+    /// Render `source` to an SVG string.
+    pub fn render_svg(self, source: &str) -> Result<String, String> {
+        match self {
+            Self::Graphviz => GraphvizRender.render_svg(source),
+            Self::Mermaid => MermaidRender.render_svg(source),
+        }
+    }
+}
+
 /// Render markdown to HTML for the editor.
 pub fn render_markdown(src: &str) -> String {
     render_markdown_for(src, RenderTarget::Editor)
@@ -33,6 +58,34 @@ pub fn render_markdown(src: &str) -> String {
 /// Render markdown to HTML for PDF export.
 pub fn render_markdown_for_pdf(src: &str) -> String {
     render_markdown_for(src, RenderTarget::Pdf)
+}
+
+/// Return mermaid and graphviz fence sources in `src`, in document order.
+pub fn diagram_fences(src: &str) -> Vec<(DiagramKind, String)> {
+    let mut out = Vec::new();
+    let mut kind = None;
+    let mut buf = String::new();
+
+    for (event, _) in Parser::new_ext(src, markdown_options()).into_offset_iter() {
+        match event {
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang))) => {
+                kind = match BlockKind::from_fence_language(lang.as_ref()) {
+                    BlockKind::Graphviz => Some(DiagramKind::Graphviz),
+                    BlockKind::Mermaid => Some(DiagramKind::Mermaid),
+                    BlockKind::Code(_) => None,
+                };
+                buf.clear();
+            }
+            Event::Text(text) if kind.is_some() => buf.push_str(&text),
+            Event::End(TagEnd::CodeBlock) => {
+                if let Some(diagram) = kind.take() {
+                    out.push((diagram, std::mem::take(&mut buf)));
+                }
+            }
+            _ => {}
+        }
+    }
+    out
 }
 
 /// Render markdown to HTML for the given output `target`.
@@ -237,7 +290,7 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{render_markdown, render_markdown_for_pdf};
+    use super::{diagram_fences, render_markdown, render_markdown_for_pdf, DiagramKind};
     use crate::constants::LIST_BULLET;
 
     #[test]
@@ -371,5 +424,26 @@ mod tests {
     fn math_html_differs_between_targets() {
         assert!(render_markdown("$x_i$\n").contains("<math"));
         assert!(render_markdown_for_pdf("$x_i$\n").contains("data-math="));
+    }
+
+    #[test]
+    /// Assert mermaid and graphviz fences are collected in document order.
+    fn diagram_fences_keeps_document_order_and_skips_code() {
+        let src = "```rust\nfn main() {}\n```\n\
+```mermaid\ngraph LR\n    A --> B\n```\n\
+```graphviz\ndigraph { A -> B }\n```\n\
+```mermaid\nnot a diagram\n```\n";
+        let fences = diagram_fences(src);
+        assert_eq!(fences.len(), 3);
+        assert_eq!(fences[0].0, DiagramKind::Mermaid);
+        assert_eq!(fences[1].0, DiagramKind::Graphviz);
+        assert_eq!(fences[2].0, DiagramKind::Mermaid);
+        assert!(fences[0].1.contains("graph LR"), "{}", fences[0].1);
+        assert!(fences[1].1.contains("digraph"), "{}", fences[1].1);
+        assert_eq!(fences[0].0.as_str(), "mermaid");
+        assert_eq!(fences[1].0.as_str(), "graphviz");
+        assert!(fences[0].0.render_svg(&fences[0].1).is_ok());
+        assert!(fences[1].0.render_svg(&fences[1].1).is_ok());
+        assert!(fences[2].0.render_svg(&fences[2].1).is_err());
     }
 }
