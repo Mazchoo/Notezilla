@@ -9,12 +9,13 @@ pub(super) enum BlockKind {
 }
 
 impl BlockKind {
-    /// Classify a fence by the first token of its info string.
+    /// Classify a fence by the first token of its info string, ignoring case.
     pub(super) fn from_fence_language(language: &str) -> Self {
-        match language.split_ascii_whitespace().next().unwrap_or("") {
+        let token = language.split_ascii_whitespace().next().unwrap_or("");
+        match token.to_ascii_lowercase().as_str() {
             "graphviz" => BlockKind::Graphviz,
             "mermaid" => BlockKind::Mermaid,
-            other => BlockKind::Code(other.to_string()),
+            _ => BlockKind::Code(token.to_string()),
         }
     }
 }
@@ -45,6 +46,19 @@ mod tests {
         ));
         assert!(matches!(
             BlockKind::from_fence_language("mermaid extra_info"),
+            BlockKind::Mermaid
+        ));
+    }
+
+    #[test]
+    /// Assert diagram fence tokens are matched without case.
+    fn diagram_fence_tokens_are_case_insensitive() {
+        assert!(matches!(
+            BlockKind::from_fence_language("Graphviz"),
+            BlockKind::Graphviz
+        ));
+        assert!(matches!(
+            BlockKind::from_fence_language("MERMAID"),
             BlockKind::Mermaid
         ));
     }
