@@ -172,6 +172,21 @@ mod tests {
     }
 
     #[test]
+    /// Assert night file-tree folder rows use the page background, matching day.
+    fn night_folder_rows_use_page_background() {
+        assert!(
+            NIGHT_CSS.contains(
+                "html[data-theme=\"dark\"] .sidebar-panel .file-tree-root .menu-list a,"
+            ),
+            "night must style file-tree folder-name rows: {NIGHT_CSS}"
+        );
+        assert!(
+            NIGHT_CSS.contains(&format!("background-color: {BG_2};")),
+            "night folder-name rows must use the page background {BG_2}: {NIGHT_CSS}"
+        );
+    }
+
+    #[test]
     /// Assert inline code color uses the CODE token alias, not a raw hex.
     fn export_pdf_stylesheet_uses_code_alias() {
         assert!(

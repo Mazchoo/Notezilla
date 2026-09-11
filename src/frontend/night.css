@@ -19,3 +19,34 @@ html[data-theme="dark"] {
   --status-error-border: #c0392b;
   color-scheme: dark;
 }
+
+/* Folder rows use Bulma's menu-item fill, which is not --bg-2. Match the
+   sidebar so night folder names sit on the same color as day mode. */
+html[data-theme="dark"] .sidebar-panel,
+html[data-theme="dark"] .sidebar-panel .file-tree-root,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list li,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list ul {
+  background-color: #1e1e2e;
+  background-image: none;
+}
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-label,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list a,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .file-tree-new-folder {
+  background-color: #1e1e2e;
+  background-image: none;
+}
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list a:hover,
+html[data-theme="dark"] .sidebar-panel .file-tree-root .file-tree-new-folder:hover {
+  background-color: #313244;
+  background-image: none;
+}
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list a.active {
+  background-color: #313244;
+  background-image: none;
+}
+html[data-theme="dark"] .sidebar-panel .file-tree-root .menu-list a.drag-over {
+  background-color: #313244;
+  background-image: none;
+}
