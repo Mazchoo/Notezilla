@@ -34,13 +34,13 @@ pub fn strip_svg_attr(element: &str, name: &str) -> String {
 
 /// Return whether index `at` starts an attribute name rather than a name suffix.
 ///
-/// Rejects `end` inside `marker-end` and `x` inside `rx`.
+/// Rejects `end` inside `marker-end`, `x` inside `rx`, and a name inside a quoted value.
 fn starts_attribute_name(tag: &[u8], at: usize) -> bool {
     if at == 0 {
         return true;
     }
     let before = tag[at - 1];
-    !(before.is_ascii_alphanumeric() || matches!(before, b'-' | b'_' | b':'))
+    !(before.is_ascii_alphanumeric() || matches!(before, b'-' | b'_' | b':' | b'"' | b'\''))
 }
 
 /// Return the byte span of the quoted value that follows `=` at or after `at`.
@@ -97,6 +97,15 @@ mod tests {
     /// Assert a missing attribute returns `None`.
     fn missing_attribute_is_none() {
         assert_eq!(svg_attr(r#"<text y="20""#, "x"), None);
+    }
+
+    #[test]
+    /// Assert an attribute name inside another value is not returned.
+    fn does_not_read_name_inside_another_value() {
+        assert_eq!(
+            svg_attr(r#"<text y="x='1'" x="2""#, "x"),
+            Some("2".to_string())
+        );
     }
 
     #[test]
