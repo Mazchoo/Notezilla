@@ -5,7 +5,7 @@ tags: [mermaid, rendering, gui, polish]
 status: todo
 ---
 
-# 15 - Mermaid Rendering Polish
+# 14 - Mermaid Rendering Polish
 
 **Phase 5: Sync & Polish**
 

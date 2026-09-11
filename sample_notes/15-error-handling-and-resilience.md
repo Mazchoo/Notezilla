@@ -5,7 +5,7 @@ tags: [error-handling, resilience, polish]
 status: todo
 ---
 
-# 16 - Error Handling & Resilience
+# 15 - Error Handling & Resilience
 
 **Phase 5: Sync & Polish**
 

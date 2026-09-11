@@ -5,7 +5,7 @@ tags: [sync, vector, gui, polish]
 status: todo
 ---
 
-# 14 - Bi-directional Sync
+# 13 - Bi-directional Sync
 
 **Phase 5: Sync & Polish**
 

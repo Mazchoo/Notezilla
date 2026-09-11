@@ -5,7 +5,7 @@ tags: [polish]
 status: todo
 ---
 
-# 18 - MCP toolcall experimentation
+# 17 - MCP toolcall experimentation
 
 Make a cargo crate that replicates the behavior to convert a markdown to html.
 
