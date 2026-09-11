@@ -15,7 +15,6 @@ Expand the amount of ways that the rendered markdown can be exported.
 
 - [x] The Leptos app loads the WASM module and renders Markdown via JS interop without errors.
 - [x] "Export as HTML" save current document as html in given folder
-- [ ] "Export as SVG" save current document svgs in given folder
+- [x] "Export as SVG" save current document svgs in given folder
 - [ ] "Copy as Markdown" shorthand way to copy markdown file
-- [ ] Copy as HTML button to put note as html to clipboard
 - [ ] The rendered output respects the application's light/dark theme.
