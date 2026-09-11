@@ -1,4 +1,4 @@
-use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH, OLLAMA_URL};
+use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_HOST, OLLAMA_TAGS_PATH};
 use crate::default_settings::{
     DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_TEMPERATURE,
     DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
@@ -49,12 +49,12 @@ struct GenerateResponse {
     error: Option<String>,
 }
 
-/// Return the same-origin Ollama origin. Trunk proxies this to 127.0.0.1.
-pub fn ollama_base_url(_port: u16) -> String {
-    OLLAMA_URL.to_string()
+/// Return the Ollama HTTP origin for `port`.
+pub fn ollama_base_url(port: u16) -> String {
+    format!("http://{OLLAMA_HOST}:{port}")
 }
 
-/// Return the same-origin Ollama URL for `path`.
+/// Return the Ollama HTTP URL for `path` on `port`.
 fn ollama_url(port: u16, path: &str) -> String {
     format!("{}{path}", ollama_base_url(port))
 }
@@ -150,8 +150,13 @@ async fn fetch_tags_body(port: u16) -> Result<String, String> {
 }
 
 /// Return the console message for a successful Ollama connection.
-fn ollama_ready_log() -> String {
-    format!("Ollama connection ready: {OLLAMA_URL}")
+fn ollama_ready_log(port: u16) -> String {
+    format!("Ollama connection ready: {}", ollama_base_url(port))
+}
+
+/// Return the console warning when Ollama cannot be reached.
+fn ollama_unreachable_log(error: &str) -> String {
+    format!("Ollama unreachable: {error}")
 }
 
 /// Probe whether the Ollama HTTP API on `port` responds with `/api/tags`.
@@ -166,14 +171,11 @@ pub fn probe_ollama(port: RwSignal<u16>, available: RwSignal<bool>) {
         spawn_local(async move {
             match check_connection(port).await {
                 Ok(()) => {
-                    web_sys::console::log_1(&ollama_ready_log().into());
+                    web_sys::console::log_1(&ollama_ready_log(port).into());
                     available.set(true);
                 }
                 Err(e) => {
-                    web_sys::console::warn_1(
-                        &format!("Ollama init failed: {e}. Prompt send will be unavailable.")
-                            .into(),
-                    );
+                    web_sys::console::warn_1(&ollama_unreachable_log(&e).into());
                     available.set(false);
                 }
             }
@@ -200,41 +202,57 @@ pub async fn send_prompt(
 #[cfg(test)]
 mod tests {
     use super::{
-        generate_request_body, ollama_base_url, ollama_ready_log, ollama_url,
-        parse_generate_response, parse_model_names, GenerateOptions,
+        generate_request_body, ollama_base_url, ollama_ready_log, ollama_unreachable_log,
+        ollama_url, parse_generate_response, parse_model_names, GenerateOptions,
     };
-    use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH, OLLAMA_URL};
+    use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_TAGS_PATH};
     use crate::default_settings::DEFAULT_OLLAMA_PORT;
     use serde_json::json;
 
     #[test]
-    /// Assert a successful Ollama probe logs the same-origin proxy path.
-    fn ollama_ready_log_names_the_proxy_path() {
+    /// Assert a successful Ollama probe logs the loopback origin and port.
+    fn ollama_ready_log_names_the_loopback_origin() {
         assert_eq!(
-            ollama_ready_log(),
-            format!("Ollama connection ready: {OLLAMA_URL}")
+            ollama_ready_log(DEFAULT_OLLAMA_PORT),
+            format!(
+                "Ollama connection ready: {}",
+                ollama_base_url(DEFAULT_OLLAMA_PORT)
+            )
         );
     }
 
     #[test]
-    /// Assert the origin is the same-origin proxy path, not a cross-origin loopback URL.
-    fn ollama_base_url_uses_same_origin_proxy() {
-        assert_eq!(ollama_base_url(DEFAULT_OLLAMA_PORT), OLLAMA_URL);
-        assert_eq!(ollama_base_url(1), OLLAMA_URL);
-        assert!(OLLAMA_URL.starts_with('/'));
-        assert!(!OLLAMA_URL.contains("://"));
+    /// Assert an unreachable Ollama probe is a single warning line.
+    fn ollama_unreachable_log_is_a_single_warning() {
+        assert_eq!(
+            ollama_unreachable_log("Network error: failed to fetch"),
+            "Ollama unreachable: Network error: failed to fetch"
+        );
+        assert_eq!(
+            ollama_unreachable_log("Network error: failed to fetch")
+                .lines()
+                .count(),
+            1
+        );
     }
 
     #[test]
-    /// Assert API paths are appended to the origin.
+    /// Assert API paths are appended to the loopback origin.
     fn ollama_url_appends_api_paths() {
         assert_eq!(
             ollama_url(DEFAULT_OLLAMA_PORT, OLLAMA_TAGS_PATH),
-            format!("{OLLAMA_URL}{OLLAMA_TAGS_PATH}")
+            format!("{}{OLLAMA_TAGS_PATH}", ollama_base_url(DEFAULT_OLLAMA_PORT))
         );
         assert_eq!(
             ollama_url(DEFAULT_OLLAMA_PORT, OLLAMA_GENERATE_PATH),
-            format!("{OLLAMA_URL}{OLLAMA_GENERATE_PATH}")
+            format!(
+                "{}{OLLAMA_GENERATE_PATH}",
+                ollama_base_url(DEFAULT_OLLAMA_PORT)
+            )
+        );
+        assert_eq!(
+            ollama_url(1, OLLAMA_TAGS_PATH),
+            format!("{}{OLLAMA_TAGS_PATH}", ollama_base_url(1))
         );
     }
 

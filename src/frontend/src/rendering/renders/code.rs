@@ -13,6 +13,27 @@ use syntect::util::LinesWithEndings;
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
 static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
 
+/// Markdown fence tokens mapped to a syntect syntax name or file extension.
+///
+/// `find_syntax_by_token` matches only those two fields, so GitHub-style
+/// aliases such as `csharp` would otherwise fall back to plain text.
+const LANGUAGE_ALIASES: &[(&str, &str)] = &[
+    ("batch", "bat"),
+    ("cmd", "bat"),
+    ("csharp", "cs"),
+    ("dosbatch", "bat"),
+    ("golang", "go"),
+    ("make", "makefile"),
+    ("objc", "m"),
+    ("objectivec", "m"),
+    ("plaintext", "txt"),
+    ("shell", "sh"),
+    ("shell-script", "sh"),
+    ("text", "txt"),
+    ("yml", "yaml"),
+    ("zsh", "sh"),
+];
+
 /// Fenced code block render for one fence language token.
 pub struct CodeRender {
     language: String,
@@ -34,9 +55,17 @@ impl CodeRender {
             return SYNTAX_SET.find_syntax_plain_text();
         }
         SYNTAX_SET
-            .find_syntax_by_token(&self.language)
+            .find_syntax_by_token(syntect_language_token(&self.language))
             .unwrap_or_else(|| SYNTAX_SET.find_syntax_plain_text())
     }
+}
+
+/// Return the syntect name or extension for a markdown fence language token.
+fn syntect_language_token(language: &str) -> &str {
+    LANGUAGE_ALIASES
+        .iter()
+        .find_map(|(alias, token)| alias.eq_ignore_ascii_case(language).then_some(*token))
+        .unwrap_or(language)
 }
 
 impl Render for CodeRender {
@@ -76,6 +105,13 @@ mod tests {
     /// Assert a known language token resolves to that syntax.
     fn known_language_resolves_to_its_syntax() {
         assert_eq!(CodeRender::new("rust").syntax().name, "Rust");
+    }
+
+    #[test]
+    /// Assert a mapped fence alias resolves to the target syntect syntax.
+    fn language_alias_resolves_to_mapped_syntax() {
+        assert_eq!(CodeRender::new("csharp").syntax().name, "C#");
+        assert_eq!(CodeRender::new("CSharp").syntax().name, "C#");
     }
 
     #[test]

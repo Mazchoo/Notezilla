@@ -160,6 +160,11 @@ fn gemini_ready_log() -> String {
     format!("Gemini connection ready: {GEMINI_API_ORIGIN}")
 }
 
+/// Return the console warning when Gemini cannot be reached.
+fn gemini_unreachable_log(error: &str) -> String {
+    format!("Gemini unreachable: {error}")
+}
+
 /// Probe whether GET `/v1beta/models/{model}` accepts `api_key`.
 async fn check_connection(model: &str, api_key: &str) -> Result<(), String> {
     fetch_model_body(model, api_key).await.map(|_| ())
@@ -185,10 +190,7 @@ pub fn probe_gemini(
                     available.set(true);
                 }
                 Err(e) => {
-                    web_sys::console::warn_1(
-                        &format!("Gemini init failed: {e}. Prompt send will be unavailable.")
-                            .into(),
-                    );
+                    web_sys::console::warn_1(&gemini_unreachable_log(&e).into());
                     available.set(false);
                 }
             }
@@ -214,8 +216,8 @@ pub async fn send_gemini_prompt(
 #[cfg(test)]
 mod tests {
     use super::{
-        generate_request_body, gemini_generate_url, gemini_ready_log, parse_generate_response,
-        parse_model_metadata,
+        generate_request_body, gemini_generate_url, gemini_ready_log, gemini_unreachable_log,
+        parse_generate_response, parse_model_metadata,
     };
     use crate::constants::{
         gemini_model_url, GEMINI_API_ORIGIN, GEMINI_GENERATE_CONTENT_ACTION, GEMINI_MODELS_PATH,
@@ -229,6 +231,21 @@ mod tests {
         assert_eq!(
             gemini_ready_log(),
             format!("Gemini connection ready: {GEMINI_API_ORIGIN}")
+        );
+    }
+
+    #[test]
+    /// Assert an unreachable Gemini probe is a single warning line.
+    fn gemini_unreachable_log_is_a_single_warning() {
+        assert_eq!(
+            gemini_unreachable_log("Network error: failed to fetch"),
+            "Gemini unreachable: Network error: failed to fetch"
+        );
+        assert_eq!(
+            gemini_unreachable_log("Network error: failed to fetch")
+                .lines()
+                .count(),
+            1
         );
     }
 
