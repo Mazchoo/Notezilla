@@ -6,7 +6,11 @@
 pub fn rewrite_text_elements(svg: &str, mut rewrite: impl FnMut(&str) -> String) -> String {
     let mut out = String::with_capacity(svg.len());
     let mut rest = svg;
-    while let Some(start) = rest.find("<text") {
+    while let Some(start) = [rest.find("<text>"), rest.find("<text ")]
+        .into_iter()
+        .flatten()
+        .min()
+    {
         out.push_str(&rest[..start]);
         let Some(close_rel) = rest[start..].find("</text>") else {
             out.push_str(&rest[start..]);
@@ -60,6 +64,21 @@ mod tests {
     fn unterminated_element_is_copied_once() {
         let svg = "<g><text x=\"1\">A";
         assert_eq!(rewrite_text_elements(svg, |_| "X".to_string()), svg);
+    }
+
+    #[test]
+    /// Assert a sibling `<textPath>` does not consume the next `<text>`.
+    fn sibling_text_path_does_not_swallow_following_text() {
+        let svg = concat!(
+            r##"<textPath href="#p">E</textPath>"##,
+            r#"<text x="1" y="2">A</text>"#,
+        );
+        let mut seen = Vec::new();
+        rewrite_text_elements(svg, |element| {
+            seen.push(element.to_string());
+            "X".to_string()
+        });
+        assert_eq!(seen, vec![r#"<text x="1" y="2">A</text>"#]);
     }
 
     #[test]
