@@ -68,7 +68,7 @@ pub const DAY_BORDER: &str = "#bcc0cc";
 pub const DAY_TEXT: &str = "#4c4f69";
 pub const DAY_TEXT_MUTED: &str = "#9ca0b0";
 pub const DAY_TEXT_SUBTLE: &str = "#6c6f85";
-pub const DAY_ACCENT: &str = "#8839ef";
+pub const DAY_ACCENT: &str = "#5b21b6";
 pub const DAY_CODE: &str = "#d20f39";
 
 /// [`TEXT`] as PDF DeviceRGB fill. Ironpress math letters inherit this and
@@ -171,6 +171,22 @@ mod tests {
             EXPORT_TEMPLATE.contains("{{THEME_CSS}}"),
             "HTML export must inject the active theme stylesheet: {EXPORT_TEMPLATE}"
         );
+    }
+
+    #[test]
+    /// Assert day selection and mark highlights paint with the accent token.
+    fn day_highlights_use_accent() {
+        for selector in ["::selection", "mark"] {
+            assert!(
+                DAY_CSS.contains(selector),
+                "day highlights must style {selector}: {DAY_CSS}"
+            );
+        }
+        assert!(
+            DAY_CSS.contains("background: var(--accent)"),
+            "day highlights must fill with --accent: {DAY_CSS}"
+        );
+        assert_eq!(DAY_ACCENT, "#5b21b6");
     }
 
     #[test]

@@ -10,7 +10,7 @@ html[data-theme="light"] {
   --text: #4c4f69;
   --text-muted: #9ca0b0;
   --text-subtle: #6c6f85;
-  --accent: #8839ef;
+  --accent: #5b21b6;
   --status-ok: #40a02b;
   --status-err: #d20f39;
   --code: #d20f39;
@@ -19,6 +19,16 @@ html[data-theme="light"] {
   --status-error-text: #d20f39;
   --status-error-border: #d20f39;
   color-scheme: light;
+}
+
+html[data-theme="light"] ::selection {
+  background: var(--accent);
+  color: var(--bg-2);
+}
+
+html[data-theme="light"] mark {
+  background: var(--accent);
+  color: var(--bg-2);
 }
 
 html[data-theme="light"] .settings-checkbox input[type="checkbox"]:checked {

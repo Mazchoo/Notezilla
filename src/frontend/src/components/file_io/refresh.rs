@@ -55,13 +55,8 @@ pub fn on_file_change_notify(state: &AppState) {
 
 /// Copy fetched note body and front matter onto `entry` when they differ.
 pub fn apply_fetched_note(entry: EditorEntry, note: &NoteFile, root_owner: &Owner) {
-    let incoming = root_owner.with(|| {
-        entry_from_note(
-            entry.title.path.get_untracked(),
-            &note.text,
-            &note.metadata,
-        )
-    });
+    let incoming = root_owner
+        .with(|| entry_from_note(entry.title.path.get_untracked(), &note.text, &note.metadata));
     let new_body = incoming.content.text.get_untracked();
     if entry.content.text.get_untracked() != new_body {
         entry.content.text.set(new_body);
