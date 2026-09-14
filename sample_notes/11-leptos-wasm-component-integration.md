@@ -17,4 +17,4 @@ Expand the amount of ways that the rendered markdown can be exported.
 - [x] "Export as HTML" save current document as html in given folder
 - [x] "Export as SVG" save current document svgs in given folder
 - [x] "Copy as Markdown" shorthand way to copy markdown file
-- [ ] The rendered output respects the application's light/dark theme.
+- [x] The rendered output respects the application's light/dark theme.
