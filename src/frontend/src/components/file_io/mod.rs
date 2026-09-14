@@ -3,6 +3,7 @@ mod fetch_directories;
 mod import;
 mod open;
 pub(crate) mod path;
+pub(crate) mod refresh;
 mod save;
 
 pub use export::{

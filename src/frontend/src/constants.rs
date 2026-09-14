@@ -5,6 +5,8 @@ pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 
 /// Proxied by Trunk to http://127.0.0.1:8020 in development.
 pub const MCP_URL: &str = "/mcp";
+/// SSE stream of filesystem change pings. Proxied by Trunk to the FastMCP backend.
+pub const FILE_CHANGE_EVENTS_URL: &str = "/events";
 /// Loopback host of the local Ollama HTTP API. The TCP port is user-configurable.
 pub const OLLAMA_HOST: &str = "127.0.0.1";
 pub const OLLAMA_TAGS_PATH: &str = "/api/tags";

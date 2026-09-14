@@ -40,6 +40,7 @@ fn App() -> impl IntoView {
     apply_document_theme(state.color_theme.get_untracked());
 
     mcp::client::probe_mcp(state.session_id);
+    mcp::events::listen_file_changes(state.clone());
     probe_ollama(state.ollama_port, state.ollama_available);
     probe_gemini(
         state.gemini_api_key,

@@ -12,3 +12,8 @@ ignore = ["dist"]
 # A POST to /mcp → strips "/mcp" → "" → forwarded to http://127.0.0.1:8020/mcp
 backend = "http://127.0.0.1:8020/mcp"
 rewrite  = "/mcp"
+
+[[proxy]]
+# Proxy /events SSE to the FastMCP file-change stream.
+backend = "http://127.0.0.1:8020/events"
+rewrite  = "/events"
