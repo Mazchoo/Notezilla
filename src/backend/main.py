@@ -336,9 +336,7 @@ def upsert_template(
     if result:
         _, new_file_created = result
         return McpResponse.upsert(new_file_created, warnings)
-    return McpResponse.upsert_error(
-        f"Failed to upsert template at '{path}'.", warnings
-    )
+    return McpResponse.upsert_error(f"Failed to upsert template at '{path}'.", warnings)
 
 
 @MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)

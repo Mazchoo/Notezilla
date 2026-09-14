@@ -127,10 +127,7 @@ fn tokenize_path(d: &str) -> Vec<String> {
             if !cur.is_empty() {
                 out.push(std::mem::take(&mut cur));
             }
-        } else if (c == '-' || c == '+')
-            && !cur.is_empty()
-            && !cur.ends_with(['e', 'E'])
-        {
+        } else if (c == '-' || c == '+') && !cur.is_empty() && !cur.ends_with(['e', 'E']) {
             // A sign starts a new number unless it belongs to an exponent.
             out.push(std::mem::take(&mut cur));
             cur.push(c);

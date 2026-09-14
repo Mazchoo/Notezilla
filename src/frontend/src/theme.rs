@@ -168,7 +168,9 @@ mod tests {
     use super::{
         current_theme, fill_export_template, ColorTheme, ThemeGuard, DAY_PALETTE, NIGHT_PALETTE,
     };
-    use crate::constants::{BG_0, BG_1, BG_2, BG_3, DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3, DAY_TEXT, NIGHT_CSS};
+    use crate::constants::{
+        BG_0, BG_1, BG_2, BG_3, DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3, DAY_TEXT, NIGHT_CSS,
+    };
 
     #[test]
     /// Assert night is the default and day uses dark text on a light page.
@@ -176,11 +178,17 @@ mod tests {
         assert_eq!(current_theme(), ColorTheme::Night);
         assert_eq!(ColorTheme::Night.as_attr(), "dark");
         let night = ColorTheme::Night.palette();
-        assert_eq!([night.bg_0, night.bg_1, night.bg_2, night.bg_3], [BG_0, BG_1, BG_2, BG_3]);
+        assert_eq!(
+            [night.bg_0, night.bg_1, night.bg_2, night.bg_3],
+            [BG_0, BG_1, BG_2, BG_3]
+        );
         assert_eq!(night.bg_2, NIGHT_PALETTE.bg_2);
         assert_eq!(ColorTheme::Day.as_attr(), "light");
         let day = ColorTheme::Day.palette();
-        assert_eq!([day.bg_0, day.bg_1, day.bg_2, day.bg_3], [DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3]);
+        assert_eq!(
+            [day.bg_0, day.bg_1, day.bg_2, day.bg_3],
+            [DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3]
+        );
         assert_eq!(day.text, DAY_TEXT);
         assert_eq!(day.bg_2, DAY_BG_2);
         assert_eq!(DAY_PALETTE.text, "#4c4f69");

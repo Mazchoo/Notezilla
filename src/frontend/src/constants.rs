@@ -175,9 +175,8 @@ mod tests {
     /// Assert night file-tree folder rows use the page background, matching day.
     fn night_folder_rows_use_page_background() {
         assert!(
-            NIGHT_CSS.contains(
-                "html[data-theme=\"dark\"] .sidebar-panel .file-tree-root .menu-list a,"
-            ),
+            NIGHT_CSS
+                .contains("html[data-theme=\"dark\"] .sidebar-panel .file-tree-root .menu-list a,"),
             "night must style file-tree folder-name rows: {NIGHT_CSS}"
         );
         assert!(
