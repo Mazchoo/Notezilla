@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
 from pydantic import Field
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, StreamingResponse
 
 from src.config import MCP_PORT
 from src.backend.file_io import (
@@ -19,6 +19,7 @@ from src.backend.file_io import (
     resolve_note_path,
 )
 from src.backend.directory_watcher import PyFileHandler
+from src.backend.file_change_notify import file_change_sse
 from src.backend.parse_markdown import (
     IMarkdownFile,
     clean_path_filter,
@@ -35,6 +36,12 @@ from src.backend.output_schema import (
 from src.backend.resolved_folders import ResolvedFolder
 
 MCP = FastMCP("Notezilla")
+
+
+@MCP.custom_route("/events", methods=["GET"])
+async def file_change_events(request: Request) -> StreamingResponse:
+    """Push filesystem change notifications to connected GUI clients."""
+    return await file_change_sse(request)
 
 
 @MCP.custom_route("/tools", methods=["GET"])

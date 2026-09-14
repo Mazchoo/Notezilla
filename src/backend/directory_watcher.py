@@ -16,6 +16,7 @@ from src.backend.event_handling import (
 from src.backend.database_interface import INoteDatabase
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.database_update import prepate_database_row
+from src.backend.file_change_notify import publish
 from src.backend.file_io import get_normalised_path
 from src.backend.logger import LOGGER
 from src.backend.resolved_folders import ResolvedFolder
@@ -99,6 +100,8 @@ class PyFileHandler(FileSystemEventHandler):
             LOGGER.info("Upserted %s files to database", total_upserted)
         if total_removed:
             LOGGER.info("Deleted %s files to database", total_removed)
+
+        publish()
 
     @staticmethod
     def construct_observer(
