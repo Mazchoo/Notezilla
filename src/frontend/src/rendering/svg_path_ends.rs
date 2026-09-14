@@ -58,18 +58,26 @@ pub fn path_ends(d: &str) -> Option<PathEnds> {
                 second.get_or_insert(cur);
             }
             'C' | 'c' => {
-                let (_x1, _y1) = take_xy(&tokens, &mut i)?;
+                let (x1, y1) = take_xy(&tokens, &mut i)?;
                 let (x2, y2) = take_xy(&tokens, &mut i)?;
                 let (x, y) = take_xy(&tokens, &mut i)?;
-                let (x2, y2, x, y) = if cmd == 'c' {
-                    (cur.0 + x2, cur.1 + y2, cur.0 + x, cur.1 + y)
+                let (x1, y1, x2, y2, x, y) = if cmd == 'c' {
+                    (
+                        cur.0 + x1,
+                        cur.1 + y1,
+                        cur.0 + x2,
+                        cur.1 + y2,
+                        cur.0 + x,
+                        cur.1 + y,
+                    )
                 } else {
-                    (x2, y2, x, y)
+                    (x1, y1, x2, y2, x, y)
                 };
+                // The first control point sets the tangent at the curve start.
+                second.get_or_insert((x1, y1));
                 // The last control point sets the tangent at the curve end.
                 prev = (x2, y2);
                 cur = (x, y);
-                second.get_or_insert(cur);
             }
             // Smooth cubics omit the reflected first control; two pairs remain.
             'S' | 's' => {
@@ -224,6 +232,13 @@ mod tests {
         let ends = path_ends("M 0 0 C 0 10 10 10 10 20").expect("path ends");
         assert_eq!(ends.end, (10.0, 20.0));
         assert_eq!(ends.end_dir, (0.0, 10.0));
+    }
+
+    #[test]
+    /// Assert a cubic start direction follows the first control point.
+    fn cubic_start_direction_uses_first_control_point() {
+        let ends = path_ends("M 0 0 C 10 0 10 10 0 10").expect("path ends");
+        assert_eq!(ends.start_dir, (10.0, 0.0));
     }
 
     #[test]
