@@ -127,6 +127,10 @@ fn tokenize_path(d: &str) -> Vec<String> {
             if !cur.is_empty() {
                 out.push(std::mem::take(&mut cur));
             }
+        } else if c == '.' && !cur.is_empty() && (cur.contains('.') || cur.contains(['e', 'E'])) {
+            // A second decimal, or a decimal after an exponent, starts a new number.
+            out.push(std::mem::take(&mut cur));
+            cur.push(c);
         } else if (c == '-' || c == '+') && !cur.is_empty() && !cur.ends_with(['e', 'E']) {
             // A sign starts a new number unless it belongs to an exponent.
             out.push(std::mem::take(&mut cur));
@@ -173,6 +177,13 @@ mod tests {
     fn minus_separates_coordinates() {
         let ends = path_ends("M0,0L10-5").expect("path ends");
         assert_eq!(ends.end, (10.0, -5.0));
+    }
+
+    #[test]
+    /// Assert a second decimal point starts a new number.
+    fn second_decimal_starts_a_new_number() {
+        let ends = path_ends("M0 0 L1.5.5").expect("path ends");
+        assert_eq!(ends.end, (1.5, 0.5));
     }
 
     #[test]
