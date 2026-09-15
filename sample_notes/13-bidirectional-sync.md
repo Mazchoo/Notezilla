@@ -23,7 +23,7 @@ Ensure that manual edits in the Leptos GUI trigger immediate updates in the Vect
 ## Acceptance Criteria
 
 - [x] Saving a note in the GUI immediately updates the vector database entry.
-- [ ] External file changes (outside the GUI) are detected and reflected in the GUI within a few seconds.
+- [x] External file changes (outside the GUI) are detected and reflected in the GUI within a few seconds.
 - [ ] Conflicting edits are detected and the user is shown both versions with an option to resolve.
 - [ ] "Resync All" rebuilds the entire vector index from the filesystem.
 - [ ] The file tree and search results update without requiring a manual page refresh.
