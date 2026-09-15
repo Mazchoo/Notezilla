@@ -15,16 +15,13 @@ Ensure that manual edits in the Leptos GUI trigger immediate updates in the Vect
 
 1. Implement a save hook in the Leptos editor that calls the `update_note` API on every save, triggering re-indexing.
 2. Add a file watcher notification channel (e.g. WebSocket or SSE) from the FastMCP service to the GUI so external file changes are reflected live.
-3. Implement conflict detection: if a note is edited in both the GUI and the filesystem simultaneously, alert the user with a diff view.
-4. Add a manual "Resync All" action that triggers a full re-index of the filesystem into the vector database.
-5. Implement optimistic UI updates so the tree and search results reflect changes before the API confirms.
-6. Write end-to-end tests covering edit-in-GUI-reflects-in-DB and edit-on-disk-reflects-in-GUI scenarios.
+3. Add a database checking window that checks that notes are synced up between the database and what is on disk.
 
 ## Acceptance Criteria
 
 - [x] Saving a note in the GUI immediately updates the vector database entry.
 - [x] External file changes (outside the GUI) are detected and reflected in the GUI within a few seconds.
-- [ ] Conflicting edits are detected and the user is shown both versions with an option to resolve.
+- [ ] Conflict between database and files can be requested and reported back as a markdown
 - [ ] "Resync All" rebuilds the entire vector index from the filesystem.
 - [ ] The file tree and search results update without requiring a manual page refresh.
 - [ ] No data loss occurs during concurrent edits from multiple sources.

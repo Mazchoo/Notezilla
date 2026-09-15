@@ -23,8 +23,7 @@ Ensure the GUI correctly renders Mermaid diagrams to satisfy the "extending user
 ## Acceptance Criteria
 
 - [ ] All major Mermaid diagram types render correctly in the preview pane.
-- [ ] Large diagrams are scrollable or zoomable, not clipped or overflowing.
-- [ ] Diagrams can be exported as SVG or PNG files via a download action.
-- [ ] Theme changes (light/dark) are reflected in diagram colors without a page reload.
-- [ ] Special characters in diagram labels do not break rendering.
+- [x] Diagrams can be exported as SVG files via a download action.
+- [x] Theme changes (light/dark) are reflected in diagram colors without a page reload.
+- [ ] Try adding a zoom button to pan over one diagram, see if it fits
 - [ ] A Mermaid syntax reference is accessible from the editor for quick lookup.

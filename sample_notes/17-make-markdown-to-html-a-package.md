@@ -20,5 +20,6 @@ Make a cargo crate that replicates the behavior to convert a markdown to html.
 
 ## Acceptance Criteria
 
+- [ ] Bug fix report for renderer has been processed
 - [ ] Cargo crate is published with tests to render all the different parts
 - [ ] Configuration class is setup to change the colors and format of output files
