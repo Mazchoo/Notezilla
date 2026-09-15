@@ -43,6 +43,7 @@ pub fn path_ends(d: &str) -> Option<PathEnds> {
                 };
                 start = cur;
                 prev = cur;
+                second = None;
                 moved = true;
                 // Repeated coordinate pairs after a moveto are implicit linetos.
                 cmd = if cmd == 'm' { 'l' } else { 'L' };
@@ -205,6 +206,15 @@ mod tests {
     fn second_decimal_starts_a_new_number() {
         let ends = path_ends("M0 0 L1.5.5").expect("path ends");
         assert_eq!(ends.end, (1.5, 0.5));
+    }
+
+    #[test]
+    /// Assert start geometry comes from the last subpath.
+    fn last_subpath_owns_start_geometry() {
+        let ends = path_ends("M 0 0 L 10 0 M 20 5 L 30 5").expect("path ends");
+        assert_eq!(ends.start, (20.0, 5.0));
+        assert_eq!(ends.start_dir, (10.0, 0.0));
+        assert_eq!(ends.end, (30.0, 5.0));
     }
 
     #[test]
