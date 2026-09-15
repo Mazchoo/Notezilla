@@ -14,19 +14,19 @@ from src.config import FILE_CHANGE_SSE_IDLE_TIMEOUT_SECONDS
 
 Subscriber = Callable[[str], None]
 
-_lock = threading.Lock()
-_subscribers: List[Subscriber] = []
+FILE_CHANGE_SUBSCRIBERS_LOCK = threading.Lock()
+FILE_CHANGE_SUBSCRIBERS: List[Subscriber] = []
 
 
 def subscribe(callback: Subscriber) -> Callable[[], None]:
     """Register a payload callback. Return an unsubscribe function."""
-    with _lock:
-        _subscribers.append(callback)
+    with FILE_CHANGE_SUBSCRIBERS_LOCK:
+        FILE_CHANGE_SUBSCRIBERS.append(callback)
 
     def unsubscribe():
-        with _lock:
+        with FILE_CHANGE_SUBSCRIBERS_LOCK:
             try:
-                _subscribers.remove(callback)
+                FILE_CHANGE_SUBSCRIBERS.remove(callback)
             except ValueError:
                 pass
 
@@ -35,8 +35,8 @@ def subscribe(callback: Subscriber) -> Callable[[], None]:
 
 def publish():
     """Ping every subscriber that a watcher batch was processed."""
-    with _lock:
-        subscribers = list(_subscribers)
+    with FILE_CHANGE_SUBSCRIBERS_LOCK:
+        subscribers = list(FILE_CHANGE_SUBSCRIBERS)
     for callback in subscribers:
         try:
             callback("{}")  # empty payload
@@ -44,15 +44,10 @@ def publish():
             LOGGER.exception("File-change subscriber failed")
 
 
-def format_sse_data(data: str) -> str:
-    """Return one unnamed SSE `message` event."""
-    return f"data: {data}\n\n"
-
-
 def clear_subscribers():
     """Drop every subscriber. Tests use this to isolate cases."""
-    with _lock:
-        _subscribers.clear()
+    with FILE_CHANGE_SUBSCRIBERS_LOCK:
+        FILE_CHANGE_SUBSCRIBERS.clear()
 
 
 async def file_change_sse(request: Request) -> StreamingResponse:
@@ -75,7 +70,7 @@ async def file_change_sse(request: Request) -> StreamingResponse:
                     payload = await asyncio.wait_for(
                         queue.get(), timeout=FILE_CHANGE_SSE_IDLE_TIMEOUT_SECONDS
                     )
-                    yield format_sse_data(payload)
+                    yield f"data: {payload}\n\n"
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
         finally:

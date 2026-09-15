@@ -8,7 +8,6 @@ from watchdog.events import FileModifiedEvent
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.file_change_notify import (
     clear_subscribers,
-    format_sse_data,
     publish,
     subscribe,
 )
@@ -31,10 +30,6 @@ def test_publish_delivers_a_ping():
     publish()
 
     assert received == ["{}"]
-
-
-def test_format_sse_data_is_an_unnamed_message():
-    assert format_sse_data("{}") == "data: {}\n\n"
 
 
 def test_process_batch_publishes_after_database_update(tmp_path):
