@@ -25,6 +25,11 @@ class INoteDatabase(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_folders(self, folders: List[str]):
+        """Delete every note stored under any of the given folder path keys."""
+        raise NotImplementedError
+
+    @abstractmethod
     def __len__(self) -> int:
         """Return the number of notes in the collection."""
         raise NotImplementedError

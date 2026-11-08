@@ -1,16 +1,24 @@
 """Observer class that handles file updates in storage directory"""
 
 import threading
-from typing import List
+from typing import List, Union
 from pathlib import Path
 
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import (
+    FileSystemEventHandler,
+    FileCreatedEvent,
+    FileDeletedEvent,
+    FileMovedEvent,
+    DirDeletedEvent,
+    DirMovedEvent,
+)
 
 from src.backend.event_handling import (
     FileChangeEvent,
     event_is_valid,
+    event_is_folder_removal,
     filter_event_list,
 )
 from src.backend.database_interface import INoteDatabase
@@ -47,8 +55,18 @@ class PyFileHandler(FileSystemEventHandler):
     def on_deleted(self, event: FileChangeEvent):
         self._handle_event(event)
 
+    def on_moved(self, event: Union[FileMovedEvent, DirMovedEvent]):
+        # A move is a delete of the old path plus an upsert of the new one.
+        # Files inside a moved folder arrive as their own synthetic move events,
+        # so a folder move only needs to clear what remains under the old path.
+        if event.is_directory:
+            self._handle_event(DirDeletedEvent(event.src_path))
+            return
+        self._handle_event(FileDeletedEvent(event.src_path))
+        self._handle_event(FileCreatedEvent(event.dest_path))
+
     def _handle_event(self, event: FileChangeEvent):
-        if not event_is_valid(event):
+        if not (event_is_valid(event) or event_is_folder_removal(event)):
             return
 
         with self._event_lock:
@@ -75,7 +93,16 @@ class PyFileHandler(FileSystemEventHandler):
 
         upsert_batch, total_upserted = [], 0
         delete_batch, total_removed = [], 0
+        removed_folders = []
         for update in queue:
+            if event_is_folder_removal(update):
+                resolved_path = Path(str(update.src_path)).resolve()
+                if folder_key := get_normalised_path(
+                    resolved_path, ResolvedFolder.NOTES
+                ):
+                    removed_folders.append(folder_key)
+                continue
+
             if update.event_type in ["created", "modified"]:
                 resolved_path = Path(str(update.src_path)).resolve()
                 if markdown := IMarkdownFile.construct_from_path(
@@ -93,6 +120,8 @@ class PyFileHandler(FileSystemEventHandler):
                     total_removed += 1
 
         with self._database_lock:
+            # Folder removals first so a folder recreated in the same batch keeps its upserts
+            self.database.delete_folders(removed_folders)
             self.database.upsert_batch(upsert_batch)
             self.database.delete_batch(delete_batch)
 

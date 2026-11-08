@@ -73,6 +73,11 @@ class NoteDatabase(INoteDatabase):
 
         self._collection.delete(ids=paths)
 
+    def delete_folders(self, folders: List[str]):
+        """Delete every note stored under any of the given folder path keys."""
+        prefixes = [f"{folder}/" for folder in folders if folder]
+        self.delete_batch(self._ids_matching_path_prefix(prefixes))
+
     def __len__(self) -> int:
         return self._collection.count()
 
