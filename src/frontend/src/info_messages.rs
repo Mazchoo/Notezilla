@@ -98,6 +98,14 @@ pub const SYNC_CHECKING_LABEL: &str = "Checking...";
 pub const SYNC_DB_ONLY_HEADING: &str = "Only in database";
 pub const SYNC_DIR_ONLY_HEADING: &str = "Only on disk";
 pub const SYNC_NONE_LABEL: &str = "None";
+pub const SYNC_RESTORE_TO_DISK_TITLE: &str = "Restore file to disk from the database";
+pub const SYNC_DELETE_FROM_DB_TITLE: &str = "Delete from the database";
+pub const SYNC_RESTORE_TO_DB_TITLE: &str = "Add file to the database";
+pub const SYNC_DELETE_FILE_TITLE: &str = "Delete file from disk";
+pub const SYNC_RESTORE_ALL_TO_DISK_TITLE: &str = "Restore all to disk from the database";
+pub const SYNC_DELETE_ALL_FROM_DB_TITLE: &str = "Delete all from the database";
+pub const SYNC_RESTORE_ALL_TO_DB_TITLE: &str = "Add all files to the database";
+pub const SYNC_DELETE_ALL_FILES_TITLE: &str = "Delete all unsynced files from disk";
 
 // --- Settings ---
 

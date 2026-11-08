@@ -19,9 +19,14 @@ from src.backend.file_io import (
     resolve_note_path,
 )
 from src.backend.database_sync import (
+    delete_db_only_entries,
+    delete_dir_only_files,
+    delete_note_from_db,
     get_sync_difference,
     restore_missing_files_from_db,
+    restore_note_from_db,
     upsert_missing_files_from_dir,
+    upsert_note_from_dir,
 )
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.file_change_notify import file_change_sse
@@ -621,6 +626,108 @@ def upsert_dir_only_notes() -> ToolResult:
         )
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in upsert_dir_only_notes")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_db_only_notes() -> ToolResult:
+    """Remove database entries for notes that are missing on disk."""
+    warnings: list[str] = []
+    try:
+        if delete_db_only_entries(init_db()):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            "Failed to delete one or more database-only entries.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in delete_db_only_notes")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_dir_only_notes() -> ToolResult:
+    """Delete markdown files on disk that are missing from the database."""
+    warnings: list[str] = []
+    try:
+        if delete_dir_only_files(init_db()):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            "Failed to delete one or more directory-only files.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in delete_dir_only_notes")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def restore_db_only_note(
+    path: Annotated[
+        str,
+        Field(description='Path of the database-only note e.g. "folder/filename.md"'),
+    ],
+) -> ToolResult:
+    """Write the database copy of a single note to disk.
+
+    Args:
+        path: Path of the database-only note e.g. "folder/filename.md"
+    """
+    warnings: list[str] = []
+    try:
+        if restore_note_from_db(init_db(), init_column_types(), path):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            f"Failed to restore '{path}' from the database.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in restore_db_only_note")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def upsert_dir_only_note(
+    path: Annotated[
+        str,
+        Field(description='Path of the note file on disk e.g. "folder/filename.md"'),
+    ],
+) -> ToolResult:
+    """Upsert the database entry for a single note file on disk.
+
+    Args:
+        path: Path of the note file on disk e.g. "folder/filename.md"
+    """
+    warnings: list[str] = []
+    try:
+        if upsert_note_from_dir(init_db(), init_column_types(), path):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            f"Failed to upsert '{path}' into the database.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in upsert_dir_only_note")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def delete_db_only_note(
+    path: Annotated[
+        str,
+        Field(description='Path of the database-only note e.g. "folder/filename.md"'),
+    ],
+) -> ToolResult:
+    """Remove a single note's database entry without touching disk.
+
+    Args:
+        path: Path of the database-only note e.g. "folder/filename.md"
+    """
+    warnings: list[str] = []
+    try:
+        if delete_note_from_db(init_db(), path):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            f"Failed to delete '{path}' from the database.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in delete_db_only_note")
         return McpResponse.empty_error(f"DB error: {e}", warnings)
 
 
