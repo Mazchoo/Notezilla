@@ -294,6 +294,31 @@ mod tests {
     use crate::constants::LIST_BULLET;
 
     #[test]
+    /// Assert markdown on the line right after display math is still parsed.
+    fn line_after_display_math_is_markdown() {
+        for src in [
+            "$$x^2$$\n* **Huber Loss**\n",
+            "$$\nx^2\n$$\r\n* **Huber Loss**\r\n",
+        ] {
+            let html = render_markdown(src);
+            assert!(html.contains("<strong>Huber Loss</strong>"), "{html}");
+            assert!(!html.contains("**"), "{html}");
+        }
+    }
+
+    #[test]
+    /// Assert a `cases` environment renders as MathML, not an error.
+    fn cases_environment_renders() {
+        let html = render_markdown(
+            r"$$\rho(r) = \begin{cases} \frac{1}{2} r^2 & |r| \le k \\ k|r| - \frac{1}{2}k^2 & |r| > k \end{cases}$$",
+        );
+        assert!(!html.contains("math-error"), "{html}");
+        assert!(html.contains("<mtable"), "{html}");
+        assert_eq!(html.matches("<mtr>").count(), 2, "{html}");
+        assert!(html.contains("≤"), "{html}");
+    }
+
+    #[test]
     /// Assert plain markdown becomes HTML.
     fn renders_plain_markdown() {
         let html = render_markdown("# Title\n\ntext\n");

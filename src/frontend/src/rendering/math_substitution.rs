@@ -4,10 +4,10 @@
 //! parsed as emphasis, and so display math becomes a block-level element.
 
 use super::renders::{MathRender, RenderPdf, RenderTarget};
-use latex2mathml::DisplayStyle;
+use math_core::MathDisplay;
 
 /// Render one delimited LaTeX expression for `target`.
-fn render_math(latex: &str, display: DisplayStyle, target: RenderTarget) -> String {
+fn render_math(latex: &str, display: MathDisplay, target: RenderTarget) -> String {
     MathRender::new(display).render_for(target, latex.trim())
 }
 
@@ -55,8 +55,15 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             if let Some(close) = find_closing_display_math(bytes, i) {
                 let latex = &src[i + 2..close];
                 if !latex.trim().is_empty() {
-                    out.push_str(&render_math(latex, DisplayStyle::Block, target));
+                    out.push_str(&render_math(latex, MathDisplay::Block, target));
+                    let opened_line = at_line_start(bytes, i);
                     i = close + 2;
+                    // A line-start `<div>` opens an HTML block that runs to the
+                    // next blank line; end it here so the following line is
+                    // still parsed as markdown.
+                    if opened_line && rest_of_line_is_blank(bytes, i) {
+                        out.push('\n');
+                    }
                     continue;
                 }
             }
@@ -73,7 +80,7 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
                 if let Some(close) = find_closing_inline_dollar(bytes, i + 1) {
                     out.push_str(&render_math(
                         &src[i + 1..close],
-                        DisplayStyle::Inline,
+                        MathDisplay::Inline,
                         target,
                     ));
                     i = close + 1;
@@ -149,6 +156,16 @@ fn at_line_start(bytes: &[u8], i: usize) -> bool {
         j -= 1;
     }
     j == 0 || bytes[j - 1] == b'\n' || bytes[j - 1] == b'\r'
+}
+
+/// Return whether only spaces or tabs sit between `i` and a line ending.
+///
+/// The end of input does not count, since no line follows it.
+fn rest_of_line_is_blank(bytes: &[u8], i: usize) -> bool {
+    bytes[i..]
+        .iter()
+        .find(|b| !matches!(b, b' ' | b'\t'))
+        .is_some_and(|&b| b == b'\n' || b == b'\r')
 }
 
 /// Find the closing `$` for inline math, rejecting a display `$$` pair.
@@ -306,7 +323,7 @@ mod tests {
             "inline $\\gets$ and block\n\n$$\nE = mc^2\n$$\n",
             RenderTarget::Editor,
         );
-        assert!(out.contains(r#"display="inline""#), "{out}");
+        assert!(out.contains("inline <math>"), "{out}");
         assert!(out.contains(r#"display="block""#), "{out}");
         assert!(out.contains(r#"class="math-block""#), "{out}");
     }
