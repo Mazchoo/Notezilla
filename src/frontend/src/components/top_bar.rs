@@ -7,9 +7,9 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
     format_save_summary, save_failed_toast, with_hotkey, EDIT_MAIN_TEXT_FROZEN_TITLE,
-    EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_TITLE, EXPORT_MARKDOWN_TITLE, EXPORT_PDF_TITLE,
-    EXPORT_SVG_TITLE, IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
-    SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
+    EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU,
+    EXPORT_SVG_MENU, EXPORT_TITLE, IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE,
+    SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
 };
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
@@ -136,6 +136,14 @@ pub fn export_all_as_svg_diagrams(state: &AppState) {
     );
 }
 
+/// Export-dropdown entries: menu label and the export action it runs.
+const EXPORT_FORMATS: [(&str, fn(&AppState)); 4] = [
+    (EXPORT_HTML_MENU, export_all_as_html),
+    (EXPORT_PDF_MENU, export_all_as_pdf),
+    (EXPORT_MARKDOWN_MENU, export_all_as_markdown),
+    (EXPORT_SVG_MENU, export_all_as_svg_diagrams),
+];
+
 /// Toggle whether main markdown blocks can enter edit mode.
 pub fn toggle_markdown_editing(state: &AppState) {
     state
@@ -178,25 +186,33 @@ pub fn TopBar() -> impl IntoView {
         save_all_entries(&state_save);
     };
 
+    let export_menu_open = RwSignal::new(false);
+    let on_export_toggle = move |_| {
+        export_menu_open.update(|open| *open = !*open);
+    };
+    let close_export_menu = move |_| export_menu_open.set(false);
+
     let state_export = state.clone();
-    let on_export_html = move |_| {
-        export_all_as_html(&state_export);
-    };
-
-    let state_export_pdf = state.clone();
-    let on_export_pdf = move |_| {
-        export_all_as_pdf(&state_export_pdf);
-    };
-
-    let state_export_markdown = state.clone();
-    let on_export_markdown = move |_| {
-        export_all_as_markdown(&state_export_markdown);
-    };
-
-    let state_export_svg = state.clone();
-    let on_export_svg = move |_| {
-        export_all_as_svg_diagrams(&state_export_svg);
-    };
+    let export_items = EXPORT_FORMATS
+        .into_iter()
+        .map(|(label, export)| {
+            let state_item = state_export.clone();
+            view! {
+                <li>
+                    <a
+                        class="context-menu-item"
+                        on:click=move |ev: web_sys::MouseEvent| {
+                            ev.prevent_default();
+                            export_menu_open.set(false);
+                            export(&state_item);
+                        }
+                    >
+                        {label}
+                    </a>
+                </li>
+            }
+        })
+        .collect_view();
 
     let state_new = state.clone();
     let on_new_block = move |_| {
@@ -244,26 +260,29 @@ pub fn TopBar() -> impl IntoView {
             >
                 <Icon icon=id::LuSave/>
             </button>
-            // Export — save each entry as a standalone HTML file.
-            <button
-                class="activity-btn"
-                title=move || with_hotkey(EXPORT_HTML_TITLE, &format_ctrl_hotkey(export_hotkey_key.get()))
-                on:click=on_export_html
-            >
-                <Icon icon=id::LuFileCode/>
-            </button>
-            // Export — markdown → HTML (including SVG drawings) → PDF.
-            <button class="activity-btn" title=EXPORT_PDF_TITLE on:click=on_export_pdf>
-                <Icon icon=id::LuFileDown/>
-            </button>
-            // Export — save each entry as a markdown file.
-            <button class="activity-btn" title=EXPORT_MARKDOWN_TITLE on:click=on_export_markdown>
-                <Icon icon=id::LuFileText/>
-            </button>
-            // Export — save each mermaid and graphviz diagram as an SVG file.
-            <button class="activity-btn" title=EXPORT_SVG_TITLE on:click=on_export_svg>
-                <Icon icon=id::LuFileImage/>
-            </button>
+            // Export — opens a dropdown to pick HTML, PDF, Markdown, or SVG diagrams.
+            <div class="top-bar-export">
+                <button
+                    class=move || AppState::activity_btn_class(export_menu_open.get())
+                    title=move || with_hotkey(EXPORT_TITLE, &format_ctrl_hotkey(export_hotkey_key.get()))
+                    aria-haspopup="menu"
+                    aria-expanded=move || export_menu_open.get().to_string()
+                    on:click=on_export_toggle
+                >
+                    <Icon icon=id::LuFileDown/>
+                </button>
+                <Show when=move || export_menu_open.get()>
+                    <div class="context-menu-backdrop" on:click=close_export_menu></div>
+                </Show>
+                <div
+                    class="file-context-menu menu export-menu"
+                    style:display=move || if export_menu_open.get() { "block" } else { "none" }
+                >
+                    <ul class="menu-list" role="menu">
+                        {export_items}
+                    </ul>
+                </div>
+            </div>
             // Toggle main-text editing — off keeps rendered markdown selectable without opening the editor.
             <button
                 class=move || AppState::activity_btn_class(state.markdown_editing_enabled.get())

@@ -12,10 +12,11 @@ pub const ACTIVITY_SETTINGS_TITLE: &str = "Settings";
 
 pub const IMPORT_MARKDOWN_TITLE: &str = "Import Markdown";
 pub const SAVE_TITLE: &str = "Save";
-pub const EXPORT_HTML_TITLE: &str = "Export as HTML";
-pub const EXPORT_PDF_TITLE: &str = "Export as PDF";
-pub const EXPORT_MARKDOWN_TITLE: &str = "Export as Markdown";
-pub const EXPORT_SVG_TITLE: &str = "Export diagrams as SVG";
+pub const EXPORT_TITLE: &str = "Export";
+pub const EXPORT_HTML_MENU: &str = "HTML";
+pub const EXPORT_PDF_MENU: &str = "PDF";
+pub const EXPORT_MARKDOWN_MENU: &str = "Markdown";
+pub const EXPORT_SVG_MENU: &str = "SVG diagrams";
 pub const EDIT_MAIN_TEXT_ON_TITLE: &str = "Edit main text (on)";
 pub const EDIT_MAIN_TEXT_FROZEN_TITLE: &str =
     "Main text frozen — select and copy without opening the editor";

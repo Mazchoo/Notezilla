@@ -374,6 +374,17 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
   background-color: var(--bg-3);
   color: var(--text);
 }
+.top-bar-export {
+  position: relative;
+}
+.file-context-menu.export-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+}
+.export-menu .menu-list a.context-menu-item {
+  padding: 0.3rem 0.75rem;
+}
 
 /* ── Editor area ───────────────────────────────────────────────── */
 .editor-area {
