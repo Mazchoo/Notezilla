@@ -3,7 +3,7 @@
 from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_normalised_path
 from src.backend.resolved_folders import ResolvedFolder
-from src.tasks.check_path_sync import check_path_sync
+from src.backend.database_sync import get_sync_difference
 
 
 def delete_only_in_db() -> list[str]:
@@ -12,7 +12,7 @@ def delete_only_in_db() -> list[str]:
 
     Returns the path keys that were deleted.
     """
-    db_only, _ = check_path_sync()
+    db_only, _ = get_sync_difference(NoteDatabase())
     if not db_only:
         return []
 

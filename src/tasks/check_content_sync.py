@@ -7,14 +7,10 @@ from typing import Any
 from tqdm import tqdm
 
 from src.backend.database_adapter import NoteDatabase
-from src.backend.file_io import get_db_column_types
+from src.backend.database_sync import get_database_paths, get_directory_paths
+from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
 from src.field_enums import ReservedFields
-from src.tasks.check_path_sync import (
-    get_database_paths,
-    get_directory_paths,
-    note_file_path,
-)
 
 
 @dataclass(frozen=True)
@@ -39,7 +35,7 @@ def _fields_for_compare(fields: dict[str, Any]) -> dict[str, Any]:
 
 def _expected_from_disk(path: str) -> tuple[str, dict[str, Any], str] | None:
     """Read body text, front matter, and filename from an on-disk note."""
-    disk = IMarkdownFile.construct_from_path(note_file_path(path))
+    disk = IMarkdownFile.construct_from_path(path)
     if disk is None:
         return None
 
@@ -64,7 +60,10 @@ def check_content_sync() -> list[ContentMismatch]:
     mismatches: list[ContentMismatch] = []
 
     for path in tqdm(sorted(shared_paths), desc="Checking content"):
-        note_from_db = db.get_note_from_path_key(path, column_types)
+        path_key = get_normalised_path(path)
+        note_from_db = (
+            db.get_note_from_path_key(path_key, column_types) if path_key else None
+        )
         expected = _expected_from_disk(path)
 
         if note_from_db is None or expected is None:
@@ -99,7 +98,7 @@ def print_mismatches(mismatches: list[ContentMismatch]) -> None:
         if mismatch.metadata_differs:
             parts.append("front matter")
         detail = ", ".join(parts) if parts else "unknown"
-        print(f"  {note_file_path(mismatch.path)} ({detail})")
+        print(f"  {mismatch.path} ({detail})")
 
 
 if __name__ == "__main__":

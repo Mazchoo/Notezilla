@@ -1,8 +1,9 @@
 """Delete note files on disk that have no corresponding database entry."""
 
+from src.backend.database_adapter import NoteDatabase
+from src.backend.database_sync import get_sync_difference
 from src.backend.file_io import delete_note_file
 from src.backend.resolved_folders import ResolvedFolder
-from src.tasks.check_path_sync import check_path_sync
 
 
 def delete_only_in_dir() -> list[str]:
@@ -11,7 +12,7 @@ def delete_only_in_dir() -> list[str]:
 
     Returns the paths that were deleted.
     """
-    _, dir_only = check_path_sync()
+    _, dir_only = get_sync_difference(NoteDatabase())
     if not dir_only:
         return []
 

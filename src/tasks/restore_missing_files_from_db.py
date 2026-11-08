@@ -4,7 +4,7 @@ from src.backend.database_adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.resolved_folders import ResolvedFolder
-from src.tasks.check_path_sync import check_path_sync
+from src.backend.database_sync import get_sync_difference
 
 
 def restore_missing_files_from_db() -> list[str]:
@@ -13,11 +13,11 @@ def restore_missing_files_from_db() -> list[str]:
 
     Returns the absolute path strings that were saved.
     """
-    db_only, _ = check_path_sync()
+    db = NoteDatabase()
+    db_only, _ = get_sync_difference(db)
     if not db_only:
         return []
 
-    db = NoteDatabase()
     column_types = get_db_column_types()
     saved: list[str] = []
 

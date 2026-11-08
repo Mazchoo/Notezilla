@@ -5,7 +5,7 @@ from src.backend.database_update import prepate_database_row
 from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
 from src.backend.resolved_folders import ResolvedFolder
-from src.tasks.check_path_sync import check_path_sync
+from src.backend.database_sync import get_sync_difference
 
 
 def upsert_missing_files_from_dir() -> tuple[list[str], list[str]]:
@@ -14,11 +14,11 @@ def upsert_missing_files_from_dir() -> tuple[list[str], list[str]]:
 
     Returns (uploaded, failures) as absolute path strings.
     """
-    _, dir_only = check_path_sync()
+    db = NoteDatabase()
+    _, dir_only = get_sync_difference(db)
     if not dir_only:
         return [], []
 
-    db = NoteDatabase()
     column_types = get_db_column_types()
     uploaded: list[str] = []
     failures: list[str] = []
