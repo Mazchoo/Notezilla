@@ -18,7 +18,11 @@ from src.backend.file_io import (
     rename_basename,
     resolve_note_path,
 )
-from src.backend.database_sync import get_sync_difference
+from src.backend.database_sync import (
+    get_sync_difference,
+    restore_missing_files_from_db,
+    upsert_missing_files_from_dir,
+)
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.file_change_notify import file_change_sse
 from src.backend.parse_markdown import (
@@ -587,6 +591,37 @@ def get_database_sync_difference() -> ToolResult:
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in get_database_sync_difference")
         return McpResponse.sync_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def restore_db_only_notes() -> ToolResult:
+    """Write markdown files for notes that exist in the database but are missing on disk."""
+    warnings: list[str] = []
+    try:
+        if restore_missing_files_from_db(init_db(), init_column_types()):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            "Failed to restore one or more database-only notes to disk.", warnings
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in restore_db_only_notes")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=EMPTY_OUTPUT_SCHEMA)
+def upsert_dir_only_notes() -> ToolResult:
+    """Upsert database entries for markdown files on disk that are missing from the database."""
+    warnings: list[str] = []
+    try:
+        if upsert_missing_files_from_dir(init_db(), init_column_types()):
+            return McpResponse.empty(warnings)
+        return McpResponse.empty_error(
+            "Failed to upsert one or more directory-only notes into the database.",
+            warnings,
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in upsert_dir_only_notes")
+        return McpResponse.empty_error(f"DB error: {e}", warnings)
 
 
 if __name__ == "__main__":
