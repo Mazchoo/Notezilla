@@ -15,6 +15,7 @@ from src.backend.output_schema import (
     DirectoryResponse,
     EmptyResponse,
     NotesResponse,
+    SyncResponse,
     UpsertResponse,
 )
 from src.field_enums import ColumnTypes
@@ -130,3 +131,19 @@ class McpResponse:
     def empty_error(message: str, warnings: List[str]) -> ToolResult:
         """Return a failed result with no payload fields."""
         return McpResponse.error(message, EmptyResponse(warnings=warnings))
+
+    @staticmethod
+    def sync(
+        db_only: List[str], dir_only: List[str], warnings: List[str]
+    ) -> ToolResult:
+        """Return database vs directory path differences."""
+        return McpResponse.success(
+            SyncResponse(db_only=db_only, dir_only=dir_only, warnings=warnings)
+        )
+
+    @staticmethod
+    def sync_error(message: str, warnings: List[str]) -> ToolResult:
+        """Return a sync-shaped error payload."""
+        return McpResponse.error(
+            message, SyncResponse(db_only=[], dir_only=[], warnings=warnings)
+        )

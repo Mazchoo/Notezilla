@@ -64,6 +64,15 @@ class UpsertResponse(SuccessResponse):
     )
 
 
+class SyncResponse(SuccessResponse):
+    """Structured content for get_database_sync_difference."""
+
+    db_only: list[str] = Field(description="Note paths in the database but not on disk")
+    dir_only: list[str] = Field(
+        description="Note paths on disk but not in the database"
+    )
+
+
 class EmptyResponse(SuccessResponse):
     """Structured content with no payload fields (e.g. delete_note success)."""
 
@@ -77,3 +86,4 @@ NOTES_OUTPUT_SCHEMA = output_schema(NotesResponse)
 DIRECTORY_OUTPUT_SCHEMA = output_schema(DirectoryResponse)
 UPSERT_OUTPUT_SCHEMA = output_schema(UpsertResponse)
 EMPTY_OUTPUT_SCHEMA = output_schema(EmptyResponse)
+SYNC_OUTPUT_SCHEMA = output_schema(SyncResponse)

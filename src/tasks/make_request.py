@@ -225,3 +225,14 @@ if __name__ == "__main__":
 
     print("\n=== delete_template_folder ===")
     print(call_tool(session, "delete_template_folder", {"path": "some-template-folder"}))
+
+    print("\n=== db_sync_difference ===")
+    print(
+        call_tool(
+            session,
+            "get_database_sync_difference",
+            {}
+        )
+    )
+
+    print()

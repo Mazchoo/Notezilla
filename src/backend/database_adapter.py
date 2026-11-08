@@ -1,7 +1,7 @@
 """Handles all database interactions for note storage and retrieval"""
 
 import os
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Iterator, List, Optional, cast
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -95,17 +95,12 @@ class NoteDatabase(INoteDatabase):
         notes = self.query_by_id(path_key, column_types)
         return notes[0] if notes else None
 
-    def _ids_matching_path_prefix(self, path_filters: List[str]) -> List[str]:
-        """Return collection ids whose path starts with any listed prefix.
+    def get_all_keys(self) -> Iterator[str]:
+        """Yield every note key (path id) stored in the collection.
 
-        IDs are the note filenames. Scans the index in BATCH_SIZE pages so a
-        single get() does not load the full id list. Stops after
-        MAX_DB_BATCH_ITERATION pages.
+        Scans the index in BATCH_SIZE pages so a single get() does not load
+        the full id list. Stops after MAX_DB_BATCH_ITERATION pages.
         """
-        if not path_filters:
-            return []
-
-        matching: List[str] = []
         for batch_index in range(MAX_DB_BATCH_ITERATION):
             batch = self._collection.get(
                 include=[],
@@ -113,16 +108,23 @@ class NoteDatabase(INoteDatabase):
                 offset=batch_index * BATCH_SIZE,
             )
             ids = batch.get("ids") or []
-            if not ids:
-                break
-            matching.extend(
-                doc_id
-                for doc_id in ids
-                if any(doc_id.startswith(prefix) for prefix in path_filters)
-            )
+            yield from ids
             if len(ids) < BATCH_SIZE:
                 break
-        return matching
+
+    def _ids_matching_path_prefix(self, path_filters: List[str]) -> List[str]:
+        """Return collection ids whose path starts with any listed prefix.
+
+        IDs are the note filenames.
+        """
+        if not path_filters:
+            return []
+
+        return [
+            doc_id
+            for doc_id in self.get_all_keys()
+            if any(doc_id.startswith(prefix) for prefix in path_filters)
+        ]
 
     def _search_with_no_text_query(
         self,

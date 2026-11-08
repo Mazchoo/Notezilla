@@ -18,6 +18,7 @@ from src.backend.file_io import (
     rename_basename,
     resolve_note_path,
 )
+from src.backend.database_sync import get_sync_difference
 from src.backend.directory_watcher import PyFileHandler
 from src.backend.file_change_notify import file_change_sse
 from src.backend.parse_markdown import (
@@ -31,6 +32,7 @@ from src.backend.output_schema import (
     DIRECTORY_OUTPUT_SCHEMA,
     EMPTY_OUTPUT_SCHEMA,
     NOTES_OUTPUT_SCHEMA,
+    SYNC_OUTPUT_SCHEMA,
     UPSERT_OUTPUT_SCHEMA,
 )
 from src.backend.resolved_folders import ResolvedFolder
@@ -569,6 +571,22 @@ def search_notes(
     except Exception as e:  # pylint: disable=broad-except
         LOGGER.exception("DB error in search_notes")
         return McpResponse.notes_error(f"DB error: {e}", warnings)
+
+
+@MCP.tool(output_schema=SYNC_OUTPUT_SCHEMA)
+def get_database_sync_difference() -> ToolResult:
+    """Compare note paths in the database against markdown files on disk.
+
+    Returns db_only (in the database but not on disk) and dir_only
+    (on disk but not in the database).
+    """
+    warnings: list[str] = []
+    try:
+        db_only, dir_only = get_sync_difference(init_db())
+        return McpResponse.sync(list(db_only), list(dir_only), warnings)
+    except Exception as e:  # pylint: disable=broad-except
+        LOGGER.exception("DB error in get_database_sync_difference")
+        return McpResponse.sync_error(f"DB error: {e}", warnings)
 
 
 if __name__ == "__main__":

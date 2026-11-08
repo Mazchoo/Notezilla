@@ -1,7 +1,7 @@
 """Abstract interface for note database storage and retrieval."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 from src.backend.note import NoteData
 from src.field_enums import ColumnTypes
@@ -27,6 +27,11 @@ class INoteDatabase(ABC):
     @abstractmethod
     def __len__(self) -> int:
         """Return the number of notes in the collection."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_all_keys(self) -> Iterator[str]:
+        """Yield every note key (path id) stored in the collection."""
         raise NotImplementedError
 
     @abstractmethod
