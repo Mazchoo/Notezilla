@@ -5,6 +5,7 @@ from pathlib import Path
 from src.backend.database_interface import INoteDatabase
 from src.backend.database_update import prepate_database_row
 from src.backend.file_io import (
+    delete_note_file,
     get_normalised_path,
     iterate_all_markdowns,
     resolve_note_path,
@@ -44,6 +45,39 @@ def get_sync_difference(db: INoteDatabase) -> tuple[set[str], set[str]]:
     return db_paths - dir_paths, dir_paths - db_paths
 
 
+def restore_note_from_db(
+    db: INoteDatabase, column_types: ColumnTypes, path: str
+) -> bool:
+    """Write the database copy of a note to disk. True on success."""
+    path_key = get_normalised_path(path, ResolvedFolder.NOTES)
+    if path_key is None:
+        return False
+    note = db.get_note_from_path_key(path_key, column_types)
+    if note is None:
+        return False
+    return bool(IMarkdownFile.construct_from_data(path_key, note.text, note.fields))
+
+
+def upsert_note_from_dir(
+    db: INoteDatabase, column_types: ColumnTypes, path: str
+) -> bool:
+    """Upsert the database entry for a note file on disk. True on success."""
+    markdown = IMarkdownFile.construct_from_path(path)
+    if markdown is None:
+        return False
+    db.upsert_batch([prepate_database_row(markdown, column_types)])
+    return True
+
+
+def delete_note_from_db(db: INoteDatabase, path: str) -> bool:
+    """Remove a note's database entry without touching disk. True on success."""
+    path_key = get_normalised_path(path, ResolvedFolder.NOTES)
+    if path_key is None:
+        return False
+    db.delete_batch([path_key])
+    return True
+
+
 def restore_missing_files_from_db(db: INoteDatabase, column_types: ColumnTypes) -> bool:
     """
     Write note files for database paths that are missing on disk.
@@ -54,15 +88,7 @@ def restore_missing_files_from_db(db: INoteDatabase, column_types: ColumnTypes) 
     success = True
 
     for path in db_only:
-        path_key = get_normalised_path(path, ResolvedFolder.NOTES)
-        if path_key is None:
-            success = False
-            continue
-        note = db.get_note_from_path_key(path_key, column_types)
-        if note is None:
-            success = False
-            continue
-        if not IMarkdownFile.construct_from_data(path_key, note.text, note.fields):
+        if not restore_note_from_db(db, column_types, path):
             success = False
 
     return success
@@ -87,5 +113,42 @@ def upsert_missing_files_from_dir(db: INoteDatabase, column_types: ColumnTypes) 
 
     if rows:
         db.upsert_batch(rows)
+
+    return success
+
+
+def delete_db_only_entries(db: INoteDatabase) -> bool:
+    """
+    Remove database entries for notes that are missing on disk.
+
+    Returns True if every database-only path resolved to a key.
+    """
+    db_only, _ = get_sync_difference(db)
+    keys: list[str] = []
+    success = True
+
+    for path in db_only:
+        path_key = get_normalised_path(path, ResolvedFolder.NOTES)
+        if path_key is None:
+            success = False
+            continue
+        keys.append(path_key)
+
+    db.delete_batch(keys)
+    return success
+
+
+def delete_dir_only_files(db: INoteDatabase) -> bool:
+    """
+    Delete note files on disk that are missing from the database.
+
+    Returns True if every directory-only file was deleted.
+    """
+    _, dir_only = get_sync_difference(db)
+    success = True
+
+    for path in dir_only:
+        if not delete_note_file(path, ResolvedFolder.NOTES):
+            success = False
 
     return success

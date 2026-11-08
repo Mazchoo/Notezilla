@@ -40,6 +40,13 @@ pub struct DirectoryContents {
     pub files: Vec<String>,
 }
 
+/// Database vs note-folder path difference returned by get_database_sync_difference.
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct SyncDifference {
+    pub db_only: Vec<String>,
+    pub dir_only: Vec<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

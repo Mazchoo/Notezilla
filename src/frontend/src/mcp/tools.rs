@@ -1,5 +1,5 @@
 use super::client::call_tool;
-use crate::models::note::{DirectoryContents, NoteFile};
+use crate::models::note::{DirectoryContents, NoteFile, SyncDifference};
 use serde_json::{json, Value};
 
 pub struct UpsertNoteResult {
@@ -204,6 +204,62 @@ pub async fn rename_template_dir(
     )
     .await
     .map(|_| ())
+}
+
+/// Compare database paths with note-folder files via the MCP `get_database_sync_difference` tool.
+pub async fn get_database_sync_difference(session_id: &str) -> Result<SyncDifference, String> {
+    let val = call_tool(session_id, "get_database_sync_difference", json!({})).await?;
+
+    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+}
+
+/// Write one database-only note to disk via the MCP `restore_db_only_note` tool.
+pub async fn restore_db_only_note(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "restore_db_only_note", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
+/// Remove one database-only entry via the MCP `delete_db_only_note` tool.
+pub async fn delete_db_only_note(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "delete_db_only_note", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
+/// Add one on-disk note to the database via the MCP `upsert_dir_only_note` tool.
+pub async fn upsert_dir_only_note(session_id: &str, path: &str) -> Result<(), String> {
+    call_tool(session_id, "upsert_dir_only_note", json!({ "path": path }))
+        .await
+        .map(|_| ())
+}
+
+/// Write every database-only note to disk via the MCP `restore_db_only_notes` tool.
+pub async fn restore_db_only_notes(session_id: &str) -> Result<(), String> {
+    call_tool(session_id, "restore_db_only_notes", json!({}))
+        .await
+        .map(|_| ())
+}
+
+/// Remove every database-only entry via the MCP `delete_db_only_notes` tool.
+pub async fn delete_db_only_notes(session_id: &str) -> Result<(), String> {
+    call_tool(session_id, "delete_db_only_notes", json!({}))
+        .await
+        .map(|_| ())
+}
+
+/// Add every on-disk-only note to the database via the MCP `upsert_dir_only_notes` tool.
+pub async fn upsert_dir_only_notes(session_id: &str) -> Result<(), String> {
+    call_tool(session_id, "upsert_dir_only_notes", json!({}))
+        .await
+        .map(|_| ())
+}
+
+/// Delete every on-disk-only note file via the MCP `delete_dir_only_notes` tool.
+pub async fn delete_dir_only_notes(session_id: &str) -> Result<(), String> {
+    call_tool(session_id, "delete_dir_only_notes", json!({}))
+        .await
+        .map(|_| ())
 }
 
 /// Fetch a markdown file from an MCP get tool and parse the first note.

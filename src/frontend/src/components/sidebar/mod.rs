@@ -7,6 +7,7 @@ pub mod rename_modal;
 pub mod search_panel;
 pub mod settings_panel;
 mod settings_validation;
+pub mod sync_panel;
 
 use crate::constants::{SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH};
 use crate::info_messages::{
@@ -19,8 +20,9 @@ use leptos::prelude::*;
 use prompt_panel::PromptPanel;
 use search_panel::SearchPanel;
 use settings_panel::SettingsPanel;
+use sync_panel::SyncPanel;
 
-/// Render the resizable sidebar and the active files, templates, search, prompt, or settings panel.
+/// Render the resizable sidebar and the active files, templates, search, prompt, sync, or settings panel.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     let state = use_context::<AppState>().expect("AppState not provided");
@@ -114,6 +116,15 @@ pub fn Sidebar() -> impl IntoView {
                     }
                 }>
                     <PromptPanel/>
+                </div>
+                <div class=move || {
+                    if state.active_panel.get() == Some(ActivePanel::Sync) {
+                        ""
+                    } else {
+                        "is-hidden"
+                    }
+                }>
+                    <SyncPanel/>
                 </div>
                 <div class=move || {
                     if state.active_panel.get() == Some(ActivePanel::Settings) {

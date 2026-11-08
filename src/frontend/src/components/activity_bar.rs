@@ -1,6 +1,6 @@
 use crate::info_messages::{
     ACTIVITY_FILES_TITLE, ACTIVITY_PROMPT_TITLE, ACTIVITY_SEARCH_TITLE, ACTIVITY_SETTINGS_TITLE,
-    ACTIVITY_TEMPLATES_TITLE,
+    ACTIVITY_SYNC_TITLE, ACTIVITY_TEMPLATES_TITLE,
 };
 use crate::state::{ActivePanel, AppState};
 use icondata as id;
@@ -53,6 +53,13 @@ pub fn ActivityBar() -> impl IntoView {
                 on:click=move |_| toggle(ActivePanel::Prompt)
             >
                 <Icon icon=id::LuMessageSquare/>
+            </button>
+            <button
+                class=move || AppState::activity_btn_class(is_active(ActivePanel::Sync))
+                title=ACTIVITY_SYNC_TITLE
+                on:click=move |_| toggle(ActivePanel::Sync)
+            >
+                <Icon icon=id::LuDatabase/>
             </button>
             <button
                 class=move || AppState::activity_btn_class(is_active(ActivePanel::Settings))

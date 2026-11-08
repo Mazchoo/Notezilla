@@ -6,6 +6,7 @@ pub const ACTIVITY_FILES_TITLE: &str = "Files";
 pub const ACTIVITY_TEMPLATES_TITLE: &str = "Templates";
 pub const ACTIVITY_SEARCH_TITLE: &str = "Search";
 pub const ACTIVITY_PROMPT_TITLE: &str = "Send prompt";
+pub const ACTIVITY_SYNC_TITLE: &str = "Database sync";
 pub const ACTIVITY_SETTINGS_TITLE: &str = "Settings";
 
 // --- Top bar ---
@@ -86,6 +87,17 @@ pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
 pub const MCP_SESSION_NOT_READY_TOAST: &str = "MCP session not ready";
 pub const ENTER_GEMINI_API_KEY_TOAST: &str = "Enter a Gemini API key";
 pub const ENTER_GEMINI_MODEL_TOAST: &str = "Enter a Gemini model";
+
+// --- Database sync ---
+
+pub const SYNC_HEADING: &str = "DATABASE SYNC";
+pub const SYNC_CHECK_TITLE: &str = "Compare the database with markdown on disk";
+pub const SYNC_NOT_CHECKED_LABEL: &str =
+    "Press sync to compare the database with markdown on disk.";
+pub const SYNC_CHECKING_LABEL: &str = "Checking...";
+pub const SYNC_DB_ONLY_HEADING: &str = "Only in database";
+pub const SYNC_DIR_ONLY_HEADING: &str = "Only on disk";
+pub const SYNC_NONE_LABEL: &str = "None";
 
 // --- Settings ---
 
