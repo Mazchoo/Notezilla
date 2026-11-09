@@ -25,5 +25,5 @@ Ensure the GUI correctly renders Mermaid diagrams to satisfy the "extending user
 - [ ] All major Mermaid diagram types render correctly in the preview pane.
 - [x] Diagrams can be exported as SVG files via a download action.
 - [x] Theme changes (light/dark) are reflected in diagram colors without a page reload.
-- [ ] Try adding a zoom button to pan over one diagram, see if it fits
+- [x] In locked mode, clicking on an a diagram creates a modal that zooms into that diagram
 - [ ] A Mermaid syntax reference is accessible from the editor for quick lookup.

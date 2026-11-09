@@ -59,6 +59,8 @@ pub struct AppState {
     pub import_file_input: NodeRef<leptos::html::Input>,
     /// Filename currently being generated during export. `None` when idle.
     pub export_progress: RwSignal<Option<String>>,
+    /// SVG markup shown full-screen by the diagram modal. `None` when closed.
+    pub diagram_modal_svg: RwSignal<Option<String>>,
     /// User-authored prompt in the Send prompt panel.
     pub prompt_text: RwSignal<String>,
     /// Destination path for the prompt response file.
@@ -122,6 +124,7 @@ impl AppState {
             ),
             import_file_input: NodeRef::new(),
             export_progress: RwSignal::new(None),
+            diagram_modal_svg: RwSignal::new(None),
             prompt_text: RwSignal::new(String::new()),
             prompt_output_path: RwSignal::new(DEFAULT_PROMPT_OUTPUT_PATH.to_string()),
             ollama_port: RwSignal::new(DEFAULT_OLLAMA_PORT),
@@ -186,6 +189,7 @@ mod tests {
             );
             assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
             assert!(state.markdown_editing_enabled.get_untracked());
+            assert_eq!(state.diagram_modal_svg.get_untracked(), None);
             assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);
             assert_eq!(state.color_theme.get_untracked(), DEFAULT_COLOR_THEME);
             assert_eq!(

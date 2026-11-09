@@ -1,6 +1,7 @@
 use crate::components::editor::actions::{
     add_front_matter, copy_markdown, delete_entry, delete_front_matter,
 };
+use crate::components::diagram_modal::diagram_svg_from_event;
 use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };
@@ -352,9 +353,17 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         }
     };
 
-    // Click anywhere on the block wrapper to enter edit mode.
-    let on_block_click = move |_: web_sys::MouseEvent| {
-        if markdown_editing_enabled.get_untracked() && !block.focused.get_untracked() {
+    // Click anywhere on the block wrapper to enter edit mode; when editing is
+    // locked, clicking a rendered diagram opens it full-screen instead.
+    let diagram_modal_svg = state.diagram_modal_svg;
+    let on_block_click = move |ev: web_sys::MouseEvent| {
+        if !markdown_editing_enabled.get_untracked() {
+            if let Some(svg) = diagram_svg_from_event(&ev) {
+                diagram_modal_svg.set(Some(svg));
+            }
+            return;
+        }
+        if !block.focused.get_untracked() {
             enter_scroll_top.set(editor_area().map(|a| a.scroll_top()));
             block.focused.set(true);
         }

@@ -824,6 +824,41 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
   font-size: 0.9rem;
 }
 
+/* ── Diagram modal (locked preview) ────────────────────────────── */
+.editor-block-frozen .block-render svg:not(.md-image-missing svg) {
+  cursor: zoom-in;
+}
+.diagram-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  padding: 2.5rem 1.5rem 1.5rem;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--bg-1) 94%, transparent);
+  cursor: zoom-out;
+}
+.diagram-modal-content {
+  width: 100%;
+  height: 100%;
+}
+.diagram-modal-content > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.diagram-modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  display: flex;
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.diagram-modal-close svg { width: 20px; height: 20px; }
+
 /* ── Toast notifications ───────────────────────────────────────── */
 .toast-stack {
   position: fixed;

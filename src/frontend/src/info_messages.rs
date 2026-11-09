@@ -189,6 +189,11 @@ pub const CTRL_HOTKEY_PREFIX: &str = "Ctrl+";
 
 pub const PAGE_TITLE: &str = "Notezilla";
 
+// --- Diagram modal ---
+
+pub const DIAGRAM_MODAL_LABEL: &str = "Diagram";
+pub const CLOSE_DIAGRAM_TITLE: &str = "Close (Esc)";
+
 // --- Toast ---
 
 pub const ERROR_TOAST_COPY_TITLE: &str = "Click to copy";
