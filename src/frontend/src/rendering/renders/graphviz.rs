@@ -1,6 +1,7 @@
 //! Renders a Graphviz DOT block to inline SVG.
 
 use super::graphviz_label::{flatten_node_label, parse_font_classes};
+use super::marker_arrow::expand_path_markers;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION};
@@ -38,11 +39,16 @@ impl Render for GraphvizRender {
 
 impl RenderPdf for GraphvizRender {}
 
-/// Flatten graphviz labels and map layout-rs default paints onto the palette.
+/// Flatten graphviz labels, map layout-rs default paints onto the palette, and
+/// paint arrowheads as polygons.
+///
+/// Ironpress ignores `marker-start` / `marker-end`, so PDF edges would otherwise
+/// be bare strokes. Arrows are expanded after recoloring so they take the
+/// palette stroke.
 fn prepare_svg(raw: &str) -> String {
-    let body = strip_xml_declaration(raw);
-    let fonts = parse_font_classes(body);
-    let labeled = rewrite_text_elements(body, |element| {
+    let body = strip_marker_defs(strip_xml_declaration(raw));
+    let fonts = parse_font_classes(&body);
+    let labeled = rewrite_text_elements(&body, |element| {
         // Edge labels riding a `<textPath>` keep their own positioning.
         if element.contains("<textPath") {
             element.to_string()
@@ -50,7 +56,21 @@ fn prepare_svg(raw: &str) -> String {
             flatten_node_label(element, &fonts)
         }
     });
-    recolor_default_paints(&labeled)
+    expand_path_markers(&recolor_default_paints(&labeled))
+}
+
+/// Return `svg` without the layout-rs `<defs>` block of arrow markers.
+///
+/// Every marker reference is replaced by a polygon, so the definitions are dead.
+fn strip_marker_defs(svg: &str) -> String {
+    let Some(start) = svg.find("<defs>") else {
+        return svg.to_string();
+    };
+    let Some(len) = svg[start..].find("</defs>") else {
+        return svg.to_string();
+    };
+    let end = start + len + "</defs>".len();
+    format!("{}{}", &svg[..start], &svg[end..])
 }
 
 /// Return `raw` without the layout-rs XML declaration.
@@ -78,8 +98,8 @@ fn recolor_default_paints(svg: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        recolor_default_paints, strip_xml_declaration, GraphvizRender, Render, RenderPdf,
-        GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION,
+        recolor_default_paints, strip_marker_defs, strip_xml_declaration, GraphvizRender, Render,
+        RenderPdf, GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION,
     };
     use crate::constants::{BASELINE_FROM_CENTER, BG_3 as NODE_FILL, TEXT as STROKE};
 
@@ -138,6 +158,28 @@ mod tests {
             (text_y - expected).abs() < 0.6,
             "label baseline {text_y} should sit near ellipse cy {cy} (expected {expected}): {svg}"
         );
+    }
+
+    #[test]
+    /// Assert graphviz arrows are painted polygons, not marker references.
+    fn arrows_are_polygons_not_marker_references() {
+        let svg = GraphvizRender.render("digraph { A -> B }");
+        assert!(
+            svg.contains("<polygon"),
+            "arrowheads must be polygons: {svg}"
+        );
+        assert!(svg.contains(&format!("fill=\"{STROKE}\"")), "{svg}");
+        assert!(!svg.contains("marker-end"), "{svg}");
+        assert!(!svg.contains("marker-start"), "{svg}");
+        assert!(!svg.contains("<marker"), "{svg}");
+        assert!(!svg.contains("<defs>"), "{svg}");
+    }
+
+    #[test]
+    /// Assert the marker `<defs>` block is removed and surrounding markup kept.
+    fn strips_marker_defs() {
+        let out = strip_marker_defs("<svg><defs><marker/></defs><g/></svg>");
+        assert_eq!(out, "<svg><g/></svg>");
     }
 
     #[test]

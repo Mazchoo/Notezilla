@@ -9,9 +9,9 @@
 mod code;
 mod graphviz;
 mod graphviz_label;
+mod marker_arrow;
 mod math;
 mod mermaid;
-mod mermaid_arrow;
 mod mermaid_label;
 mod missing_image;
 mod render_error;

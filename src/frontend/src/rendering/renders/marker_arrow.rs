@@ -69,7 +69,8 @@ fn expand_element_markers(element: &str) -> String {
 
 /// Resolve an arrow color from a marker URL, else from the path stroke.
 ///
-/// rusty-mermaid encodes the marker paint as a hex suffix of the marker id.
+/// rusty-mermaid encodes the marker paint as a hex suffix of the marker id;
+/// layout-rs markers carry no suffix and take the stroke.
 fn marker_color(url: &str, stroke: Option<&str>) -> String {
     let id = url.trim().trim_start_matches("url(#").trim_end_matches(')');
     if let Some((_, hex)) = id.rsplit_once('-') {

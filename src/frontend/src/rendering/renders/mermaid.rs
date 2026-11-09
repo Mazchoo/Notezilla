@@ -1,6 +1,6 @@
 //! Renders a Mermaid diagram block to inline SVG.
 
-use super::mermaid_arrow::expand_path_markers;
+use super::marker_arrow::expand_path_markers;
 use super::mermaid_label::flatten_label;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};

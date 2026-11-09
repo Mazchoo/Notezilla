@@ -85,6 +85,8 @@ pub const BASELINE_FROM_CENTER: f64 = 0.35;
 /// rusty-mermaid measures labels as Intel One Mono (~0.6em). Ironpress maps
 /// that family to Helvetica, so PDF uses Courier (standard 14 monospace).
 pub const PDF_FONT_FAMILY: &str = "Courier, monospace";
+/// Advance width of one [`PDF_FONT_FAMILY`] glyph as a fraction of font size.
+pub const MONOSPACE_ADVANCE_RATIO: f64 = 0.6;
 /// Matches rusty_mermaid_core::constants::BASELINE_ASCENT_RATIO.
 pub const BASELINE_ASCENT_RATIO: f64 = 0.3;
 pub const ARROW_SIZE: f64 = 8.0;
