@@ -106,19 +106,30 @@ pub fn path_ends(d: &str) -> Option<PathEnds> {
                 second.get_or_insert(cur);
             }
             'A' | 'a' => {
-                let _rx = take_num(&tokens, &mut i)?;
-                let _ry = take_num(&tokens, &mut i)?;
-                let _rotation = take_num(&tokens, &mut i)?;
-                let _large_arc = take_num(&tokens, &mut i)?;
-                let _sweep = take_num(&tokens, &mut i)?;
+                let rx = take_num(&tokens, &mut i)?;
+                let ry = take_num(&tokens, &mut i)?;
+                let rotation = take_num(&tokens, &mut i)?;
+                let large_arc = take_num(&tokens, &mut i)? != 0.0;
+                let sweep = take_num(&tokens, &mut i)? != 0.0;
                 let (x, y) = take_xy(&tokens, &mut i)?;
-                prev = cur;
-                cur = if cmd == 'a' {
+                let to = if cmd == 'a' {
                     (cur.0 + x, cur.1 + y)
                 } else {
                     (x, y)
                 };
-                second.get_or_insert(cur);
+                let arc = Arc {
+                    from: cur,
+                    to,
+                    radii: (rx, ry),
+                    rotation,
+                    large_arc,
+                    sweep,
+                };
+                let (start_tangent, end_tangent) = arc_tangents(&arc);
+                second.get_or_insert((cur.0 + start_tangent.0, cur.1 + start_tangent.1));
+                // Step back along the end tangent so `end_dir` follows the curve.
+                prev = (to.0 - end_tangent.0, to.1 - end_tangent.1);
+                cur = to;
             }
             _ => return None,
         }
@@ -133,6 +144,56 @@ pub fn path_ends(d: &str) -> Option<PathEnds> {
         end: cur,
         end_dir: (cur.0 - prev.0, cur.1 - prev.1),
     })
+}
+
+/// An SVG elliptical arc segment in endpoint form.
+struct Arc {
+    from: (f64, f64),
+    to: (f64, f64),
+    radii: (f64, f64),
+    /// Rotation of the ellipse x-axis, in degrees.
+    rotation: f64,
+    large_arc: bool,
+    sweep: bool,
+}
+
+/// Return the travel direction of `arc` at its start and at its end.
+///
+/// Converts the arc to centre form (SVG 1.1 appendix F.6.5). A zero radius
+/// draws a straight line, so both tangents are the chord.
+fn arc_tangents(arc: &Arc) -> ((f64, f64), (f64, f64)) {
+    let chord = (arc.to.0 - arc.from.0, arc.to.1 - arc.from.1);
+    let (mut rx, mut ry) = (arc.radii.0.abs(), arc.radii.1.abs());
+    if rx == 0.0 || ry == 0.0 || chord == (0.0, 0.0) {
+        return (chord, chord);
+    }
+    let (sin, cos) = arc.rotation.to_radians().sin_cos();
+    // Half the chord, rotated into the ellipse frame.
+    let (hx, hy) = (-chord.0 / 2.0, -chord.1 / 2.0);
+    let x1 = cos * hx + sin * hy;
+    let y1 = -sin * hx + cos * hy;
+    // Radii too small to span the endpoints are scaled up until they do.
+    let lambda = (x1 * x1) / (rx * rx) + (y1 * y1) / (ry * ry);
+    if lambda > 1.0 {
+        let scale = lambda.sqrt();
+        rx *= scale;
+        ry *= scale;
+    }
+    let numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1;
+    let denominator = rx * rx * y1 * y1 + ry * ry * x1 * x1;
+    let sign = if arc.large_arc == arc.sweep { -1.0 } else { 1.0 };
+    let coef = sign * (numerator / denominator).max(0.0).sqrt();
+    let (cx, cy) = (coef * rx * y1 / ry, -coef * ry * x1 / rx);
+    let start_angle = ((y1 - cy) / ry).atan2((x1 - cx) / rx);
+    let end_angle = ((-y1 - cy) / ry).atan2((-x1 - cx) / rx);
+    // A positive sweep travels towards increasing angle.
+    let direction = if arc.sweep { 1.0 } else { -1.0 };
+    let tangent = |angle: f64| {
+        let (s, c) = angle.sin_cos();
+        let (tx, ty) = (-rx * s * direction, ry * c * direction);
+        (cos * tx - sin * ty, sin * tx + cos * ty)
+    };
+    (tangent(start_angle), tangent(end_angle))
 }
 
 /// Tokenize an SVG path `d` string into command letters and numbers.
@@ -264,6 +325,72 @@ mod tests {
         let ends = path_ends("M 0 0 L 10 0 Z").expect("path ends");
         assert_eq!(ends.end, (0.0, 0.0));
         assert_eq!(ends.end_dir, (-10.0, 0.0));
+    }
+
+    /// Assert `actual` points the same way as `expected`.
+    fn assert_same_direction(actual: (f64, f64), expected: (f64, f64)) {
+        let cross = actual.0 * expected.1 - actual.1 * expected.0;
+        let dot = actual.0 * expected.0 + actual.1 * expected.1;
+        assert!(
+            cross.abs() < 1e-9 && dot > 0.0,
+            "expected direction {expected:?}, got {actual:?}"
+        );
+    }
+
+    #[test]
+    /// Assert an arc end direction is not the chord of the endpoints.
+    fn arc_end_direction_is_not_the_chord() {
+        let ends = path_ends("M 0 0 A 10 10 0 0 1 10 0").expect("path ends");
+        assert_eq!(ends.end, (10.0, 0.0));
+        assert_same_direction(ends.start_dir, (3f64.sqrt(), -1.0));
+        assert_same_direction(ends.end_dir, (3f64.sqrt(), 1.0));
+    }
+
+    #[test]
+    /// Assert a negative sweep bends the arc the other way.
+    fn negative_sweep_arc_mirrors_tangents() {
+        let ends = path_ends("M 0 0 A 10 10 0 0 0 10 0").expect("path ends");
+        assert_same_direction(ends.start_dir, (3f64.sqrt(), 1.0));
+        assert_same_direction(ends.end_dir, (3f64.sqrt(), -1.0));
+    }
+
+    #[test]
+    /// Assert a semicircle arrives perpendicular to its diameter.
+    fn semicircle_ends_perpendicular_to_diameter() {
+        let ends = path_ends("M 0 0 a 5 5 0 0 1 10 0").expect("path ends");
+        assert_same_direction(ends.start_dir, (0.0, -1.0));
+        assert_same_direction(ends.end_dir, (0.0, 1.0));
+    }
+
+    #[test]
+    /// Assert radii too small for the chord are scaled up to a semicircle.
+    fn undersized_radii_scale_to_semicircle() {
+        let ends = path_ends("M 0 0 A 1 1 0 0 1 10 0").expect("path ends");
+        assert_same_direction(ends.end_dir, (0.0, 1.0));
+    }
+
+    #[test]
+    /// Assert a large-arc flag travels the long way round.
+    fn large_arc_takes_the_long_way() {
+        let ends = path_ends("M 0 0 A 10 10 0 1 1 10 0").expect("path ends");
+        assert_same_direction(ends.start_dir, (-3f64.sqrt(), -1.0));
+        assert_same_direction(ends.end_dir, (-3f64.sqrt(), 1.0));
+    }
+
+    #[test]
+    /// Assert a rotated ellipse rotates its tangents with it.
+    fn rotated_ellipse_rotates_tangents() {
+        let ends = path_ends("M 0 0 A 10 5 90 0 1 0 10").expect("path ends");
+        // Centre (-2.5√3, 5); the end sits 60° short of the minor-axis vertex.
+        assert_same_direction(ends.end_dir, (-1.0, 2.0 * 3f64.sqrt()));
+    }
+
+    #[test]
+    /// Assert a zero-radius arc is a straight line.
+    fn zero_radius_arc_is_a_line() {
+        let ends = path_ends("M 0 0 A 0 5 0 0 1 10 0").expect("path ends");
+        assert_eq!(ends.end_dir, (10.0, 0.0));
+        assert_eq!(ends.start_dir, (10.0, 0.0));
     }
 
     #[test]
