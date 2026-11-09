@@ -2,26 +2,15 @@
 
 ## MCP Server
 
-The server runs at `http://127.0.0.1:8020`. Use `GET /tools` to list available tools and their schemas without a session handshake.
+The server runs at `http://127.0.0.1:8020` and is registered in `.mcp.json` as `notezilla`. Call its tools through the MCP integration (`mcp__notezilla__<tool>`), not raw curl — direct requests to `/mcp` are denied in `.claude/settings.json` so the per-tool permissions can't be bypassed.
+
+Use `GET /tools` to list available tools and their schemas:
 
 ```bash
 curl http://127.0.0.1:8020/tools
 ```
 
-To call a tool, initialize first (capturing the session ID), then call in one chained command:
-
-```bash
-SESSION=$(curl -s -X POST http://127.0.0.1:8020/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -D - \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' \
-  | grep -i "mcp-session-id" | tr -d '\r' | awk '{print $2}') && \
-curl -s -X POST http://127.0.0.1:8020/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -H "mcp-session-id: $SESSION" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"TOOL_NAME","arguments":{}}}'
-```
-
-Required headers on every request: `Content-Type: application/json` and `Accept: application/json, text/event-stream`. The session ID comes from the `mcp-session-id` response header of the initialize call and must be passed on all subsequent requests.
+Tool permissions (see `.claude/settings.json`):
+- **Allowed:** read-only tools (`search_notes`, `get_note`, `get_dir_contents`, `get_template`, `get_template_dir_contents`, `get_database_sync_difference`)
+- **Ask first:** tools that create, move, rename, upsert or restore
+- **Denied:** all `delete_*` tools

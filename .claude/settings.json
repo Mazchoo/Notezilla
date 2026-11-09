@@ -1,12 +1,41 @@
 {
-  "mcpServers": {
-    "notezilla": {
-      "url": "http://127.0.0.1:8020/mcp"
-    }
-  },
+  "enabledMcpjsonServers": ["notezilla"],
   "permissions": {
     "allow": [
-      "Bash(curl http://127.0.0.1:8020/*)"
+      "Bash(curl http://127.0.0.1:8020/*)",
+      "mcp__notezilla__search_notes",
+      "mcp__notezilla__get_note",
+      "mcp__notezilla__get_dir_contents",
+      "mcp__notezilla__get_template",
+      "mcp__notezilla__get_template_dir_contents",
+      "mcp__notezilla__upsert_note",
+      "mcp__notezilla__upsert_template",
+      "mcp__notezilla__get_database_sync_difference"
+    ],
+    "ask": [
+      "mcp__notezilla__new_dir",
+      "mcp__notezilla__new_template_dir",
+      "mcp__notezilla__move_dir",
+      "mcp__notezilla__move_template_dir",
+      "mcp__notezilla__rename_dir",
+      "mcp__notezilla__rename_template_dir",
+      "mcp__notezilla__restore_db_only_note",
+      "mcp__notezilla__restore_db_only_notes",
+      "mcp__notezilla__upsert_dir_only_note",
+      "mcp__notezilla__upsert_dir_only_notes"
+    ],
+    "deny": [
+      "mcp__notezilla__delete_note",
+      "mcp__notezilla__delete_folder",
+      "mcp__notezilla__delete_template",
+      "mcp__notezilla__delete_template_folder",
+      "mcp__notezilla__delete_db_only_note",
+      "mcp__notezilla__delete_db_only_notes",
+      "mcp__notezilla__delete_dir_only_notes",
+      "Bash(*127.0.0.1:8020/mcp*)",
+      "Bash(*localhost:8020/mcp*)",
+      "PowerShell(*127.0.0.1:8020/mcp*)",
+      "PowerShell(*localhost:8020/mcp*)"
     ]
   }
 }
