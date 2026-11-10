@@ -6,7 +6,7 @@ use super::graphviz_label::{
 use super::marker_arrow::expand_path_markers;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
-use crate::constants::{GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION};
+use crate::constants::{GRAPHVIZ_EMPTY_GRAPH_ERROR, GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::current_theme;
 use layout::backends::svg::SVGWriter;
@@ -18,13 +18,19 @@ pub struct GraphvizRender;
 impl GraphvizRender {
     /// Render DOT source to an inline SVG string.
     ///
-    /// Returns the layout-rs parse error when `dot` is not valid DOT source.
+    /// Returns the layout-rs parse error when `dot` is not valid DOT source,
+    /// or an error when the graph has no nodes.
     pub fn render_svg(&self, dot: &str) -> Result<String, String> {
         let mut parser = DotParser::new(dot);
         let tree = parser.process().map_err(|e| format!("{e:?}"))?;
         let mut builder = GraphBuilder::new();
         builder.visit_graph(&tree);
         let mut graph = builder.get();
+        // layout-rs asserts on a topological sort of an empty graph, and a
+        // panic aborts the WASM session rather than unwinding.
+        if graph.num_nodes() == 0 {
+            return Err(GRAPHVIZ_EMPTY_GRAPH_ERROR.to_string());
+        }
         let mut writer = SVGWriter::new();
         graph.do_it(false, false, false, &mut writer);
         Ok(prepare_svg(&writer.finalize()))
@@ -287,6 +293,36 @@ mod tests {
             "{html}"
         );
         assert!(html.contains("digraph { A -&gt;"), "{html}");
+    }
+
+    #[test]
+    /// Assert user DOT cannot panic the graphviz render.
+    fn render_does_not_panic_on_user_dot() {
+        for source in [
+            "",
+            "graph {}",
+            "digraph {}",
+            "digraph { subgraph {} }",
+            "digraph { subgraph cluster_x { } }",
+            "digraph { node [shape=box] }",
+            "digraph { A -> A }",
+            "digraph { A -> B -> C -> A }",
+            "digraph { A -- B }",
+            "digraph { A -> B [label=x]; B -> A [label=y]; A -> A [label=z] }",
+        ] {
+            let result = std::panic::catch_unwind(|| GraphvizRender.render(source));
+            assert!(result.is_ok(), "panicked on {source:?}");
+        }
+    }
+
+    #[test]
+    /// Assert a graph without nodes renders the fallback block.
+    fn empty_graph_renders_fallback_block() {
+        let html = GraphvizRender.render("digraph {}");
+        assert!(
+            html.contains(&format!("class=\"{GRAPHVIZ_ERROR_CLASS}\"")),
+            "{html}"
+        );
     }
 
     #[test]

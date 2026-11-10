@@ -108,6 +108,9 @@ pub const LIST_BULLET: &str = "•";
 pub const GRAPHVIZ_ERROR_CLASS: &str = "graphviz-error";
 pub const MERMAID_ERROR_CLASS: &str = "mermaid-error";
 
+/// Error shown in the graphviz fallback block when the graph has no nodes.
+pub const GRAPHVIZ_EMPTY_GRAPH_ERROR: &str = "Graph has no nodes";
+
 /// XML declaration layout-rs prefixes to its SVG output.
 pub const SVG_XML_DECLARATION: &str =
     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
