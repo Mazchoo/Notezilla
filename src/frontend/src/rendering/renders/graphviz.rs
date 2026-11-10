@@ -83,18 +83,53 @@ fn strip_xml_declaration(raw: &str) -> &str {
         .trim_start()
 }
 
-/// Replace layout-rs default paints with the editor palette.
+/// Replace black and white `fill` / `stroke` paints with the editor palette.
+///
+/// Matching is by colour value, not by attribute, so `fillcolor=black` and
+/// `color=white` follow the theme like the layout-rs defaults do. Black (and
+/// `context-stroke`) maps to `--text`; white maps to `--bg-3`.
 fn recolor_default_paints(svg: &str) -> String {
     let palette = current_theme().palette();
-    svg.replace("fill=\"#ffffffff\"", &format!("fill=\"{}\"", palette.bg_3))
-        .replace(
-            "stroke=\"#000000ff\"",
-            &format!("stroke=\"{}\"", palette.text),
-        )
-        .replace(
-            "fill=\"context-stroke\"",
-            &format!("fill=\"{}\"", palette.text),
-        )
+    let mut out = String::with_capacity(svg.len());
+    let mut rest = svg;
+    while let Some((value_start, value_end)) = next_paint_value(rest) {
+        out.push_str(&rest[..value_start]);
+        let value = &rest[value_start..value_end];
+        out.push_str(palette_paint(value, palette.text, palette.bg_3).unwrap_or(value));
+        rest = &rest[value_end..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Return the byte range of the next `fill="…"` or `stroke="…"` value in `svg`.
+fn next_paint_value(svg: &str) -> Option<(usize, usize)> {
+    let mut offset = 0;
+    while let Some(eq) = svg[offset..].find("=\"").map(|i| offset + i) {
+        let name_start = svg[..eq]
+            .rfind(|c: char| c.is_ascii_whitespace())
+            .map_or(0, |i| i + 1);
+        let value_start = eq + 2;
+        let value_end = value_start + svg[value_start..].find('"')?;
+        if matches!(&svg[name_start..eq], "fill" | "stroke") {
+            return Some((value_start, value_end));
+        }
+        offset = value_end + 1;
+    }
+    None
+}
+
+/// Return the palette token for a black or white SVG paint value.
+fn palette_paint(value: &str, text: &'static str, bg: &'static str) -> Option<&'static str> {
+    let value = value.trim();
+    let is = |names: &[&str]| names.iter().any(|n| value.eq_ignore_ascii_case(n));
+    if is(&["black", "#000", "#000000", "#000000ff", "context-stroke"]) {
+        Some(text)
+    } else if is(&["white", "#fff", "#ffffff", "#ffffffff"]) {
+        Some(bg)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -127,6 +162,47 @@ mod tests {
         assert!(out.contains(&format!("fill=\"{NODE_FILL}\"")), "{out}");
         assert!(out.contains(&format!("stroke=\"{STROKE}\"")), "{out}");
         assert!(!out.contains("context-stroke"), "{out}");
+    }
+
+    #[test]
+    /// Assert black and white map by value on either paint attribute.
+    fn recolors_black_and_white_on_any_paint_attribute() {
+        let out = recolor_default_paints(
+            r##"<rect fill="#000000ff" stroke="#ffffffff"/><path stroke="BLACK" fill="#fff"/>"##,
+        );
+        assert_eq!(
+            out,
+            format!(
+                r#"<rect fill="{STROKE}" stroke="{NODE_FILL}"/><path stroke="{STROKE}" fill="{NODE_FILL}"/>"#
+            )
+        );
+    }
+
+    #[test]
+    /// Assert other colours and non-paint attributes are left untouched.
+    fn keeps_other_colours_and_attributes() {
+        let input = r##"<rect fill="#ff0000ff" stroke-width="1" data-fill="#000" class="white"/>"##;
+        assert_eq!(recolor_default_paints(input), input);
+    }
+
+    #[test]
+    /// Assert an explicit black node fill and white edge follow the palette.
+    fn explicit_fill_and_edge_colours_use_palette() {
+        let svg = GraphvizRender
+            .render(r#"digraph { A [style=filled fillcolor=black]; A -> B [color=white] }"#)
+            .to_ascii_lowercase();
+        assert!(!svg.contains("#000000"), "{svg}");
+        assert!(!svg.contains("#ffffff"), "{svg}");
+    }
+
+    #[test]
+    /// Assert an explicit black stroke is remapped to the page text colour.
+    fn explicit_black_stroke_uses_page_text_colour() {
+        let svg = GraphvizRender.render(r#"digraph { A -> B [color=black] }"#);
+        assert!(
+            !svg.to_ascii_lowercase().contains("#000000"),
+            "black stroke must use the palette token: {svg}"
+        );
     }
 
     #[test]
