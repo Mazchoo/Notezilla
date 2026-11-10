@@ -27,15 +27,33 @@ pub fn expand_path_markers(svg: &str) -> String {
 }
 
 /// Return the length of the `<path>` element at the start of `rest`.
+///
+/// The opening tag decides the shape: a `/>` close ends the element there,
+/// otherwise it runs to `</path>`, so `/>` inside a child does not end it.
 fn path_element_end(rest: &str) -> Option<usize> {
-    let self_closing = rest.find("/>");
-    let closing_tag = rest.find("</path>");
-    match (self_closing, closing_tag) {
-        (Some(at), None) => Some(at + "/>".len()),
-        (Some(at), Some(tag_at)) if at < tag_at => Some(at + "/>".len()),
-        (_, Some(at)) => Some(at + "</path>".len()),
-        (None, None) => None,
+    let open_end = opening_tag_end(rest)?;
+    if rest[..open_end].ends_with("/>") {
+        return Some(open_end);
     }
+    let close_at = rest[open_end..].find("</path>")?;
+    Some(open_end + close_at + "</path>".len())
+}
+
+/// Return the length of the opening tag at the start of `rest`.
+///
+/// A `>` inside a quoted attribute value does not end the tag.
+fn opening_tag_end(rest: &str) -> Option<usize> {
+    let mut quote = None;
+    for (at, c) in rest.char_indices() {
+        match (quote, c) {
+            (Some(q), _) if c == q => quote = None,
+            (Some(_), _) => {}
+            (None, '"' | '\'') => quote = Some(c),
+            (None, '>') => return Some(at + '>'.len_utf8()),
+            (None, _) => {}
+        }
+    }
+    None
 }
 
 /// Return `element` without marker references, followed by its arrow polygons.
@@ -125,6 +143,28 @@ mod tests {
         let svg = r#"<path d="M0 0"></path><rect/>"#;
         let end = path_element_end(svg).expect("element end");
         assert_eq!(&svg[..end], r#"<path d="M0 0"></path>"#);
+    }
+
+    #[test]
+    /// Assert `/>` inside a child does not end the path element.
+    fn child_self_close_does_not_end_path() {
+        let svg = r#"<path d="M0 0 L1 0"><animate dur="1s"/></path>"#;
+        let end = path_element_end(svg).expect("element end");
+        assert_eq!(&svg[..end], svg);
+    }
+
+    #[test]
+    /// Assert a `>` inside a quoted attribute does not end the opening tag.
+    fn quoted_angle_bracket_does_not_end_tag() {
+        let svg = r#"<path data-x="a>b" d="M0 0" /><rect/>"#;
+        let end = path_element_end(svg).expect("element end");
+        assert_eq!(&svg[..end], r#"<path data-x="a>b" d="M0 0" />"#);
+    }
+
+    #[test]
+    /// Assert an open path element without `</path>` has no end.
+    fn open_element_without_closing_tag_has_no_end() {
+        assert_eq!(path_element_end(r#"<path d="M0 0"><rect/>"#), None);
     }
 
     #[test]
