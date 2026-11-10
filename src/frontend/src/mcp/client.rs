@@ -1,7 +1,7 @@
 use crate::components::toast::show_mcp_warnings;
 use crate::constants::MCP_URL;
 use gloo_net::http::Request;
-use leptos::prelude::{RwSignal, Set};
+use leptos::prelude::{GetUntracked, RwSignal, Set};
 use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -34,20 +34,33 @@ fn mcp_ready_log(id: &str) -> String {
     format!("MCP session ready: {id}")
 }
 
-/// Probe MCP at startup and store the session ID when initialize succeeds.
-pub fn probe_mcp(session_id: RwSignal<Option<String>>) {
+/// Probe MCP, store the session ID when initialize succeeds, and record availability.
+///
+/// Skips the call while a probe is already in flight.
+pub fn probe_mcp(
+    session_id: RwSignal<Option<String>>,
+    mcp_available: RwSignal<bool>,
+    mcp_probing: RwSignal<bool>,
+) {
+    if mcp_probing.get_untracked() {
+        return;
+    }
+    mcp_probing.set(true);
     spawn_local(async move {
         match initialize_session().await {
             Ok(id) => {
                 web_sys::console::log_1(&mcp_ready_log(&id).into());
                 session_id.set(Some(id));
+                mcp_available.set(true);
             }
             Err(e) => {
                 web_sys::console::warn_1(
                     &format!("MCP init failed: {e}. Search will be unavailable.").into(),
                 );
+                mcp_available.set(false);
             }
         }
+        mcp_probing.set(false);
     });
 }
 

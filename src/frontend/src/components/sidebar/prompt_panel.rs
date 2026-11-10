@@ -52,8 +52,8 @@ fn copy_text_to_clipboard(
     });
 }
 
-/// Return the CSS class for an LLM availability badge.
-fn status_badge_class(available: bool) -> &'static str {
+/// Return the CSS class for a service availability badge.
+pub(crate) fn status_badge_class(available: bool) -> &'static str {
     if available {
         "ollama-status-badge is-available"
     } else {

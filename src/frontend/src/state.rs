@@ -22,6 +22,10 @@ pub struct AppState {
     /// aren't disposed when transient handler scopes go away.
     pub root_owner: Owner,
     pub session_id: RwSignal<Option<String>>,
+    /// Whether the last MCP initialize probe succeeded.
+    pub mcp_available: RwSignal<bool>,
+    /// True while an MCP initialize probe is in flight.
+    pub mcp_probing: RwSignal<bool>,
     pub active_panel: RwSignal<Option<ActivePanel>>,
     pub entries: RwSignal<Vec<EditorEntry>>,
     pub current_path: RwSignal<Option<String>>,
@@ -98,6 +102,8 @@ impl AppState {
             root_owner: Owner::current()
                 .expect("AppState::new must be called within a reactive Owner scope"),
             session_id: RwSignal::new(None),
+            mcp_available: RwSignal::new(false),
+            mcp_probing: RwSignal::new(false),
             active_panel: RwSignal::new(Some(ActivePanel::Files)),
             entries: RwSignal::new(vec![EditorEntry::new(
                 DEFAULT_MARKDOWN_PATH,
@@ -188,6 +194,8 @@ mod tests {
                 include_str!("../templates/new_markdown.md")
             );
             assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
+            assert!(!state.mcp_available.get_untracked());
+            assert!(!state.mcp_probing.get_untracked());
             assert!(state.markdown_editing_enabled.get_untracked());
             assert_eq!(state.diagram_modal_svg.get_untracked(), None);
             assert_eq!(state.color_theme.get_untracked(), ColorTheme::Night);

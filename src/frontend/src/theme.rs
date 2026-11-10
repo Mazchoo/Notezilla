@@ -117,6 +117,11 @@ pub fn set_current_theme(theme: ColorTheme) {
 
 /// Write `data-theme` onto the document element so CSS palettes apply.
 pub fn apply_document_theme(theme: ColorTheme) {
+    // js-sys panics on any global access off wasm, before `window()` can
+    // return `None`, so native unit tests skip the DOM write entirely.
+    if !cfg!(target_arch = "wasm32") {
+        return;
+    }
     let Some(document) = web_sys::window().and_then(|window| window.document()) else {
         return;
     };

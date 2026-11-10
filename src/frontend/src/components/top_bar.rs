@@ -4,13 +4,16 @@ use crate::components::file_io::{
 };
 use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
+use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
-    format_save_summary, save_failed_toast, with_hotkey, EDIT_MAIN_TEXT_FROZEN_TITLE,
-    EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU,
-    EXPORT_SVG_MENU, EXPORT_TITLE, IMPORT_MARKDOWN_TITLE, NEW_FILE_BUTTON, NEW_FILE_TITLE,
-    SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
+    format_save_summary, mcp_status_title, save_failed_toast, with_hotkey,
+    EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU,
+    EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
+    MCP_STATUS_LABEL, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE,
+    SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
 };
+use crate::mcp::client::probe_mcp;
 use crate::models::block::EditorEntry;
 use crate::state::AppState;
 use crate::theme::{apply_document_theme, set_current_theme, ColorTheme};
@@ -234,6 +237,11 @@ pub fn TopBar() -> impl IntoView {
         set_color_theme(&state_theme, theme);
     };
 
+    let session_id = state.session_id;
+    let mcp_available = state.mcp_available;
+    let mcp_probing = state.mcp_probing;
+    let on_mcp_refresh = move |_| probe_mcp(session_id, mcp_available, mcp_probing);
+
     view! {
         <div class="top-bar">
             // Hidden file input — accepts markdown and plain-text files.
@@ -310,6 +318,26 @@ pub fn TopBar() -> impl IntoView {
             >
                 {NEW_FILE_BUTTON}
             </button>
+            // MCP backend status — probed at startup; refresh probes again.
+            <div class="mcp-status">
+                <span
+                    class=move || status_badge_class(mcp_available.get())
+                    title=move || mcp_status_title(mcp_available.get())
+                    role="status"
+                >
+                    <Icon icon=id::LuCircle/>
+                    {MCP_STATUS_LABEL}
+                </span>
+                <button
+                    class=move || if mcp_probing.get() { "sync-icon-btn is-spinning" } else { "sync-icon-btn" }
+                    type="button"
+                    title=MCP_REFRESH_TITLE
+                    prop:disabled=move || mcp_probing.get()
+                    on:click=on_mcp_refresh
+                >
+                    <Icon icon=id::LuRefreshCw/>
+                </button>
+            </div>
             <label
                 class="theme-slider"
                 title=move || {

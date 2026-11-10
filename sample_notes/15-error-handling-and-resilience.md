@@ -23,7 +23,7 @@ Robust handling for when the local LLM is offline or the vector index needs a re
 
 ## Acceptance Criteria
 
-- [ ] A status dashboard shows the connection state of backend.
+- [x] A status dashboard shows the connection state of backend.
 - [x] The app remains functional for editing and browsing when Ollama is offline (generation features are disabled with a clear message).
 - [ ] The app remains functional for editing when ChromaDB is unavailable (search is disabled with a clear message).
 - [ ] "Rebuild Index" re-indexes all notes with a visible progress indicator.

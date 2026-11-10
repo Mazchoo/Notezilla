@@ -37,13 +37,20 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  margin-left: auto;
+  margin-left: 0.5rem;
   cursor: pointer;
   user-select: none;
   color: var(--text-muted);
   flex-shrink: 0;
 }
 .theme-slider:hover { color: var(--text); }
+.mcp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .theme-slider svg { width: 16px; height: 16px; }
 .theme-slider-night,
 .theme-slider-day {

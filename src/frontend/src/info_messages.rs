@@ -26,6 +26,10 @@ pub const NEW_FILE_BUTTON: &str = "＋";
 pub const SWITCH_TO_DAY_TITLE: &str = "Switch to day theme";
 pub const SWITCH_TO_NIGHT_TITLE: &str = "Switch to night theme";
 pub const THEME_SLIDER_ARIA: &str = "Night and day theme";
+pub const MCP_STATUS_LABEL: &str = "MCP";
+pub const MCP_AVAILABLE_TITLE: &str = "MCP backend available";
+pub const MCP_UNAVAILABLE_TITLE: &str = "MCP backend unavailable";
+pub const MCP_REFRESH_TITLE: &str = "Probe the MCP backend again";
 
 // --- File tree ---
 
@@ -223,6 +227,15 @@ pub fn ollama_status_title(available: bool) -> &'static str {
     }
 }
 
+/// Return the title for the MCP backend availability badge.
+pub fn mcp_status_title(available: bool) -> &'static str {
+    if available {
+        MCP_AVAILABLE_TITLE
+    } else {
+        MCP_UNAVAILABLE_TITLE
+    }
+}
+
 /// Return the title for the Gemini availability badge.
 pub fn gemini_status_title(available: bool) -> &'static str {
     if available {
@@ -402,6 +415,13 @@ mod tests {
     fn gemini_status_title_marks_available_or_unavailable() {
         assert_eq!(gemini_status_title(true), GEMINI_AVAILABLE_TITLE);
         assert_eq!(gemini_status_title(false), GEMINI_UNAVAILABLE_TITLE);
+    }
+
+    #[test]
+    /// Assert the MCP badge title switches between available and unavailable.
+    fn mcp_status_title_marks_available_or_unavailable() {
+        assert_eq!(mcp_status_title(true), MCP_AVAILABLE_TITLE);
+        assert_eq!(mcp_status_title(false), MCP_UNAVAILABLE_TITLE);
     }
 
     #[test]

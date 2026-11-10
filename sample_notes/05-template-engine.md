@@ -33,3 +33,4 @@ Create a system to store Markdown templates with placeholders for LLM injection.
 - [x] Template must be visually distinctive from other files
 - [x] Tests exist on frontend for utilities and file creation and ensure they can be debugged locally
 - [x] Can export pdfs but page is responsive when the pdf is being generated
+- [ ] There is a new button to add a blank template with a rename
