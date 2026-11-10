@@ -7,6 +7,7 @@
 use crate::constants::{
     BASELINE_FROM_CENTER, DEFAULT_FONT_SIZE, GRAPHVIZ_EDGE_LABEL_GAP, GRAPHVIZ_LABEL_FONT_FAMILY,
 };
+use crate::rendering::escape_svg_text;
 use crate::rendering::svg_attr::{svg_attr, svg_attr_f64};
 use crate::rendering::svg_path_ends::path_midpoint;
 use crate::theme::current_theme;
@@ -137,8 +138,12 @@ fn line_baseline(y: f64, font_size: f64, index: usize, count: usize) -> f64 {
 }
 
 /// Build one `<text>` element for a label line, aligned by `anchor`.
+///
+/// `text` is re-escaped so a label that reaches here unescaped cannot close
+/// the element; layout-rs character references are kept as they are.
 fn label_text_element(anchor: &str, x: f64, baseline: f64, font_size: f64, text: &str) -> String {
-    let fill = current_theme().palette().text;
+    let fill = escape_svg_text(current_theme().palette().text);
+    let text = escape_svg_text(text);
     format!(
         "<text text-anchor=\"{anchor}\" x=\"{x}\" y=\"{baseline}\" font-size=\"{font_size}px\" \
          font-family=\"{GRAPHVIZ_LABEL_FONT_FAMILY}\" fill=\"{fill}\">{text}</text>"
@@ -339,5 +344,27 @@ mod tests {
             flatten_node_label(r#"<text x="1" y="2"></text>"#, &HashMap::new()),
             ""
         );
+    }
+
+    #[test]
+    /// Assert raw markup in a tspan line cannot close the `<text>` element.
+    fn node_label_markup_is_escaped() {
+        let html = flatten_node_label(
+            r#"<text x="1" y="2"><tspan x="1">a</text><b>&amp;</tspan></text>"#,
+            &HashMap::new(),
+        );
+        assert!(!html.contains("<b>"), "{html}");
+        assert!(html.contains(">a&lt;/text&gt;&lt;b&gt;&amp;</text>"), "{html}");
+    }
+
+    #[test]
+    /// Assert raw markup in an edge label is escaped once.
+    fn edge_label_markup_is_escaped() {
+        let html = flatten_edge_label(
+            r##"<text><textPath href="#arrow0">a<b> &lt;</textPath></text>"##,
+            &edge_paths("arrow0", "M 0 0 L 100 0"),
+            &HashMap::new(),
+        );
+        assert!(html.contains(">a&lt;b&gt; &lt;</text>"), "{html}");
     }
 }

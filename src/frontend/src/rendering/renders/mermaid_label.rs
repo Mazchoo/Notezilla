@@ -6,6 +6,7 @@
 use crate::constants::{
     BASELINE_ASCENT_RATIO, DEFAULT_FONT_SIZE, MONOSPACE_ADVANCE_RATIO, PDF_FONT_FAMILY, TEXT,
 };
+use crate::rendering::escape_svg_text;
 use crate::rendering::svg_attr::{svg_attr, svg_attr_f64};
 
 /// One laid-out line of a Mermaid label.
@@ -46,8 +47,12 @@ pub fn flatten_label(element: &str) -> String {
     let font_size = svg_attr(open, "font-size")
         .and_then(|value| parse_font_px(&value))
         .unwrap_or(DEFAULT_FONT_SIZE as f64);
-    let anchor = svg_attr(open, "text-anchor").unwrap_or_else(|| "middle".to_string());
-    let fill = svg_attr(open, "fill").unwrap_or_else(|| TEXT.to_string());
+    let anchor = svg_attr(open, "text-anchor")
+        .map(|value| escape_svg_text(&value))
+        .unwrap_or_else(|| "middle".to_string());
+    let fill = svg_attr(open, "fill")
+        .map(|value| escape_svg_text(&value))
+        .unwrap_or_else(|| TEXT.to_string());
     let style = LabelStyle {
         font_size,
         anchor: &anchor,
@@ -163,7 +168,7 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
             }
             y_cursor += dy;
         }
-        let text = strip_tags(content);
+        let text = escape_svg_text(&strip_tags(content));
         if !text.is_empty() {
             lines.push(LabelLine {
                 x: svg_attr_f64(open, "x").unwrap_or(default_x),
@@ -188,7 +193,7 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
 
 /// Return the label's plain text content as a single line, if it has any.
 fn plain_text_line(inner: &str, x: f64, y: f64) -> Vec<LabelLine> {
-    let text = strip_tags(inner.trim().trim_end_matches("</text>").trim());
+    let text = escape_svg_text(&strip_tags(inner.trim().trim_end_matches("</text>").trim()));
     if text.is_empty() {
         return Vec::new();
     }
@@ -403,5 +408,30 @@ mod tests {
     /// Assert an empty label is dropped rather than emitted as an empty element.
     fn empty_label_is_dropped() {
         assert_eq!(flatten_label(r#"<text x="1" y="2"></text>"#), "");
+    }
+
+    #[test]
+    /// Assert flattened label text cannot close the `<text>` element.
+    fn flattened_text_escapes_markup() {
+        let html = flatten_label(r#"<text x="1" y="2">a</b></text>"#);
+        assert!(!html.contains("</b>"), "{html}");
+    }
+
+    #[test]
+    /// Assert a bare `&` is escaped while upstream entities are kept as-is.
+    fn flattened_text_escapes_bare_ampersand_once() {
+        let html = flatten_label(r#"<text x="1" y="2">a & b &lt; c</text>"#);
+        assert!(html.contains(">a &amp; b &lt; c</text>"), "{html}");
+    }
+
+    #[test]
+    /// Assert a single-quoted fill or anchor holding `"` cannot inject attributes.
+    fn quoted_attributes_cannot_inject() {
+        let html = flatten_label(
+            r#"<text x="1" y="2" fill='red" onload="x' text-anchor='end" a="b'>A</text>"#,
+        );
+        assert!(!html.contains("onload=\""), "{html}");
+        assert!(!html.contains(" a=\"b"), "{html}");
+        assert!(html.contains("fill=\"red&quot; onload=&quot;x\""), "{html}");
     }
 }
