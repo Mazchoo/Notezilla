@@ -5,7 +5,10 @@
       "label": "Run Backend",
       "type": "shell",
       "command": "python",
-      "args": ["-m", "src.backend.main"],
+      "args": [
+        "-m",
+        "src.backend.main"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -24,7 +27,10 @@
       "type": "shell",
       "command": "trunk serve --release",
       "options": {
-        "cwd": "${workspaceFolder}/src/frontend"
+        "cwd": "${workspaceFolder}/src/frontend",
+        "env": {
+          "RUST_LOG": "info,tower_http=off,trunk::serve=off"
+        }
       },
       "presentation": {
         "reveal": "always",
@@ -37,7 +43,10 @@
       "type": "shell",
       "command": "trunk serve",
       "options": {
-        "cwd": "${workspaceFolder}/src/frontend"
+        "cwd": "${workspaceFolder}/src/frontend",
+        "env": {
+          "RUST_LOG": "info,tower_http=off,trunk::serve=off"
+        }
       },
       "presentation": {
         "reveal": "always",
@@ -75,7 +84,11 @@
       "label": "Tests Backend",
       "type": "shell",
       "command": "python",
-      "args": ["-m", "pytest", "."],
+      "args": [
+        "-m",
+        "pytest",
+        "."
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
