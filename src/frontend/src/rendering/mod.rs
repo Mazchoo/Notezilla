@@ -15,7 +15,7 @@ mod svg_path_ends;
 mod svg_text_elements;
 
 use block_kind::BlockKind;
-pub(crate) use html_escape::{escape_html, escape_html_comment};
+pub(crate) use html_escape::{escape_html, escape_html_comment, escape_svg_text};
 use math_substitution::substitute_math;
 pub(crate) use pdf::{html_to_pdf_bytes, pdf_rgb_operator};
 use pdf::{pdf_list_item_open, PdfListKind};
