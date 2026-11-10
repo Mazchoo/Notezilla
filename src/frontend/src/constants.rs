@@ -92,6 +92,8 @@ pub const BASELINE_ASCENT_RATIO: f64 = 0.3;
 pub const ARROW_SIZE: f64 = 8.0;
 /// Font family of flattened graphviz node labels.
 pub const GRAPHVIZ_LABEL_FONT_FAMILY: &str = "Helvetica, Arial, sans-serif";
+/// Gap between a graphviz edge and its upright label, as a fraction of font size.
+pub const GRAPHVIZ_EDGE_LABEL_GAP: f64 = 0.25;
 /// Extra mermaid padding so a stroke centered on the viewBox edge is not clipped.
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 

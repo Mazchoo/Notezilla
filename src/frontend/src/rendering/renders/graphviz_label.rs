@@ -1,12 +1,75 @@
-//! Flattens layout-rs node labels onto explicit alphabetic baselines.
+//! Flattens layout-rs node and edge labels onto explicit alphabetic baselines.
 //!
-//! Ironpress ignores `dominant-baseline` and `<tspan>` positioning, so every
-//! label line becomes its own `<text>` element with an absolute baseline.
+//! Ironpress ignores `dominant-baseline`, `<tspan>` positioning, and
+//! `<textPath>`, so every label line becomes its own `<text>` element with an
+//! absolute baseline.
 
-use crate::constants::{BASELINE_FROM_CENTER, DEFAULT_FONT_SIZE, GRAPHVIZ_LABEL_FONT_FAMILY};
+use crate::constants::{
+    BASELINE_FROM_CENTER, DEFAULT_FONT_SIZE, GRAPHVIZ_EDGE_LABEL_GAP, GRAPHVIZ_LABEL_FONT_FAMILY,
+};
 use crate::rendering::svg_attr::{svg_attr, svg_attr_f64};
+use crate::rendering::svg_path_ends::path_midpoint;
 use crate::theme::current_theme;
 use std::collections::HashMap;
+
+/// Collect the `d` geometry of every `<path>` that has an `id`, keyed by id.
+pub fn parse_path_geometry(svg: &str) -> HashMap<String, String> {
+    let mut paths = HashMap::new();
+    let mut rest = svg;
+    while let Some(start) = rest.find("<path") {
+        rest = &rest[start..];
+        let end = rest.find('>').unwrap_or(rest.len());
+        let open = &rest[..end];
+        if let (Some(id), Some(d)) = (svg_attr(open, "id"), svg_attr(open, "d")) {
+            paths.insert(id, d);
+        }
+        rest = &rest[end..];
+    }
+    paths
+}
+
+/// Flatten a `<text><textPath>` edge label into an upright positioned `<text>`.
+///
+/// layout-rs centres the label at 50% of the referenced edge path. The label
+/// sits just above a mostly horizontal edge and just right of a mostly
+/// vertical one. Returns an empty string for an edge without a label, and the
+/// element unchanged when the referenced path cannot be resolved.
+pub fn flatten_edge_label(
+    element: &str,
+    paths: &HashMap<String, String>,
+    fonts: &HashMap<String, usize>,
+) -> String {
+    let Some(path_at) = element.find("<textPath") else {
+        return element.to_string();
+    };
+    let inner = &element[path_at..];
+    let gt = inner.find('>').unwrap_or(inner.len());
+    let open = &inner[..gt];
+    let text = inner[gt..]
+        .trim_start_matches('>')
+        .split("</textPath>")
+        .next()
+        .unwrap_or_default()
+        .trim();
+    if text.is_empty() {
+        return String::new();
+    }
+    let Some(mid) = svg_attr(open, "href")
+        .and_then(|href| paths.get(href.trim_start_matches('#')))
+        .and_then(|d| path_midpoint(d))
+    else {
+        return element.to_string();
+    };
+    let font_size = label_font_size(open, fonts);
+    let gap = font_size * GRAPHVIZ_EDGE_LABEL_GAP;
+    let (x, y) = mid.point;
+    if mid.dir.1.abs() > mid.dir.0.abs() {
+        let baseline = y + font_size * BASELINE_FROM_CENTER;
+        label_text_element("start", x + gap, baseline, font_size, text)
+    } else {
+        label_text_element("middle", x, y - gap, font_size, text)
+    }
+}
 
 /// Parse the `.aN` CSS font-size classes layout-rs emits, keyed by class name.
 pub fn parse_font_classes(svg: &str) -> HashMap<String, usize> {
@@ -45,6 +108,7 @@ pub fn flatten_node_label(element: &str, fonts: &HashMap<String, usize>) -> Stri
     for (index, (line_x, text)) in lines.iter().enumerate() {
         let baseline = line_baseline(y, font_size, index, lines.len());
         out.push_str(&label_text_element(
+            "middle",
             line_x.unwrap_or(x),
             baseline,
             font_size,
@@ -72,11 +136,11 @@ fn line_baseline(y: f64, font_size: f64, index: usize, count: usize) -> f64 {
     center_y + offset * font_size + font_size * BASELINE_FROM_CENTER
 }
 
-/// Build one `<text>` element for a label line.
-fn label_text_element(x: f64, baseline: f64, font_size: f64, text: &str) -> String {
+/// Build one `<text>` element for a label line, aligned by `anchor`.
+fn label_text_element(anchor: &str, x: f64, baseline: f64, font_size: f64, text: &str) -> String {
     let fill = current_theme().palette().text;
     format!(
-        "<text text-anchor=\"middle\" x=\"{x}\" y=\"{baseline}\" font-size=\"{font_size}px\" \
+        "<text text-anchor=\"{anchor}\" x=\"{x}\" y=\"{baseline}\" font-size=\"{font_size}px\" \
          font-family=\"{GRAPHVIZ_LABEL_FONT_FAMILY}\" fill=\"{fill}\">{text}</text>"
     )
 }
@@ -112,11 +176,77 @@ fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
 #[cfg(test)]
 mod tests {
     use super::{
-        flatten_node_label, line_baseline, parse_font_classes, tspan_lines, BASELINE_FROM_CENTER,
-        GRAPHVIZ_LABEL_FONT_FAMILY,
+        flatten_edge_label, flatten_node_label, line_baseline, parse_font_classes,
+        parse_path_geometry, tspan_lines, BASELINE_FROM_CENTER, GRAPHVIZ_LABEL_FONT_FAMILY,
     };
     use crate::constants::TEXT;
     use std::collections::HashMap;
+
+    /// One edge path keyed by id, for edge label tests.
+    fn edge_paths(id: &str, d: &str) -> HashMap<String, String> {
+        HashMap::from([(id.to_string(), d.to_string())])
+    }
+
+    #[test]
+    /// Assert path geometry is collected by id and paths without an id are skipped.
+    fn collects_path_geometry_by_id() {
+        let paths =
+            parse_path_geometry(r#"<path id="arrow0" d="M 0 0 L 1 0" /><path d="M 5 5" />"#);
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths.get("arrow0").map(String::as_str), Some("M 0 0 L 1 0"));
+    }
+
+    #[test]
+    /// Assert a horizontal edge label is centred above the edge midpoint.
+    fn horizontal_edge_label_sits_above_midpoint() {
+        let html = flatten_edge_label(
+            r##"<text><textPath href="#arrow0" startOffset="50%" class="a14">hi</textPath></text>"##,
+            &edge_paths("arrow0", "M 0 50 L 100 50"),
+            &HashMap::from([("a14".to_string(), 14)]),
+        );
+        assert!(!html.contains("textPath"), "{html}");
+        assert!(html.contains("text-anchor=\"middle\""), "{html}");
+        assert!(html.contains("x=\"50\""), "{html}");
+        assert!(html.contains("y=\"46.5\""), "{html}");
+        assert!(html.contains(">hi</text>"), "{html}");
+    }
+
+    #[test]
+    /// Assert a vertical edge label starts just right of the edge midpoint.
+    fn vertical_edge_label_sits_beside_midpoint() {
+        let html = flatten_edge_label(
+            r##"<text><textPath href="#arrow0" class="a14">hi</textPath></text>"##,
+            &edge_paths("arrow0", "M 10 0 L 10 100"),
+            &HashMap::from([("a14".to_string(), 14)]),
+        );
+        assert!(html.contains("text-anchor=\"start\""), "{html}");
+        assert!(html.contains("x=\"13.5\""), "{html}");
+        assert!(
+            html.contains(&format!("y=\"{}\"", 50.0 + 14.0 * BASELINE_FROM_CENTER)),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert an edge without a label is dropped.
+    fn unlabelled_edge_is_dropped() {
+        let html = flatten_edge_label(
+            r##"<text><textPath href="#arrow0" class="a14"></textPath></text>"##,
+            &edge_paths("arrow0", "M 0 0 L 1 0"),
+            &HashMap::new(),
+        );
+        assert_eq!(html, "");
+    }
+
+    #[test]
+    /// Assert a label whose path cannot be resolved is left untouched.
+    fn unresolved_edge_label_is_unchanged() {
+        let element = r##"<text><textPath href="#missing">hi</textPath></text>"##;
+        assert_eq!(
+            flatten_edge_label(element, &HashMap::new(), &HashMap::new()),
+            element
+        );
+    }
 
     #[test]
     /// Assert `.aN` style rules become font sizes keyed by class name.

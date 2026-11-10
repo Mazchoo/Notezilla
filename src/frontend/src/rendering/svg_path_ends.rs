@@ -1,4 +1,7 @@
-//! Computes the endpoints and endpoint directions of an SVG path.
+//! Computes the endpoints, midpoint, and travel directions of an SVG path.
+
+/// Samples taken along each cubic segment when measuring arc length.
+const CUBIC_SAMPLES: usize = 16;
 
 /// Endpoints of a path and the direction the path travels at each one.
 pub struct PathEnds {
@@ -146,6 +149,137 @@ pub fn path_ends(d: &str) -> Option<PathEnds> {
     })
 }
 
+/// A point on a path and the direction the path travels there.
+pub struct PathPoint {
+    pub point: (f64, f64),
+    pub dir: (f64, f64),
+}
+
+/// Return the point halfway along the arc length of an SVG path `d` string.
+///
+/// This is where an SVG `<textPath startOffset="50%">` centres its text.
+/// Supports `M L C S Q Z` in either case; returns `None` for an empty path or
+/// any other command.
+pub fn path_midpoint(d: &str) -> Option<PathPoint> {
+    let polyline = path_polyline(d)?;
+    let total: f64 = polyline.windows(2).map(|w| distance(w[0], w[1])).sum();
+    let mut remaining = total / 2.0;
+    for w in polyline.windows(2) {
+        let step = distance(w[0], w[1]);
+        if step > 0.0 && remaining <= step {
+            let t = remaining / step;
+            let dir = (w[1].0 - w[0].0, w[1].1 - w[0].1);
+            let point = (w[0].0 + dir.0 * t, w[0].1 + dir.1 * t);
+            return Some(PathPoint { point, dir });
+        }
+        remaining -= step;
+    }
+    // A zero-length path has no direction; report its only point.
+    polyline.first().map(|&point| PathPoint {
+        point,
+        dir: (0.0, 0.0),
+    })
+}
+
+/// Flatten a path into points, sampling each curve as `CUBIC_SAMPLES` chords.
+fn path_polyline(d: &str) -> Option<Vec<(f64, f64)>> {
+    let tokens = tokenize_path(d);
+    let mut points = Vec::new();
+    let mut i = 0;
+    let mut start = (0.0, 0.0);
+    let mut cur = (0.0, 0.0);
+    // Second control of the previous cubic, reflected by a following `S`.
+    let mut last_control: Option<(f64, f64)> = None;
+    let mut cmd = 'M';
+    while i < tokens.len() {
+        let token = &tokens[i];
+        if token.len() == 1 && token.chars().next()?.is_ascii_alphabetic() {
+            cmd = token.chars().next()?;
+            i += 1;
+            if cmd == 'Z' || cmd == 'z' {
+                cur = start;
+                points.push(cur);
+                last_control = None;
+                continue;
+            }
+        }
+        // Relative coordinates offset from the point the command starts at.
+        let origin = if cmd.is_ascii_lowercase() && !points.is_empty() {
+            cur
+        } else {
+            (0.0, 0.0)
+        };
+        let abs = move |(x, y): (f64, f64)| (origin.0 + x, origin.1 + y);
+        match cmd {
+            'M' | 'm' => {
+                cur = abs(take_xy(&tokens, &mut i)?);
+                start = cur;
+                points.push(cur);
+                last_control = None;
+                // Repeated coordinate pairs after a moveto are implicit linetos.
+                cmd = if cmd == 'm' { 'l' } else { 'L' };
+            }
+            'L' | 'l' => {
+                cur = abs(take_xy(&tokens, &mut i)?);
+                points.push(cur);
+                last_control = None;
+            }
+            'C' | 'c' => {
+                let c1 = abs(take_xy(&tokens, &mut i)?);
+                let c2 = abs(take_xy(&tokens, &mut i)?);
+                let to = abs(take_xy(&tokens, &mut i)?);
+                sample_cubic(&mut points, [cur, c1, c2, to]);
+                last_control = Some(c2);
+                cur = to;
+            }
+            'S' | 's' => {
+                let c2 = abs(take_xy(&tokens, &mut i)?);
+                let to = abs(take_xy(&tokens, &mut i)?);
+                let c1 = last_control.map_or(cur, |c| (2.0 * cur.0 - c.0, 2.0 * cur.1 - c.1));
+                sample_cubic(&mut points, [cur, c1, c2, to]);
+                last_control = Some(c2);
+                cur = to;
+            }
+            'Q' | 'q' => {
+                let c = abs(take_xy(&tokens, &mut i)?);
+                let to = abs(take_xy(&tokens, &mut i)?);
+                // Degree-elevate the quadratic to an equivalent cubic.
+                let c1 = (
+                    cur.0 + 2.0 / 3.0 * (c.0 - cur.0),
+                    cur.1 + 2.0 / 3.0 * (c.1 - cur.1),
+                );
+                let c2 = (
+                    to.0 + 2.0 / 3.0 * (c.0 - to.0),
+                    to.1 + 2.0 / 3.0 * (c.1 - to.1),
+                );
+                sample_cubic(&mut points, [cur, c1, c2, to]);
+                last_control = None;
+                cur = to;
+            }
+            _ => return None,
+        }
+    }
+    (!points.is_empty()).then_some(points)
+}
+
+/// Append `CUBIC_SAMPLES` points along the cubic `p`, excluding its start.
+fn sample_cubic(points: &mut Vec<(f64, f64)>, p: [(f64, f64); 4]) {
+    for step in 1..=CUBIC_SAMPLES {
+        let t = step as f64 / CUBIC_SAMPLES as f64;
+        let u = 1.0 - t;
+        let (a, b, c, d) = (u * u * u, 3.0 * u * u * t, 3.0 * u * t * t, t * t * t);
+        points.push((
+            a * p[0].0 + b * p[1].0 + c * p[2].0 + d * p[3].0,
+            a * p[0].1 + b * p[1].1 + c * p[2].1 + d * p[3].1,
+        ));
+    }
+}
+
+/// Return the straight-line distance between `a` and `b`.
+fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
+    (b.0 - a.0).hypot(b.1 - a.1)
+}
+
 /// An SVG elliptical arc segment in endpoint form.
 struct Arc {
     from: (f64, f64),
@@ -181,7 +315,11 @@ fn arc_tangents(arc: &Arc) -> ((f64, f64), (f64, f64)) {
     }
     let numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1;
     let denominator = rx * rx * y1 * y1 + ry * ry * x1 * x1;
-    let sign = if arc.large_arc == arc.sweep { -1.0 } else { 1.0 };
+    let sign = if arc.large_arc == arc.sweep {
+        -1.0
+    } else {
+        1.0
+    };
     let coef = sign * (numerator / denominator).max(0.0).sqrt();
     let (cx, cy) = (coef * rx * y1 / ry, -coef * ry * x1 / rx);
     let start_angle = ((y1 - cy) / ry).atan2((x1 - cx) / rx);
@@ -244,7 +382,67 @@ fn take_xy(tokens: &[String], i: &mut usize) -> Option<(f64, f64)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{path_ends, tokenize_path};
+    use super::{path_ends, path_midpoint, tokenize_path};
+
+    #[test]
+    /// Assert a straight line's midpoint is halfway between its ends.
+    fn line_midpoint_is_halfway() {
+        let mid = path_midpoint("M 0 0 L 10 0").expect("midpoint");
+        assert_eq!(mid.point, (5.0, 0.0));
+        assert_eq!(mid.dir, (10.0, 0.0));
+    }
+
+    #[test]
+    /// Assert the midpoint is by arc length, not by segment count.
+    fn midpoint_follows_arc_length() {
+        let mid = path_midpoint("M 0 0 L 2 0 L 10 0").expect("midpoint");
+        assert_eq!(mid.point, (5.0, 0.0));
+    }
+
+    #[test]
+    /// Assert a symmetric cubic's midpoint sits on its axis of symmetry.
+    fn symmetric_cubic_midpoint_is_on_the_axis() {
+        let mid = path_midpoint("M 0 0 C 0 10 10 10 10 0").expect("midpoint");
+        assert!((mid.point.0 - 5.0).abs() < 1e-6, "{:?}", mid.point);
+        assert!((mid.point.1 - 7.5).abs() < 0.1, "{:?}", mid.point);
+        // The apex chord is nearly horizontal, travelling right.
+        assert!(
+            mid.dir.0 > 0.0 && mid.dir.1.abs() < mid.dir.0 * 0.25,
+            "{:?}",
+            mid.dir
+        );
+    }
+
+    #[test]
+    /// Assert a smooth cubic reflects the previous control point.
+    fn smooth_cubic_reflects_previous_control() {
+        // Reflection makes the second curve mirror the first about (10, 0).
+        let mid = path_midpoint("M 0 0 C 0 10 10 10 10 0 S 20 -10 20 0").expect("midpoint");
+        assert!((mid.point.0 - 10.0).abs() < 1e-6, "{:?}", mid.point);
+        assert!(mid.point.1.abs() < 1e-6, "{:?}", mid.point);
+    }
+
+    #[test]
+    /// Assert relative commands offset from the current point.
+    fn relative_midpoint_accumulates() {
+        let mid = path_midpoint("m 10 10 l 0 10").expect("midpoint");
+        assert_eq!(mid.point, (10.0, 15.0));
+    }
+
+    #[test]
+    /// Assert a zero-length path reports its only point without a direction.
+    fn zero_length_midpoint_has_no_direction() {
+        let mid = path_midpoint("M 3 4").expect("midpoint");
+        assert_eq!(mid.point, (3.0, 4.0));
+        assert_eq!(mid.dir, (0.0, 0.0));
+    }
+
+    #[test]
+    /// Assert unsupported or empty paths have no midpoint.
+    fn unsupported_path_has_no_midpoint() {
+        assert!(path_midpoint("").is_none());
+        assert!(path_midpoint("M 0 0 A 1 1 0 0 1 2 0").is_none());
+    }
 
     #[test]
     /// Assert commands and numbers split into separate tokens.

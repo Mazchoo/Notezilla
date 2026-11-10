@@ -1,6 +1,8 @@
 //! Renders a Graphviz DOT block to inline SVG.
 
-use super::graphviz_label::{flatten_node_label, parse_font_classes};
+use super::graphviz_label::{
+    flatten_edge_label, flatten_node_label, parse_font_classes, parse_path_geometry,
+};
 use super::marker_arrow::expand_path_markers;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
@@ -42,16 +44,16 @@ impl RenderPdf for GraphvizRender {}
 /// Flatten graphviz labels, map layout-rs default paints onto the palette, and
 /// paint arrowheads as polygons.
 ///
-/// Ironpress ignores `marker-start` / `marker-end`, so PDF edges would otherwise
-/// be bare strokes. Arrows are expanded after recoloring so they take the
-/// palette stroke.
+/// Ironpress ignores `marker-start` / `marker-end` and `<textPath>`, so PDF
+/// edges would otherwise be bare strokes without labels. Arrows are expanded
+/// after recoloring so they take the palette stroke.
 fn prepare_svg(raw: &str) -> String {
     let body = strip_marker_defs(strip_xml_declaration(raw));
     let fonts = parse_font_classes(&body);
+    let paths = parse_path_geometry(&body);
     let labeled = rewrite_text_elements(&body, |element| {
-        // Edge labels riding a `<textPath>` keep their own positioning.
         if element.contains("<textPath") {
-            element.to_string()
+            flatten_edge_label(element, &paths, &fonts)
         } else {
             flatten_node_label(element, &fonts)
         }
@@ -173,6 +175,22 @@ mod tests {
         assert!(!svg.contains("marker-start"), "{svg}");
         assert!(!svg.contains("<marker"), "{svg}");
         assert!(!svg.contains("<defs>"), "{svg}");
+    }
+
+    #[test]
+    /// Assert an edge label is a positioned `<text>`, not a `<textPath>`.
+    fn edge_labels_are_positioned_text() {
+        let svg = GraphvizRender.render(r#"digraph { A -> B [label="hello"] }"#);
+        assert!(svg.contains(">hello</text>"), "{svg}");
+        assert!(!svg.contains("<textPath"), "{svg}");
+    }
+
+    #[test]
+    /// Assert edges without a label leave no empty text elements behind.
+    fn unlabelled_edges_emit_no_text() {
+        let svg = GraphvizRender.render("digraph { A -> B }");
+        assert_eq!(svg.matches("<text ").count(), 2, "{svg}");
+        assert!(!svg.contains("<text>"), "{svg}");
     }
 
     #[test]
