@@ -1,6 +1,7 @@
 {
   "enabledMcpjsonServers": ["notezilla"],
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "Bash(curl http://127.0.0.1:8020/*)",
       "mcp__notezilla__search_notes",
