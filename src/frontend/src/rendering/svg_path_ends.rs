@@ -335,46 +335,50 @@ fn arc_tangents(arc: &Arc) -> ((f64, f64), (f64, f64)) {
 }
 
 /// Tokenize an SVG path `d` string into command letters and numbers.
-fn tokenize_path(d: &str) -> Vec<String> {
+///
+/// Tokens borrow from `d`: each is a contiguous span, so none are allocated.
+fn tokenize_path(d: &str) -> Vec<&str> {
     let mut out = Vec::new();
-    let mut cur = String::new();
-    for c in d.chars() {
+    // Start of the number currently being scanned; `d[start..at]` is that number.
+    let mut start = 0;
+    for (at, c) in d.char_indices() {
+        let cur = &d[start..at];
         if c.is_ascii_alphabetic() {
             if !cur.is_empty() {
-                out.push(std::mem::take(&mut cur));
+                out.push(cur);
             }
-            out.push(c.to_string());
+            out.push(&d[at..at + c.len_utf8()]);
+            start = at + c.len_utf8();
         } else if c == ',' || c.is_whitespace() {
             if !cur.is_empty() {
-                out.push(std::mem::take(&mut cur));
+                out.push(cur);
             }
+            start = at + c.len_utf8();
         } else if c == '.' && !cur.is_empty() && (cur.contains('.') || cur.contains(['e', 'E'])) {
             // A second decimal, or a decimal after an exponent, starts a new number.
-            out.push(std::mem::take(&mut cur));
-            cur.push(c);
+            out.push(cur);
+            start = at;
         } else if (c == '-' || c == '+') && !cur.is_empty() && !cur.ends_with(['e', 'E']) {
             // A sign starts a new number unless it belongs to an exponent.
-            out.push(std::mem::take(&mut cur));
-            cur.push(c);
-        } else {
-            cur.push(c);
+            out.push(cur);
+            start = at;
         }
     }
-    if !cur.is_empty() {
-        out.push(cur);
+    if start < d.len() {
+        out.push(&d[start..]);
     }
     out
 }
 
 /// Consume the next numeric token from `tokens`.
-fn take_num(tokens: &[String], i: &mut usize) -> Option<f64> {
+fn take_num(tokens: &[&str], i: &mut usize) -> Option<f64> {
     let n = tokens.get(*i)?.parse().ok()?;
     *i += 1;
     Some(n)
 }
 
 /// Consume the next `x,y` pair from `tokens`.
-fn take_xy(tokens: &[String], i: &mut usize) -> Option<(f64, f64)> {
+fn take_xy(tokens: &[&str], i: &mut usize) -> Option<(f64, f64)> {
     let x = take_num(tokens, i)?;
     let y = take_num(tokens, i)?;
     Some((x, y))
