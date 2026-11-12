@@ -124,6 +124,28 @@ pub const PDF_BLACK_STROKE: &[u8] = b"0 0 0 RG";
 
 pub const MATH_FONTS: [&[u8]; 3] = [b"/Helvetica-Oblique ", b"/Symbol ", b"/Helvetica "];
 
+/// Liberation Sans faces embedded in exported PDFs. Names are ironpress font
+/// variant keys: the family, then `__bold`, `__italic` or `__bold_italic`.
+/// The first entry's name is the family `export-pdf.html` sets on the body.
+pub const PDF_EMBEDDED_FONTS: [(&str, &[u8]); 4] = [
+    (
+        "Liberation Sans",
+        include_bytes!("assets/LiberationSans-Regular.ttf"),
+    ),
+    (
+        "Liberation Sans__bold",
+        include_bytes!("assets/LiberationSans-Bold.ttf"),
+    ),
+    (
+        "Liberation Sans__italic",
+        include_bytes!("assets/LiberationSans-Italic.ttf"),
+    ),
+    (
+        "Liberation Sans__bold_italic",
+        include_bytes!("assets/LiberationSans-BoldItalic.ttf"),
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;

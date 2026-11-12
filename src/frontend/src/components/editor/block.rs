@@ -1,7 +1,7 @@
+use crate::components::diagram_modal::diagram_svg_from_event;
 use crate::components::editor::actions::{
     add_front_matter, copy_markdown, delete_entry, delete_front_matter,
 };
-use crate::components::diagram_modal::diagram_svg_from_event;
 use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };

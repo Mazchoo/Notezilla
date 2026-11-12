@@ -354,7 +354,10 @@ mod tests {
             &HashMap::new(),
         );
         assert!(!html.contains("<b>"), "{html}");
-        assert!(html.contains(">a&lt;/text&gt;&lt;b&gt;&amp;</text>"), "{html}");
+        assert!(
+            html.contains(">a&lt;/text&gt;&lt;b&gt;&amp;</text>"),
+            "{html}"
+        );
     }
 
     #[test]

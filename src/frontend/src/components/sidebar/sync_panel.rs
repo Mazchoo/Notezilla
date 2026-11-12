@@ -205,8 +205,11 @@ fn run_all_action(ctx: SyncCtx, side: SyncSide, action: SyncAction, busy: RwSign
 fn SyncPathList(side: SyncSide, ctx: SyncCtx) -> impl IntoView {
     let busy = RwSignal::new(false);
     let paths = Memo::new(move |_| {
-        ctx.result
-            .with(|r| r.as_ref().map(|d| side.paths(d).clone()).unwrap_or_default())
+        ctx.result.with(|r| {
+            r.as_ref()
+                .map(|d| side.paths(d).clone())
+                .unwrap_or_default()
+        })
     });
     let has_paths = move || paths.with(|p| !p.is_empty());
 

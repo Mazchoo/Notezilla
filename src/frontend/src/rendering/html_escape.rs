@@ -65,7 +65,10 @@ mod tests {
     #[test]
     /// Assert existing character references survive SVG text escaping.
     fn svg_text_keeps_character_references() {
-        assert_eq!(escape_svg_text("a&lt;b&#60;&#x3C;&amp;"), "a&lt;b&#60;&#x3C;&amp;");
+        assert_eq!(
+            escape_svg_text("a&lt;b&#60;&#x3C;&amp;"),
+            "a&lt;b&#60;&#x3C;&amp;"
+        );
     }
 
     #[test]

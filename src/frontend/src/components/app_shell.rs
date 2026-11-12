@@ -1,6 +1,6 @@
 use crate::components::{
-    activity_bar::ActivityBar, diagram_modal::DiagramModal, editor::Editor, hotkeys::GlobalHotkeys, sidebar::Sidebar,
-    toast::Toast, top_bar::TopBar,
+    activity_bar::ActivityBar, diagram_modal::DiagramModal, editor::Editor, hotkeys::GlobalHotkeys,
+    sidebar::Sidebar, toast::Toast, top_bar::TopBar,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
