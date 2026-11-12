@@ -1753,6 +1753,7 @@ dependencies = [
  "leptos",
  "leptos_icons",
  "math-core",
+ "memchr",
  "pulldown-cmark",
  "rusty-mermaid",
  "rusty-mermaid-core",

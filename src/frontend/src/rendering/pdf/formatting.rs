@@ -2,10 +2,17 @@
 
 use super::content::recolor_content;
 use super::objects::{
-    find_subslice, find_xref_offset, parse_catalog_id, rewrite_length, serialize_pdf, split_objects,
+    find_subslice, find_xref_offset, parse_catalog_id, split_objects, write_dict_with_length,
+    PdfWriter,
 };
 use super::radical::correct_radicals;
 use crate::constants::PDF_HEADER;
+
+/// Output capacity added on top of the input size, as a divisor of it.
+///
+/// Recoloring changes each content stream's length by a few bytes, so a small
+/// margin keeps the output buffer from reallocating.
+const OUTPUT_SLACK_DIVISOR: usize = 16;
 
 /// Recolor black math fill/stroke operators to the page text color.
 ///
@@ -18,47 +25,47 @@ pub(super) fn recolor_math_operators(pdf: &[u8]) -> Result<Vec<u8>, String> {
     let xref_at = find_xref_offset(body)?;
     let catalog_id = parse_catalog_id(&body[xref_at..])?;
     let objects = split_objects(&body[..xref_at])?;
-    let recolored: Vec<Vec<u8>> = objects.into_iter().map(recolor_object).collect();
-    Ok(serialize_pdf(&recolored, catalog_id))
+    let mut writer = PdfWriter::with_capacity(pdf.len() + pdf.len() / OUTPUT_SLACK_DIVISOR);
+    for object in objects {
+        writer.write_object(|out| write_recolored_object(object, out));
+    }
+    Ok(writer.finish(catalog_id))
 }
 
-/// Rewrite the content stream of one PDF object.
+/// Write one PDF object to `out` with its content stream recolored.
 ///
 /// Objects without a stream, and objects whose stream is compressed, are
-/// returned unchanged.
-fn recolor_object(object: Vec<u8>) -> Vec<u8> {
-    let Some(stream_at) = find_subslice(&object, b"\nstream\n") else {
-        return object;
+/// written unchanged.
+fn write_recolored_object(object: &[u8], out: &mut Vec<u8>) {
+    let Some(stream_at) = find_subslice(object, b"\nstream\n") else {
+        out.extend_from_slice(object);
+        return;
     };
     let dict = &object[..stream_at];
     if find_subslice(dict, b"/Filter").is_some() {
-        return object;
+        out.extend_from_slice(object);
+        return;
     }
     let payload_start = stream_at + b"\nstream\n".len();
     let Some(endstream_rel) = find_subslice(&object[payload_start..], b"\nendstream") else {
-        return object;
+        out.extend_from_slice(object);
+        return;
     };
-    let payload_end = payload_start + endstream_rel;
-    let mut content = object[payload_start..payload_end].to_vec();
-    if content.ends_with(b"\n") {
-        content.pop();
-    }
+    let payload = &object[payload_start..payload_start + endstream_rel];
+    let payload = payload.strip_suffix(b"\n").unwrap_or(payload);
     // Drop this line with `radical.rs` once ironpress places the radical sign.
-    let content = correct_radicals(&content);
+    let content = correct_radicals(payload);
     let recolored = recolor_content(&content);
 
-    let mut dict = dict.to_vec();
-    rewrite_length(&mut dict, recolored.len());
-    let mut out = dict;
+    write_dict_with_length(dict, recolored.len(), out);
     out.extend_from_slice(b"\nstream\n");
     out.extend_from_slice(&recolored);
     out.extend_from_slice(b"\nendstream\nendobj\n");
-    out
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{recolor_math_operators, recolor_object};
+    use super::{recolor_math_operators, write_recolored_object};
     use crate::constants::{EXPORT_PDF_TEMPLATE, TEXT_FILL};
     use crate::rendering::{html_to_pdf_bytes, render_markdown, render_markdown_for_pdf};
 
@@ -81,6 +88,13 @@ mod tests {
     fn export_to_pdf(body: &str) -> Vec<u8> {
         let document = crate::theme::fill_export_template(EXPORT_PDF_TEMPLATE, "t", body);
         html_to_pdf_bytes(&document).expect("PDF conversion")
+    }
+
+    /// Return `object` as written by `write_recolored_object`.
+    fn recolor_object(object: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        write_recolored_object(object, &mut out);
+        out
     }
 
     /// Return the content of the text object that paints `glyph`.
@@ -198,7 +212,7 @@ mod tests {
     /// Assert an object without a stream is left unchanged.
     fn object_without_stream_is_unchanged() {
         let object = b"1 0 obj\n<< /Type /Catalog >>\nendobj\n".to_vec();
-        assert_eq!(recolor_object(object.clone()), object);
+        assert_eq!(recolor_object(&object), object);
     }
 
     #[test]
@@ -207,14 +221,14 @@ mod tests {
         let object =
             b"1 0 obj\n<< /Filter /FlateDecode /Length 4 >>\nstream\n0 0 0 rg\nendstream\nendobj\n"
                 .to_vec();
-        assert_eq!(recolor_object(object.clone()), object);
+        assert_eq!(recolor_object(&object), object);
     }
 
     #[test]
     /// Assert recoloring a stream repaints it and updates its `/Length`.
     fn recolored_stream_length_is_updated() {
         let object = b"1 0 obj\n<< /Length 9 >>\nstream\n0 0 0 rg\nendstream\nendobj\n".to_vec();
-        let out = String::from_utf8_lossy(&recolor_object(object)).to_string();
+        let out = String::from_utf8_lossy(&recolor_object(&object)).to_string();
         let fill = text_fill_operator();
         assert!(out.contains(&fill), "{out}");
         assert!(!out.contains("0 0 0 rg"), "{out}");

@@ -5,6 +5,7 @@
 //! apart, edited, and written back with a rebuilt xref table and trailer.
 
 use crate::constants::PDF_HEADER;
+use memchr::{memchr_iter, memmem};
 
 /// Parse the catalog object id from a PDF trailer.
 pub fn parse_catalog_id(trailer: &[u8]) -> Result<usize, String> {
@@ -22,8 +23,8 @@ pub fn parse_catalog_id(trailer: &[u8]) -> Result<usize, String> {
         .map_err(|_| "PDF trailer Root id is not a number".to_string())
 }
 
-/// Split a PDF body into individual object byte sequences.
-pub fn split_objects(body: &[u8]) -> Result<Vec<Vec<u8>>, String> {
+/// Split a PDF body into slices of its individual objects.
+pub fn split_objects(body: &[u8]) -> Result<Vec<&[u8]>, String> {
     let mut objects = Vec::new();
     let mut rest = body;
     while !rest.is_empty() {
@@ -40,31 +41,61 @@ pub fn split_objects(body: &[u8]) -> Result<Vec<Vec<u8>>, String> {
     Ok(objects)
 }
 
-/// Serialize PDF objects with a rebuilt xref table and trailer.
-pub fn serialize_pdf(objects: &[Vec<u8>], catalog_id: usize) -> Vec<u8> {
-    let mut out = PDF_HEADER.to_vec();
-    let mut offsets = Vec::with_capacity(objects.len());
-    for object in objects {
-        offsets.push(out.len());
-        out.extend_from_slice(object);
-        if !object.ends_with(b"\n") {
-            out.push(b'\n');
+/// Writes PDF objects into one buffer and records their xref offsets.
+pub struct PdfWriter {
+    out: Vec<u8>,
+    offsets: Vec<usize>,
+}
+
+impl PdfWriter {
+    /// Start a document whose buffer holds `capacity` bytes before growing.
+    pub fn with_capacity(capacity: usize) -> Self {
+        let mut out = Vec::with_capacity(capacity);
+        out.extend_from_slice(PDF_HEADER);
+        Self {
+            out,
+            offsets: Vec::new(),
         }
     }
-    let xref_offset = out.len();
-    out.extend_from_slice(format!("xref\n0 {}\n", objects.len() + 1).as_bytes());
-    out.extend_from_slice(b"0000000000 65535 f \n");
-    for offset in offsets {
-        out.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+
+    /// Append one object written by `write`, ending it with a newline.
+    pub fn write_object(&mut self, write: impl FnOnce(&mut Vec<u8>)) {
+        self.offsets.push(self.out.len());
+        write(&mut self.out);
+        if !self.out.ends_with(b"\n") {
+            self.out.push(b'\n');
+        }
     }
-    out.extend_from_slice(
-        format!(
-            "trailer\n<< /Size {} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n",
-            objects.len() + 1,
-        )
-        .as_bytes(),
-    );
-    out
+
+    /// Append the xref table and trailer and return the document bytes.
+    pub fn finish(mut self, catalog_id: usize) -> Vec<u8> {
+        let size = self.offsets.len() + 1;
+        let xref_offset = self.out.len();
+        self.out
+            .extend_from_slice(format!("xref\n0 {size}\n").as_bytes());
+        self.out.extend_from_slice(b"0000000000 65535 f \n");
+        for offset in &self.offsets {
+            self.out
+                .extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+        }
+        self.out.extend_from_slice(
+            format!(
+                "trailer\n<< /Size {size} /Root {catalog_id} 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n"
+            )
+            .as_bytes(),
+        );
+        self.out
+    }
+}
+
+/// Serialize PDF objects with a rebuilt xref table and trailer.
+#[cfg(test)]
+pub fn serialize_pdf(objects: &[&[u8]], catalog_id: usize) -> Vec<u8> {
+    let mut writer = PdfWriter::with_capacity(0);
+    for object in objects {
+        writer.write_object(|out| out.extend_from_slice(object));
+    }
+    writer.finish(catalog_id)
 }
 
 /// Return the offset of the xref table that follows the object list.
@@ -87,12 +118,13 @@ pub fn parse_length(dict: &[u8]) -> Option<usize> {
     digits.parse().ok()
 }
 
-/// Rewrite a stream dictionary's `/Length` to `new_len`.
+/// Write a stream dictionary to `out` with its `/Length` set to `new_len`.
 ///
-/// A dictionary without `/Length` is left unchanged.
-pub fn rewrite_length(dict: &mut Vec<u8>, new_len: usize) {
+/// A dictionary without `/Length` is written unchanged.
+pub fn write_dict_with_length(dict: &[u8], new_len: usize, out: &mut Vec<u8>) {
     let key = b"/Length ";
     let Some(at) = find_subslice(dict, key) else {
+        out.extend_from_slice(dict);
         return;
     };
     let digits_at = at + key.len();
@@ -101,26 +133,25 @@ pub fn rewrite_length(dict: &mut Vec<u8>, new_len: usize) {
             .iter()
             .take_while(|b| b.is_ascii_digit())
             .count();
-    let mut new_dict = dict[..digits_at].to_vec();
-    new_dict.extend_from_slice(new_len.to_string().as_bytes());
-    new_dict.extend_from_slice(&dict[digits_end..]);
-    *dict = new_dict;
+    out.extend_from_slice(&dict[..digits_at]);
+    out.extend_from_slice(new_len.to_string().as_bytes());
+    out.extend_from_slice(&dict[digits_end..]);
 }
 
 /// Return the index of `needle` in `haystack`.
 pub fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack.windows(needle.len()).position(|w| w == needle)
+    memmem::find(haystack, needle)
 }
 
 /// Take the next PDF object from `input` and return the remainder.
-fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
+fn take_object(input: &[u8]) -> Result<(&[u8], &[u8]), String> {
     let header_end = object_header_end(input)?;
 
     let Some(stream_keyword) = own_stream_keyword(input, header_end) else {
         let endobj = find_subslice(input, b"\nendobj")
             .ok_or_else(|| "PDF object missing endobj".to_string())?;
         let end = skip_newline(input, endobj + b"\nendobj".len());
-        return Ok((input[..end].to_vec(), &input[end..]));
+        return Ok(input.split_at(end));
     };
 
     let dict = &input[header_end..stream_keyword];
@@ -139,7 +170,7 @@ fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
             "PDF stream missing endobj",
         )?
     };
-    Ok((input[..end].to_vec(), &input[end..]))
+    Ok(input.split_at(end))
 }
 
 /// Return the index of the `stream` keyword belonging to this object.
@@ -147,13 +178,23 @@ fn take_object(input: &[u8]) -> Result<(Vec<u8>, &[u8]), String> {
 /// A later object's stream must not be claimed by this one, so a `stream`
 /// keyword only counts when it precedes the first `endobj`. The keyword of a
 /// stream object always precedes its own `endobj`, including when a compressed
-/// payload happens to contain the `endobj` bytes.
+/// payload happens to contain the `endobj` bytes. Stopping at whichever
+/// keyword comes first keeps a plain object from scanning ahead to the next
+/// stream, and a stream object from scanning its own payload.
 fn own_stream_keyword(input: &[u8], header_end: usize) -> Option<usize> {
-    let stream_at = find_subslice(&input[header_end..], b"\nstream\n")? + header_end;
-    match find_subslice(input, b"\nendobj") {
-        Some(endobj_at) if endobj_at < stream_at => None,
-        _ => Some(stream_at),
-    }
+    memchr_iter(b'\n', &input[header_end..])
+        .map(|at| header_end + at)
+        .find_map(|at| {
+            let rest = &input[at..];
+            if rest.starts_with(b"\nstream\n") {
+                Some(Some(at))
+            } else if rest.starts_with(b"\nendobj") {
+                Some(None)
+            } else {
+                None
+            }
+        })
+        .flatten()
 }
 
 /// Return the index just past the `N 0 obj` header line of `input`.
@@ -213,8 +254,8 @@ fn skip_newline(input: &[u8], at: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{
-        find_subslice, find_xref_offset, parse_catalog_id, parse_length, rewrite_length,
-        serialize_pdf, split_objects, PDF_HEADER,
+        find_subslice, find_xref_offset, parse_catalog_id, parse_length, serialize_pdf,
+        split_objects, write_dict_with_length, PDF_HEADER,
     };
 
     #[test]
@@ -266,7 +307,7 @@ mod tests {
         let body = b"1 0 obj\n<< /Length 5 >>\nstream\nBT ET\nendstream\nendobj\n";
         let objects = split_objects(body).expect("objects");
         assert_eq!(objects.len(), 1);
-        assert_eq!(objects[0], body.to_vec());
+        assert_eq!(objects[0], &body[..]);
     }
 
     #[test]
@@ -322,25 +363,25 @@ mod tests {
     }
 
     #[test]
-    /// Assert `/Length` is rewritten in place, keeping the rest of the dictionary.
+    /// Assert `/Length` is rewritten, keeping the rest of the dictionary.
     fn rewrites_stream_length() {
-        let mut dict = b"<< /Length 7 /Type /X >>".to_vec();
-        rewrite_length(&mut dict, 1234);
-        assert_eq!(dict, b"<< /Length 1234 /Type /X >>".to_vec());
+        let mut out = Vec::new();
+        write_dict_with_length(b"<< /Length 7 /Type /X >>", 1234, &mut out);
+        assert_eq!(out, b"<< /Length 1234 /Type /X >>".to_vec());
     }
 
     #[test]
-    /// Assert a dictionary without `/Length` is left unchanged.
+    /// Assert a dictionary without `/Length` is written unchanged.
     fn rewrite_without_length_is_a_no_op() {
-        let mut dict = b"<< /Type /X >>".to_vec();
-        rewrite_length(&mut dict, 10);
-        assert_eq!(dict, b"<< /Type /X >>".to_vec());
+        let mut out = Vec::new();
+        write_dict_with_length(b"<< /Type /X >>", 10, &mut out);
+        assert_eq!(out, b"<< /Type /X >>".to_vec());
     }
 
     #[test]
     /// Assert serialization writes a header, xref entry per object, and trailer.
     fn serializes_header_xref_and_trailer() {
-        let objects = vec![b"1 0 obj\n<< >>\nendobj\n".to_vec()];
+        let objects: [&[u8]; 1] = [b"1 0 obj\n<< >>\nendobj\n"];
         let pdf = serialize_pdf(&objects, 1);
         assert!(pdf.starts_with(PDF_HEADER), "{pdf:?}");
         let text = String::from_utf8_lossy(&pdf);
@@ -353,10 +394,7 @@ mod tests {
     #[test]
     /// Assert each xref entry holds the object's byte offset.
     fn xref_entries_hold_object_offsets() {
-        let objects = vec![
-            b"1 0 obj\n<< >>\nendobj\n".to_vec(),
-            b"2 0 obj\n<< >>\nendobj\n".to_vec(),
-        ];
+        let objects: [&[u8]; 2] = [b"1 0 obj\n<< >>\nendobj\n", b"2 0 obj\n<< >>\nendobj\n"];
         let pdf = serialize_pdf(&objects, 1);
         let text = String::from_utf8_lossy(&pdf);
         for (index, object) in objects.iter().enumerate() {
@@ -371,13 +409,13 @@ mod tests {
     #[test]
     /// Assert splitting and reserializing a document round-trips its objects.
     fn split_and_serialize_round_trip() {
-        let objects = vec![
-            b"1 0 obj\n<< /Type /Catalog >>\nendobj\n".to_vec(),
-            b"2 0 obj\n<< /Length 5 >>\nstream\nBT ET\nendstream\nendobj\n".to_vec(),
+        let objects: [&[u8]; 2] = [
+            b"1 0 obj\n<< /Type /Catalog >>\nendobj\n",
+            b"2 0 obj\n<< /Length 5 >>\nstream\nBT ET\nendstream\nendobj\n",
         ];
         let pdf = serialize_pdf(&objects, 1);
         let body = &pdf[PDF_HEADER.len()..find_xref_offset(&pdf).expect("xref")];
-        assert_eq!(split_objects(body).expect("objects"), objects);
+        assert_eq!(split_objects(body).expect("objects"), objects.to_vec());
     }
 
     #[test]
