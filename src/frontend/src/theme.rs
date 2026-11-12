@@ -6,6 +6,7 @@ use crate::constants::{
     DAY_TEXT_MUTED, DAY_TEXT_STROKE, DAY_TEXT_SUBTLE, NIGHT_CSS, TEXT, TEXT_FILL, TEXT_MUTED,
     TEXT_STROKE, TEXT_SUBTLE,
 };
+use crate::utils::template::fill_placeholders;
 use std::cell::Cell;
 
 thread_local! {
@@ -132,17 +133,18 @@ pub fn apply_document_theme(theme: ColorTheme) {
 }
 
 /// Fill export-template placeholders for the current color theme.
-///
-/// `{{THEME_CSS}}` is replaced before `{{THEME}}` because the latter is a
-/// prefix of the former.
 pub fn fill_export_template(template: &str, title: &str, body_html: &str) -> String {
     let theme = current_theme();
-    template
-        .replace("{{THEME_CSS}}", theme.css())
-        .replace("{{PAGE_BG}}", theme.palette().bg_2)
-        .replace("{{THEME}}", theme.as_attr())
-        .replace("{{TITLE}}", title)
-        .replace("{{BODY}}", body_html)
+    fill_placeholders(
+        template,
+        &[
+            ("THEME_CSS", theme.css()),
+            ("PAGE_BG", theme.palette().bg_2),
+            ("THEME", theme.as_attr()),
+            ("TITLE", title),
+            ("BODY", body_html),
+        ],
+    )
 }
 
 /// Restore `current_theme` when dropped. Used by tests that switch theme.
