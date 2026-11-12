@@ -35,11 +35,7 @@ pub fn parse_path_geometry(svg: &str) -> HashMap<String, String> {
 /// sits just above a mostly horizontal edge and just right of a mostly
 /// vertical one. Returns an empty string for an edge without a label, and the
 /// element unchanged when the referenced path cannot be resolved.
-pub fn flatten_edge_label(
-    element: &str,
-    paths: &HashMap<String, String>,
-    fonts: &HashMap<String, usize>,
-) -> String {
+pub fn flatten_edge_label(element: &str, paths: &HashMap<String, String>) -> String {
     let Some(path_at) = element.find("<textPath") else {
         return element.to_string();
     };
@@ -61,7 +57,7 @@ pub fn flatten_edge_label(
     else {
         return element.to_string();
     };
-    let font_size = label_font_size(open, fonts);
+    let font_size = label_font_size(open);
     let gap = font_size * GRAPHVIZ_EDGE_LABEL_GAP;
     let (x, y) = mid.point;
     if mid.dir.1.abs() > mid.dir.0.abs() {
@@ -72,34 +68,17 @@ pub fn flatten_edge_label(
     }
 }
 
-/// Parse the `.aN` CSS font-size classes layout-rs emits, keyed by class name.
-pub fn parse_font_classes(svg: &str) -> HashMap<String, usize> {
-    let mut fonts = HashMap::new();
-    let mut rest = svg;
-    while let Some(at) = rest.find(".a") {
-        rest = &rest[at + 2..];
-        let size: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
-        if size.is_empty() {
-            continue;
-        }
-        if let Ok(px) = size.parse::<usize>() {
-            fonts.insert(format!("a{size}"), px);
-        }
-    }
-    fonts
-}
-
 /// Flatten one `<text>` element into one `<text>` per label line.
 ///
 /// Returns an empty string for a label with no text content, and the element
 /// unchanged when it has no `x`/`y` position to lay lines out from.
-pub fn flatten_node_label(element: &str, fonts: &HashMap<String, usize>) -> String {
+pub fn flatten_node_label(element: &str) -> String {
     let gt = element.find('>').unwrap_or(element.len());
     let open = &element[..gt];
     let (Some(x), Some(y)) = (svg_attr_f64(open, "x"), svg_attr_f64(open, "y")) else {
         return element.to_string();
     };
-    let font_size = label_font_size(open, fonts);
+    let font_size = label_font_size(open);
 
     let lines = tspan_lines(&element[gt + 1..]);
     if lines.is_empty() {
@@ -120,9 +99,13 @@ pub fn flatten_node_label(element: &str, fonts: &HashMap<String, usize>) -> Stri
 }
 
 /// Return the font size of a label from its CSS class, else the default size.
-fn label_font_size(open_tag: &str, fonts: &HashMap<String, usize>) -> f64 {
+///
+/// layout-rs names each font class `a{font_size}`, so the size is read from the
+/// class name instead of from the `<style>` rules.
+fn label_font_size(open_tag: &str) -> f64 {
     svg_attr(open_tag, "class")
-        .and_then(|class| fonts.get(class).copied())
+        .and_then(|class| class.strip_prefix('a'))
+        .and_then(|size| size.parse::<usize>().ok())
         .unwrap_or(DEFAULT_FONT_SIZE) as f64
 }
 
@@ -181,7 +164,7 @@ fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
 #[cfg(test)]
 mod tests {
     use super::{
-        flatten_edge_label, flatten_node_label, line_baseline, parse_font_classes,
+        flatten_edge_label, flatten_node_label, line_baseline,
         parse_path_geometry, tspan_lines, BASELINE_FROM_CENTER, GRAPHVIZ_LABEL_FONT_FAMILY,
     };
     use crate::constants::TEXT;
@@ -207,7 +190,6 @@ mod tests {
         let html = flatten_edge_label(
             r##"<text><textPath href="#arrow0" startOffset="50%" class="a14">hi</textPath></text>"##,
             &edge_paths("arrow0", "M 0 50 L 100 50"),
-            &HashMap::from([("a14".to_string(), 14)]),
         );
         assert!(!html.contains("textPath"), "{html}");
         assert!(html.contains("text-anchor=\"middle\""), "{html}");
@@ -222,7 +204,6 @@ mod tests {
         let html = flatten_edge_label(
             r##"<text><textPath href="#arrow0" class="a14">hi</textPath></text>"##,
             &edge_paths("arrow0", "M 10 0 L 10 100"),
-            &HashMap::from([("a14".to_string(), 14)]),
         );
         assert!(html.contains("text-anchor=\"start\""), "{html}");
         assert!(html.contains("x=\"13.5\""), "{html}");
@@ -238,7 +219,6 @@ mod tests {
         let html = flatten_edge_label(
             r##"<text><textPath href="#arrow0" class="a14"></textPath></text>"##,
             &edge_paths("arrow0", "M 0 0 L 1 0"),
-            &HashMap::new(),
         );
         assert_eq!(html, "");
     }
@@ -247,18 +227,14 @@ mod tests {
     /// Assert a label whose path cannot be resolved is left untouched.
     fn unresolved_edge_label_is_unchanged() {
         let element = r##"<text><textPath href="#missing">hi</textPath></text>"##;
-        assert_eq!(
-            flatten_edge_label(element, &HashMap::new(), &HashMap::new()),
-            element
-        );
+        assert_eq!(flatten_edge_label(element, &HashMap::new()), element);
     }
 
     #[test]
-    /// Assert `.aN` style rules become font sizes keyed by class name.
-    fn parses_font_size_classes() {
-        let fonts = parse_font_classes(".a14 { font-size: 14px } .a20 { font-size: 20px }");
-        assert_eq!(fonts.get("a14"), Some(&14));
-        assert_eq!(fonts.get("a20"), Some(&20));
+    /// Assert the font size is read from the layout-rs `aN` class name.
+    fn font_size_comes_from_class_name() {
+        let html = flatten_node_label(r#"<text x="1" y="2" class="a20">A</text>"#);
+        assert!(html.contains("font-size=\"20px\""), "{html}");
     }
 
     #[test]
@@ -310,9 +286,7 @@ mod tests {
     #[test]
     /// Assert a flattened label inlines fill, font family, and font size.
     fn flattened_label_inlines_paint_and_font() {
-        let mut fonts = HashMap::new();
-        fonts.insert("a14".to_string(), 14);
-        let html = flatten_node_label(r#"<text x="10" y="20" class="a14">A</text>"#, &fonts);
+        let html = flatten_node_label(r#"<text x="10" y="20" class="a14">A</text>"#);
         assert!(html.contains(&format!("fill=\"{TEXT}\"")), "{html}");
         assert!(html.contains("font-size=\"14px\""), "{html}");
         assert!(
@@ -326,7 +300,7 @@ mod tests {
     #[test]
     /// Assert an unknown class falls back to the default font size.
     fn unknown_class_uses_default_font_size() {
-        let html = flatten_node_label(r#"<text x="1" y="2" class="zz">A</text>"#, &HashMap::new());
+        let html = flatten_node_label(r#"<text x="1" y="2" class="zz">A</text>"#);
         assert!(html.contains("font-size=\"14px\""), "{html}");
     }
 
@@ -334,16 +308,13 @@ mod tests {
     /// Assert a label with no position is left untouched.
     fn label_without_position_is_unchanged() {
         let element = "<text>A</text>";
-        assert_eq!(flatten_node_label(element, &HashMap::new()), element);
+        assert_eq!(flatten_node_label(element), element);
     }
 
     #[test]
     /// Assert an empty label is dropped rather than emitted as an empty element.
     fn empty_label_is_dropped() {
-        assert_eq!(
-            flatten_node_label(r#"<text x="1" y="2"></text>"#, &HashMap::new()),
-            ""
-        );
+        assert_eq!(flatten_node_label(r#"<text x="1" y="2"></text>"#), "");
     }
 
     #[test]
@@ -351,7 +322,6 @@ mod tests {
     fn node_label_markup_is_escaped() {
         let html = flatten_node_label(
             r#"<text x="1" y="2"><tspan x="1">a</text><b>&amp;</tspan></text>"#,
-            &HashMap::new(),
         );
         assert!(!html.contains("<b>"), "{html}");
         assert!(
@@ -366,7 +336,6 @@ mod tests {
         let html = flatten_edge_label(
             r##"<text><textPath href="#arrow0">a<b> &lt;</textPath></text>"##,
             &edge_paths("arrow0", "M 0 0 L 100 0"),
-            &HashMap::new(),
         );
         assert!(html.contains(">a&lt;b&gt; &lt;</text>"), "{html}");
     }

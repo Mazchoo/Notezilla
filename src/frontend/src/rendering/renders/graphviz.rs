@@ -1,7 +1,7 @@
 //! Renders a Graphviz DOT block to inline SVG.
 
 use super::graphviz_label::{
-    flatten_edge_label, flatten_node_label, parse_font_classes, parse_path_geometry,
+    flatten_edge_label, flatten_node_label, parse_path_geometry,
 };
 use super::marker_arrow::expand_path_markers;
 use super::render_error::render_error_html;
@@ -55,13 +55,12 @@ impl RenderPdf for GraphvizRender {}
 /// after recoloring so they take the palette stroke.
 fn prepare_svg(raw: &str) -> String {
     let body = strip_marker_defs(strip_xml_declaration(raw));
-    let fonts = parse_font_classes(&body);
     let paths = parse_path_geometry(&body);
     let labeled = rewrite_text_elements(&body, |element| {
         if element.contains("<textPath") {
-            flatten_edge_label(element, &paths, &fonts)
+            flatten_edge_label(element, &paths)
         } else {
-            flatten_node_label(element, &fonts)
+            flatten_node_label(element)
         }
     });
     expand_path_markers(&recolor_default_paints(&labeled))
