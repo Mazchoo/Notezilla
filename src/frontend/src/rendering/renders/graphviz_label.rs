@@ -22,7 +22,7 @@ pub fn parse_path_geometry(svg: &str) -> HashMap<String, String> {
         let end = rest.find('>').unwrap_or(rest.len());
         let open = &rest[..end];
         if let (Some(id), Some(d)) = (svg_attr(open, "id"), svg_attr(open, "d")) {
-            paths.insert(id, d);
+            paths.insert(id.to_string(), d.to_string());
         }
         rest = &rest[end..];
     }
@@ -122,7 +122,7 @@ pub fn flatten_node_label(element: &str, fonts: &HashMap<String, usize>) -> Stri
 /// Return the font size of a label from its CSS class, else the default size.
 fn label_font_size(open_tag: &str, fonts: &HashMap<String, usize>) -> f64 {
     svg_attr(open_tag, "class")
-        .and_then(|class| fonts.get(&class).copied())
+        .and_then(|class| fonts.get(class).copied())
         .unwrap_or(DEFAULT_FONT_SIZE) as f64
 }
 

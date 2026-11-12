@@ -68,16 +68,16 @@ fn expand_element_markers(element: &str) -> String {
     let Some(geometry) = svg_attr(element, "d") else {
         return out;
     };
-    let Some(ends) = path_ends(&geometry) else {
+    let Some(ends) = path_ends(geometry) else {
         return out;
     };
     let stroke = svg_attr(element, "stroke");
-    if let Some(url) = marker_end.as_deref() {
-        let color = marker_color(url, stroke.as_deref());
+    if let Some(url) = marker_end {
+        let color = marker_color(url, stroke);
         out.push_str(&arrow_polygon(ends.end, ends.end_dir, &color));
     }
-    if let Some(url) = marker_start.as_deref() {
-        let color = marker_color(url, stroke.as_deref());
+    if let Some(url) = marker_start {
+        let color = marker_color(url, stroke);
         // The start arrowhead points back out of the path.
         let direction = (-ends.start_dir.0, -ends.start_dir.1);
         out.push_str(&arrow_polygon(ends.start, direction, &color));

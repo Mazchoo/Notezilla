@@ -1,7 +1,7 @@
 //! Reads and removes attributes on a single SVG element string.
 
 /// Return the quoted value of attribute `name` in the SVG element `tag`.
-pub fn svg_attr(tag: &str, name: &str) -> Option<String> {
+pub fn svg_attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let bytes = tag.as_bytes();
     let mut at = 0;
     while let Some(rel) = tag.get(at..)?.find(name) {
@@ -11,7 +11,7 @@ pub fn svg_attr(tag: &str, name: &str) -> Option<String> {
             continue;
         }
         if let Some((from, to)) = quoted_value_span(bytes, at) {
-            return Some(tag[from..to].to_string());
+            return Some(&tag[from..to]);
         }
     }
     None
@@ -77,20 +77,20 @@ mod tests {
     fn reads_double_quoted_value() {
         assert_eq!(
             svg_attr(r#"<text x="10" y="20""#, "x"),
-            Some("10".to_string())
+            Some("10")
         );
     }
 
     #[test]
     /// Assert a single-quoted attribute value is read.
     fn reads_single_quoted_value() {
-        assert_eq!(svg_attr("<text x='10'", "x"), Some("10".to_string()));
+        assert_eq!(svg_attr("<text x='10'", "x"), Some("10"));
     }
 
     #[test]
     /// Assert whitespace around `=` does not prevent a read.
     fn reads_value_with_spaces_around_equals() {
-        assert_eq!(svg_attr(r#"<text x = "10""#, "x"), Some("10".to_string()));
+        assert_eq!(svg_attr(r#"<text x = "10""#, "x"), Some("10"));
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
     fn does_not_read_name_inside_another_value() {
         assert_eq!(
             svg_attr(r#"<text y="x='1'" x="2""#, "x"),
-            Some("2".to_string())
+            Some("2")
         );
     }
 
@@ -113,7 +113,7 @@ mod tests {
     fn does_not_match_name_suffix_after_letter() {
         assert_eq!(
             svg_attr(r#"<ellipse rx="5" x="1""#, "x"),
-            Some("1".to_string())
+            Some("1")
         );
     }
 
@@ -128,7 +128,7 @@ mod tests {
     fn reads_hyphenated_name() {
         assert_eq!(
             svg_attr(r#"<text font-size="14px""#, "font-size"),
-            Some("14px".to_string())
+            Some("14px")
         );
     }
 
@@ -137,7 +137,7 @@ mod tests {
     fn skips_name_without_value_and_keeps_scanning() {
         assert_eq!(
             svg_attr(r##"<path stroke-width="2" stroke="#fff""##, "stroke"),
-            Some("#fff".to_string())
+            Some("#fff")
         );
     }
 

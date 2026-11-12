@@ -45,20 +45,20 @@ pub fn flatten_label(element: &str) -> String {
         return element.to_string();
     };
     let font_size = svg_attr(open, "font-size")
-        .and_then(|value| parse_font_px(&value))
+        .and_then(parse_font_px)
         .unwrap_or(DEFAULT_FONT_SIZE as f64);
     let anchor = svg_attr(open, "text-anchor")
-        .map(|value| escape_svg_text(&value))
+        .map(escape_svg_text)
         .unwrap_or_else(|| "middle".to_string());
     let fill = svg_attr(open, "fill")
-        .map(|value| escape_svg_text(&value))
+        .map(escape_svg_text)
         .unwrap_or_else(|| TEXT.to_string());
     let style = LabelStyle {
         font_size,
         anchor: &anchor,
         fill: &fill,
-        bold: svg_attr(open, "font-weight").as_deref() == Some("bold"),
-        italic: svg_attr(open, "font-style").as_deref() == Some("italic"),
+        bold: svg_attr(open, "font-weight") == Some("bold"),
+        italic: svg_attr(open, "font-style") == Some("italic"),
     };
 
     let mut out = String::new();
@@ -175,8 +175,8 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
                 y: y_cursor,
                 runs: vec![LabelRun {
                     text,
-                    bold: svg_attr(open, "font-weight").as_deref() == Some("bold"),
-                    italic: svg_attr(open, "font-style").as_deref() == Some("italic"),
+                    bold: svg_attr(open, "font-weight") == Some("bold"),
+                    italic: svg_attr(open, "font-style") == Some("italic"),
                 }],
             });
         }
