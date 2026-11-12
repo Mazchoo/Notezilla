@@ -7,7 +7,7 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
-    format_save_summary, mcp_status_title, save_failed_toast, with_hotkey,
+    format_save_summary, mcp_status_title, save_failed_toast, with_hotkey, CLOSE_ALL_TITLE,
     EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU,
     EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
     MCP_STATUS_LABEL, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE,
@@ -94,6 +94,11 @@ pub fn append_new_file(state: &AppState) {
         }
         FileTreeBackend::Notes.insert_in_editor(list, entry);
     });
+}
+
+/// Close every open editor entry, notes and templates alike.
+pub fn close_all_entries(state: &AppState) {
+    state.entries.update(|list: &mut Vec<EditorEntry>| list.clear());
 }
 
 /// Open the OS file picker for markdown import.
@@ -222,6 +227,11 @@ pub fn TopBar() -> impl IntoView {
         append_new_file(&state_new);
     };
 
+    let state_close_all = state.clone();
+    let on_close_all = move |_| {
+        close_all_entries(&state_close_all);
+    };
+
     let state_toggle = state.clone();
     let on_toggle_markdown_editing = move |_| {
         toggle_markdown_editing(&state_toggle);
@@ -318,6 +328,14 @@ pub fn TopBar() -> impl IntoView {
             >
                 {NEW_FILE_BUTTON}
             </button>
+            // Close All — removes every open entry from the editor.
+            <button
+                class="activity-btn top-bar-close-all"
+                title=CLOSE_ALL_TITLE
+                on:click=on_close_all
+            >
+                <Icon icon=id::LuX/>
+            </button>
             // MCP backend status — probed at startup; refresh probes again.
             <div class="mcp-status">
                 <span
@@ -403,6 +421,21 @@ mod tests {
             append_new_file(&state);
             let added = state.entries.get_untracked()[1];
             assert!(!added.content.focused.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert close-all removes every open entry, including templates.
+    fn close_all_entries_empties_the_editor() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            append_new_file(&state);
+            let mut tmpl = EditorEntry::new("./t.md", "tmpl");
+            tmpl.backend = FileTreeBackend::Templates;
+            state.entries.update(|list| list.push(tmpl));
+            close_all_entries(&state);
+            assert!(state.entries.get_untracked().is_empty());
         });
     }
 

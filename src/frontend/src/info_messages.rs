@@ -26,6 +26,7 @@ pub const NEW_FILE_BUTTON: &str = "＋";
 pub const SWITCH_TO_DAY_TITLE: &str = "Switch to day theme";
 pub const SWITCH_TO_NIGHT_TITLE: &str = "Switch to night theme";
 pub const THEME_SLIDER_ARIA: &str = "Night and day theme";
+pub const CLOSE_ALL_TITLE: &str = "Close all open notes";
 pub const MCP_STATUS_LABEL: &str = "MCP";
 pub const MCP_AVAILABLE_TITLE: &str = "MCP backend available";
 pub const MCP_UNAVAILABLE_TITLE: &str = "MCP backend unavailable";

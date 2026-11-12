@@ -44,11 +44,15 @@ html, body {
   flex-shrink: 0;
 }
 .theme-slider:hover { color: var(--text); }
+.top-bar-close-all {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .mcp-status {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-left: auto;
+  margin-left: 0.25rem;
   flex-shrink: 0;
 }
 .theme-slider svg { width: 16px; height: 16px; }
