@@ -1,4 +1,6 @@
 pub const DEFAULT_MARKDOWN_PATH: &str = "./example_folder/new_markdown.md";
+/// Editor path for a blank template created from the templates tree.
+pub const NEW_TEMPLATE_PATH: &str = "./new_template.md";
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;

@@ -209,11 +209,12 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
 }
 .file-tree-heading {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
+  gap: 0.125rem;
 }
-.file-tree-heading .menu-label { margin: 0; }
+.file-tree-heading .menu-label { margin: 0 auto 0 0; min-width: 0; }
 .file-tree-new-folder {
   width: 22px;
   height: 22px;

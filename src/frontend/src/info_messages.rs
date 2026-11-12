@@ -39,6 +39,7 @@ pub const TEMPLATES_HEADING: &str = "TEMPLATE MARKDOWN RESPONSES";
 pub const NOTE_FOLDER_ROOT_LABEL: &str = "note folder root";
 pub const TEMPLATE_FOLDER_ROOT_LABEL: &str = "template folder root";
 pub const NEW_FOLDER_TITLE: &str = "New folder";
+pub const NEW_TEMPLATE_TITLE: &str = "New template";
 pub const CREATE_FOLDER_SEPARATORS_TOAST: &str =
     "Create folder failed: name cannot contain path separators";
 pub const RENAME_SEPARATORS_TOAST: &str = "Rename failed: name cannot contain path separators";

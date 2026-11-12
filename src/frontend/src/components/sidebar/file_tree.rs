@@ -10,12 +10,12 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::new_folder_modal::{NewFolderModal, NewFolderModalCtrl};
 use crate::components::sidebar::rename_modal::{RenameModal, RenameModalCtrl};
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::constants::DRAG_MIME;
+use crate::constants::{DRAG_MIME, NEW_TEMPLATE_PATH};
 use crate::info_messages::{
     create_folder_failed_toast, created_folder_toast, delete_failed_toast,
     delete_folder_failed_toast, deleted_folder_toast, deleted_toast, move_failed_toast,
     moved_toast, rename_failed_toast, renamed_toast, CREATE_FOLDER_SEPARATORS_TOAST,
-    NEW_FOLDER_TITLE, RENAME_SEPARATORS_TOAST,
+    NEW_FOLDER_TITLE, NEW_TEMPLATE_TITLE, RENAME_SEPARATORS_TOAST,
 };
 use crate::models::block::EditorEntry;
 use crate::models::note::DirectoryContents;
@@ -168,6 +168,18 @@ fn on_drop_at(
 /// Open the new-folder modal for a folder at the tree root.
 fn open_root_new_folder(ctrl: NewFolderModalCtrl) {
     ctrl.open(String::new());
+}
+
+/// Open a blank template in the editor, replacing any open template.
+fn open_new_template(state: &AppState) {
+    let editing_enabled = state.markdown_editing_enabled.get_untracked();
+    state.entries.update(|list: &mut Vec<EditorEntry>| {
+        let entry = EditorEntry::empty(NEW_TEMPLATE_PATH);
+        if editing_enabled {
+            entry.content.focused.set(true);
+        }
+        FileTreeBackend::Templates.open_in_editor(list, entry);
+    });
 }
 
 /// Create a new folder under `parent_path` via the MCP backend.
@@ -344,6 +356,23 @@ pub fn FileTree(
         ev.stop_propagation();
         open_root_new_folder(new_folder_ctrl);
     };
+    let new_template_button = (backend == FileTreeBackend::Templates).then(|| {
+        let state = state.clone();
+        view! {
+            <button
+                class="file-tree-new-folder"
+                type="button"
+                title=NEW_TEMPLATE_TITLE
+                on:click=move |ev: web_sys::MouseEvent| {
+                    ev.prevent_default();
+                    ev.stop_propagation();
+                    open_new_template(&state);
+                }
+            >
+                <Icon icon=id::LuFilePlus/>
+            </button>
+        }
+    });
 
     view! {
         <div
@@ -353,6 +382,7 @@ pub fn FileTree(
         >
             <div class="file-tree-heading px-2 mt-2">
                 <p class="menu-label">{heading}</p>
+                {new_template_button}
                 <button
                     class="file-tree-new-folder"
                     type="button"
@@ -728,6 +758,25 @@ mod tests {
             let ctrl = NewFolderModalCtrl::new();
             open_root_new_folder(ctrl);
             assert_eq!(ctrl.parent_path.get_untracked().as_deref(), Some(""));
+        });
+    }
+
+    #[test]
+    /// Assert a new template opens blank and focused, replacing any open template.
+    fn open_new_template_replaces_open_template() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            open_new_template(&state);
+            open_new_template(&state);
+            let entries = state.entries.get_untracked();
+            assert_eq!(entries.len(), 2);
+            assert_eq!(entries[0].backend, FileTreeBackend::Notes);
+            let tmpl = entries[1];
+            assert_eq!(tmpl.backend, FileTreeBackend::Templates);
+            assert_eq!(tmpl.title.path.get_untracked(), NEW_TEMPLATE_PATH);
+            assert_eq!(tmpl.content.text.get_untracked(), "");
+            assert!(tmpl.content.focused.get_untracked());
         });
     }
 }
