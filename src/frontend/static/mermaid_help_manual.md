@@ -317,17 +317,7 @@ flowchart LR
 
 Nodes can trigger browser events, open URLs in new tabs, or display hover tooltips:
 
-```mermaid
-flowchart LR
-    GH["GitHub Repository"]
-    DOCS["Official Mermaid Docs"]
-
-    %% Syntax: click NodeID "URL" "Tooltip" Target
-    click GH "https://github.com/mermaid-js/mermaid" "Visit Mermaid on GitHub" _blank
-    click DOCS "https://mermaid.js.org/" "Open Documentation" _blank
-
-    GH --> DOCS
-```
+> **Not supported yet.** `click` statements (hyperlinks, tooltips and callbacks) are not supported by the diagram renderer. A flowchart that contains a `click` line will fail to render, so leave them out for now.
 
 ### Markdown String Formatting & FontAwesome Icons
 
@@ -655,17 +645,15 @@ stateDiagram-v2
 
     state Operational {
         [*] --> NormalMode
-        NormalMode --> DegradedMode : Error Rate > 5%
-        DegradedMode --> NormalMode : Health Restored
-        
+        NormalMode --> ReadOnly : Error Rate > 5%
+        ReadOnly --> NormalMode : Health Restored
+
         state DegradedMode {
-            [*] --> ReadOnly
             ReadOnly --> CacheOnly : DB Unreachable
         }
     }
 
     Operational --> Maintenance : Admin Command
-    Maintenance --> Operational : Maintenance Complete
 ```
 
 ### Choice, Fork, & Join Pseudo-States
