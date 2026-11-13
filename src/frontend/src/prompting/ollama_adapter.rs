@@ -1,7 +1,13 @@
-use crate::constants::{OLLAMA_GENERATE_PATH, OLLAMA_HOST, OLLAMA_TAGS_PATH};
+use crate::constants::{
+    CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE, OLLAMA_GENERATE_PATH, OLLAMA_HOST, OLLAMA_TAGS_PATH,
+};
 use crate::default_settings::{
     DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_TEMPERATURE,
     DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
+};
+use crate::info_messages::{
+    body_read_error, http_status_error, network_error, ollama_ready_log, ollama_unreachable_log,
+    parse_error, serialize_error, OLLAMA_MISSING_RESPONSE_ERROR,
 };
 use gloo_net::http::Request;
 use leptos::prelude::{Effect, Get, RwSignal, Set};
@@ -78,34 +84,26 @@ fn generate_request_body(model: &str, prompt: &str, options: &GenerateOptions) -
 
 /// Parse `/api/tags` and return installed model names.
 fn parse_model_names(body: &str) -> Result<Vec<String>, String> {
-    let parsed: TagsResponse =
-        serde_json::from_str(body).map_err(|e| format!("Parse error: {e}"))?;
+    let parsed: TagsResponse = serde_json::from_str(body).map_err(parse_error)?;
     Ok(parsed.models.into_iter().map(|m| m.name).collect())
 }
 
 /// Parse a non-streaming `/api/generate` body and return the completion text.
 fn parse_generate_response(body: &str) -> Result<String, String> {
-    let parsed: GenerateResponse =
-        serde_json::from_str(body).map_err(|e| format!("Parse error: {e}"))?;
+    let parsed: GenerateResponse = serde_json::from_str(body).map_err(parse_error)?;
     if let Some(error) = parsed.error.filter(|e| !e.is_empty()) {
         return Err(error);
     }
     parsed
         .response
-        .ok_or_else(|| "Missing response in Ollama body".to_string())
+        .ok_or_else(|| OLLAMA_MISSING_RESPONSE_ERROR.to_string())
 }
 
 /// GET `url` and return the response body when the status is 2xx.
 async fn ollama_get(url: &str) -> Result<String, String> {
-    let response = Request::get(url)
-        .send()
-        .await
-        .map_err(|e| format!("Network error: {e}"))?;
+    let response = Request::get(url).send().await.map_err(network_error)?;
     let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Body read error: {e}"))?;
+    let body = response.text().await.map_err(body_read_error)?;
     if !(200..300).contains(&status) {
         return Err(http_error(status, &body));
     }
@@ -115,17 +113,14 @@ async fn ollama_get(url: &str) -> Result<String, String> {
 /// POST JSON to `url` and return the response body when the status is 2xx.
 async fn ollama_post_json(url: &str, body: &Value) -> Result<String, String> {
     let response = Request::post(url)
-        .header("Content-Type", "application/json")
+        .header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE)
         .json(body)
-        .map_err(|e| format!("Serialize error: {e}"))?
+        .map_err(serialize_error)?
         .send()
         .await
-        .map_err(|e| format!("Network error: {e}"))?;
+        .map_err(network_error)?;
     let status = response.status();
-    let text = response
-        .text()
-        .await
-        .map_err(|e| format!("Body read error: {e}"))?;
+    let text = response.text().await.map_err(body_read_error)?;
     if !(200..300).contains(&status) {
         return Err(http_error(status, &text));
     }
@@ -139,7 +134,7 @@ fn http_error(status: u16, body: &str) -> String {
             return error;
         }
     }
-    format!("HTTP {status}")
+    http_status_error(status)
 }
 
 /// GET `/api/tags` on `port` and return the body when it is a tags payload.
@@ -147,16 +142,6 @@ async fn fetch_tags_body(port: u16) -> Result<String, String> {
     let body = ollama_get(&ollama_url(port, OLLAMA_TAGS_PATH)).await?;
     parse_model_names(&body)?;
     Ok(body)
-}
-
-/// Return the console message for a successful Ollama connection.
-fn ollama_ready_log(port: u16) -> String {
-    format!("Ollama connection ready: {}", ollama_base_url(port))
-}
-
-/// Return the console warning when Ollama cannot be reached.
-fn ollama_unreachable_log(error: &str) -> String {
-    format!("Ollama unreachable: {error}")
 }
 
 /// Probe whether the Ollama HTTP API on `port` responds with `/api/tags`.
@@ -171,7 +156,7 @@ pub fn probe_ollama(port: RwSignal<u16>, available: RwSignal<bool>) {
         spawn_local(async move {
             match check_connection(port).await {
                 Ok(()) => {
-                    web_sys::console::log_1(&ollama_ready_log(port).into());
+                    web_sys::console::log_1(&ollama_ready_log(&ollama_base_url(port)).into());
                     available.set(true);
                 }
                 Err(e) => {
@@ -213,7 +198,7 @@ mod tests {
     /// Assert a successful Ollama probe logs the loopback origin and port.
     fn ollama_ready_log_names_the_loopback_origin() {
         assert_eq!(
-            ollama_ready_log(DEFAULT_OLLAMA_PORT),
+            ollama_ready_log(&ollama_base_url(DEFAULT_OLLAMA_PORT)),
             format!(
                 "Ollama connection ready: {}",
                 ollama_base_url(DEFAULT_OLLAMA_PORT)

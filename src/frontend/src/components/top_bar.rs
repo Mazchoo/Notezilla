@@ -7,11 +7,12 @@ use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
-    format_save_summary, mcp_status_title, save_failed_toast, with_hotkey, CLOSE_ALL_TITLE,
-    EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE, EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU,
-    EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
-    MCP_STATUS_LABEL, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE,
-    SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
+    format_save_summary, mcp_status_title, save_failed_toast, saved_log, with_hotkey,
+    APP_STATE_MISSING_PANIC, CLOSE_ALL_TITLE, EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE,
+    EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE,
+    IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE, MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL,
+    NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE,
+    THEME_SLIDER_ARIA,
 };
 use crate::mcp::client::probe_mcp;
 use crate::models::block::EditorEntry;
@@ -42,7 +43,7 @@ pub fn save_all_entries(state: &AppState) {
     let sid = match state.session_id.get_untracked() {
         Some(s) => s,
         None => {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             return;
         }
     };
@@ -60,7 +61,7 @@ pub fn save_all_entries(state: &AppState) {
         for (backend, path, contents, fields) in items {
             match backend.upsert(&sid, &path, &contents, fields).await {
                 Ok(result) => {
-                    web_sys::console::log_1(&format!("Saved {path}").into());
+                    web_sys::console::log_1(&saved_log(&path).into());
                     if result.new_file_created {
                         created += 1;
                     } else {
@@ -68,7 +69,7 @@ pub fn save_all_entries(state: &AppState) {
                     }
                 }
                 Err(e) => {
-                    web_sys::console::error_1(&format!("Save failed for {path}: {e}").into());
+                    web_sys::console::error_1(&save_failed_toast(&path, &e).into());
                     errors.push(save_failed_toast(&path, e));
                 }
             }
@@ -98,7 +99,9 @@ pub fn append_new_file(state: &AppState) {
 
 /// Close every open editor entry, notes and templates alike.
 pub fn close_all_entries(state: &AppState) {
-    state.entries.update(|list: &mut Vec<EditorEntry>| list.clear());
+    state
+        .entries
+        .update(|list: &mut Vec<EditorEntry>| list.clear());
 }
 
 /// Open the OS file picker for markdown import.
@@ -169,7 +172,7 @@ pub fn set_color_theme(state: &AppState, theme: ColorTheme) {
 /// Render the top-bar import, save, export, edit-toggle, and new-file actions.
 #[component]
 pub fn TopBar() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let entries = state.entries;
     let toast = state.toast;
     let save_hotkey_key = state.save_hotkey_key;

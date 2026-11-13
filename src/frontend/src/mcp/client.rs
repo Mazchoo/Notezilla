@@ -1,6 +1,13 @@
 use crate::components::toast::show_mcp_warnings;
-use crate::constants::MCP_URL;
-use crate::info_messages::BACKEND_NO_RESPONSE_TOAST;
+use crate::constants::{
+    ACCEPT_HEADER, CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE, MCP_ACCEPT, MCP_SESSION_HEADER,
+    MCP_TOOL_ERROR_PREFIX, MCP_TOOL_SUCCESS, MCP_URL,
+};
+use crate::info_messages::{
+    body_read_error, mcp_init_failed_warning, mcp_ready_log, network_error, rpc_error,
+    serialize_error, sse_parse_error, unexpected_result_shape_error, unexpected_tool_message_error,
+    BACKEND_NO_RESPONSE_TOAST, MCP_EMPTY_RESULT_ERROR, MCP_MISSING_SESSION_HEADER_ERROR,
+};
 use gloo_net::http::Request;
 use leptos::prelude::{GetUntracked, RwSignal, Set};
 use leptos::task::spawn_local;
@@ -30,11 +37,6 @@ fn parse_sse(body: &str) -> Option<JsonRpcResponse> {
     None
 }
 
-/// Return the console message for a successful MCP initialize.
-fn mcp_ready_log(id: &str) -> String {
-    format!("MCP session ready: {id}")
-}
-
 /// Probe MCP, store the session ID when initialize succeeds, and record availability.
 ///
 /// Skips the call while a probe is already in flight.
@@ -55,9 +57,7 @@ pub fn probe_mcp(
                 mcp_available.set(true);
             }
             Err(e) => {
-                web_sys::console::warn_1(
-                    &format!("MCP init failed: {e}. Search will be unavailable.").into(),
-                );
+                web_sys::console::warn_1(&mcp_init_failed_warning(e).into());
                 mcp_available.set(false);
             }
         }
@@ -79,27 +79,27 @@ pub async fn initialize_session() -> Result<String, String> {
     });
 
     let response = Request::post(MCP_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream")
+        .header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE)
+        .header(ACCEPT_HEADER, MCP_ACCEPT)
         .json(&body)
-        .map_err(|e| format!("Serialize error: {e}"))?
+        .map_err(serialize_error)?
         .send()
         .await
-        .map_err(|e| format!("Network error: {e}"))?;
+        .map_err(network_error)?;
 
     let session_id = response
         .headers()
         .entries()
-        .find(|(name, _)| name.eq_ignore_ascii_case("mcp-session-id"))
+        .find(|(name, _)| name.eq_ignore_ascii_case(MCP_SESSION_HEADER))
         .map(|(_, value)| value)
-        .ok_or_else(|| "No mcp-session-id header in initialize response".to_string())?;
+        .ok_or_else(|| MCP_MISSING_SESSION_HEADER_ERROR.to_string())?;
 
     // Fire-and-forget notifications/initialized
     let notify = json!({ "jsonrpc": "2.0", "method": "notifications/initialized" });
     if let Ok(req) = Request::post(MCP_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream")
-        .header("mcp-session-id", &session_id)
+        .header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE)
+        .header(ACCEPT_HEADER, MCP_ACCEPT)
+        .header(MCP_SESSION_HEADER, &session_id)
         .json(&notify)
     {
         spawn_local(async move {
@@ -126,36 +126,33 @@ pub async fn call_tool(
     });
 
     let response = Request::post(MCP_URL)
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json, text/event-stream")
-        .header("mcp-session-id", session_id)
+        .header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE)
+        .header(ACCEPT_HEADER, MCP_ACCEPT)
+        .header(MCP_SESSION_HEADER, session_id)
         .json(&body)
-        .map_err(|e| format!("Serialize error: {e}"))?
+        .map_err(serialize_error)?
         .send()
         .await
-        .map_err(|e| format!("Network error: {e}"))?;
+        .map_err(network_error)?;
 
-    let text = response
-        .text()
-        .await
-        .map_err(|e| format!("Body read error: {e}"))?;
+    let text = response.text().await.map_err(body_read_error)?;
 
     if text.trim().is_empty() {
         return Err(BACKEND_NO_RESPONSE_TOAST.to_string());
     }
 
-    let rpc = parse_sse(&text).ok_or_else(|| format!("Could not parse SSE body: {text:?}"))?;
+    let rpc = parse_sse(&text).ok_or_else(|| sse_parse_error(&text))?;
 
     if let Some(err) = rpc.error {
-        return Err(format!("RPC error: {err}"));
+        return Err(rpc_error(err));
     }
 
-    let result = rpc.result.ok_or("Empty RPC result")?;
+    let result = rpc.result.ok_or(MCP_EMPTY_RESULT_ERROR)?;
 
     let message = result
         .pointer("/content/0/text")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Unexpected result shape: {result}"))?;
+        .ok_or_else(|| unexpected_result_shape_error(&result))?;
 
     let structured = result
         .get("structuredContent")
@@ -163,12 +160,12 @@ pub async fn call_tool(
         .unwrap_or_else(|| json!({}));
     show_mcp_warnings(&warnings_from_structured(&structured));
 
-    if let Some(error_message) = message.strip_prefix("Error: ") {
+    if let Some(error_message) = message.strip_prefix(MCP_TOOL_ERROR_PREFIX) {
         return Err(error_message.to_string());
     }
 
-    if message != "Success" {
-        return Err(format!("Unexpected tool message: {message}"));
+    if message != MCP_TOOL_SUCCESS {
+        return Err(unexpected_tool_message_error(message));
     }
 
     Ok(structured)

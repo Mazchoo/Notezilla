@@ -2,7 +2,7 @@ use crate::components::top_bar::{
     append_new_file, export_all_as_html, open_import_picker, save_all_entries,
     toggle_markdown_editing,
 };
-use crate::info_messages::CTRL_HOTKEY_PREFIX;
+use crate::info_messages::{APP_STATE_MISSING_PANIC, CTRL_HOTKEY_PREFIX};
 use crate::state::AppState;
 use leptos::ev;
 use leptos::prelude::*;
@@ -31,7 +31,7 @@ pub fn format_ctrl_hotkey(key: char) -> String {
 /// Bind global Ctrl/Meta hotkeys for save, new file, import, export, and edit toggle.
 #[component]
 pub fn GlobalHotkeys() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
 
     let handle = window_event_listener(ev::keydown, move |ev: web_sys::KeyboardEvent| {
         if !(ev.ctrl_key() || ev.meta_key()) || ev.alt_key() {

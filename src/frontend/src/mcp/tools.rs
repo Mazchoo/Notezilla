@@ -1,4 +1,5 @@
 use super::client::call_tool;
+use crate::info_messages::{file_not_found_error, parse_error, MCP_MISSING_NOTES_ERROR};
 use crate::models::note::{DirectoryContents, NoteFile, SyncDifference};
 use serde_json::{json, Value};
 
@@ -11,9 +12,9 @@ fn notes_from_structured(val: &Value) -> Result<Vec<NoteFile>, String> {
     let notes = val
         .get("notes")
         .cloned()
-        .ok_or_else(|| "Missing notes in MCP response".to_string())?;
+        .ok_or_else(|| MCP_MISSING_NOTES_ERROR.to_string())?;
 
-    serde_json::from_value(notes).map_err(|e| format!("Parse error: {e}"))
+    serde_json::from_value(notes).map_err(parse_error)
 }
 
 /// Search notes via the MCP `search_notes` tool.
@@ -127,7 +128,7 @@ pub async fn rename_dir(session_id: &str, path: &str, new_name: &str) -> Result<
 pub async fn get_dir_contents(session_id: &str, path: &str) -> Result<DirectoryContents, String> {
     let val = call_tool(session_id, "get_dir_contents", json!({ "path": path })).await?;
 
-    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+    serde_json::from_value(val).map_err(parse_error)
 }
 
 /// Fetch a note via the MCP `get_note` tool.
@@ -147,7 +148,7 @@ pub async fn get_template_dir_contents(
     )
     .await?;
 
-    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+    serde_json::from_value(val).map_err(parse_error)
 }
 
 /// Fetch a template file via the MCP `get_template` tool.
@@ -210,7 +211,7 @@ pub async fn rename_template_dir(
 pub async fn get_database_sync_difference(session_id: &str) -> Result<SyncDifference, String> {
     let val = call_tool(session_id, "get_database_sync_difference", json!({})).await?;
 
-    serde_json::from_value(val).map_err(|e| format!("Parse error: {e}"))
+    serde_json::from_value(val).map_err(parse_error)
 }
 
 /// Write one database-only note to disk via the MCP `restore_db_only_note` tool.
@@ -269,13 +270,11 @@ async fn get_markdown_file(session_id: &str, tool: &str, path: &str) -> Result<N
     let notes = val
         .get("notes")
         .and_then(|v| v.as_array())
-        .ok_or_else(|| "Missing notes in MCP response".to_string())?;
+        .ok_or_else(|| MCP_MISSING_NOTES_ERROR.to_string())?;
 
-    let item = notes
-        .first()
-        .ok_or_else(|| format!("File not found at '{path}'"))?;
+    let item = notes.first().ok_or_else(|| file_not_found_error(path))?;
 
-    serde_json::from_value(item.clone()).map_err(|e| format!("Parse error: {e}"))
+    serde_json::from_value(item.clone()).map_err(parse_error)
 }
 
 #[cfg(test)]

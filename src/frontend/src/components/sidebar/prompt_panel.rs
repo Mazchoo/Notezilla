@@ -2,11 +2,12 @@ use crate::components::file_io::{display_note_path, normalize_note_path};
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::info_messages::{
     gemini_send_failed_toast, gemini_status_title, ollama_send_failed_toast, ollama_status_title,
-    prompt_response_saved_toast, save_failed_toast, CLIPBOARD_COPY_FAILED_TOAST, COPY_BUTTON,
-    COPY_PROMPT_TITLE, ENTER_GEMINI_API_KEY_TOAST, ENTER_GEMINI_MODEL_TOAST,
-    ENTER_OLLAMA_MODEL_TOAST, ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL,
-    MCP_SESSION_NOT_READY_TOAST, OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING,
-    PROMPT_OUTPUT_PATH_TITLE, PROMPT_PLACEHOLDER, SEND_BUTTON,
+    prompt_response_saved_toast, save_failed_toast, write_failed_log, APP_STATE_MISSING_PANIC,
+    CLIPBOARD_COPY_FAILED_TOAST, CLIPBOARD_NO_WINDOW_ERROR, COPY_BUTTON, COPY_PROMPT_TITLE,
+    ENTER_GEMINI_API_KEY_TOAST, ENTER_GEMINI_MODEL_TOAST, ENTER_OLLAMA_MODEL_TOAST,
+    ENTER_OUTPUT_PATH_TOAST, ENTER_PROMPT_TOAST, GEMINI_STATUS_LABEL, MCP_SESSION_NOT_READY_TOAST,
+    OLLAMA_STATUS_LABEL, PROMPT_COPIED_TOAST, PROMPT_HEADING, PROMPT_OUTPUT_PATH_TITLE,
+    PROMPT_PLACEHOLDER, SEND_BUTTON,
 };
 use crate::mcp::tools::upsert_note;
 use crate::prompting::{build_prompt, send_gemini_prompt, send_prompt, GenerateOptions};
@@ -36,7 +37,7 @@ fn copy_text_to_clipboard(
     error_toast: RwSignal<Option<String>>,
 ) {
     let Some(window) = web_sys::window() else {
-        web_sys::console::error_1(&"Clipboard unavailable: no window".into());
+        web_sys::console::error_1(&CLIPBOARD_NO_WINDOW_ERROR.into());
         show_error_toast(error_toast, CLIPBOARD_COPY_FAILED_TOAST);
         return;
     };
@@ -85,7 +86,7 @@ fn prompt_save_path(raw: &str) -> Option<String> {
 /// Render the Send prompt form: prompt text, copy, output path, and send.
 #[component]
 pub fn PromptPanel() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let prompt_text = state.prompt_text;
     let prompt_output_path = state.prompt_output_path;
     let ollama_available = state.ollama_available;
@@ -111,7 +112,7 @@ pub fn PromptPanel() -> impl IntoView {
             return;
         };
         let Some(session_id) = state_send.session_id.get_untracked() else {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             show_error_toast(state_send.error_toast, MCP_SESSION_NOT_READY_TOAST);
             return;
         };
@@ -177,7 +178,7 @@ pub fn PromptPanel() -> impl IntoView {
             return;
         };
         let Some(session_id) = state_send_gemini.session_id.get_untracked() else {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             show_error_toast(state_send_gemini.error_toast, MCP_SESSION_NOT_READY_TOAST);
             return;
         };
@@ -307,7 +308,7 @@ async fn write_prompt_response(
             show_toast(toast, prompt_response_saved_toast(&display_note_path(path)));
         }
         Err(e) => {
-            web_sys::console::error_1(&format!("Write failed for {path}: {e}").into());
+            web_sys::console::error_1(&write_failed_log(path, &e).into());
             show_error_toast(error_toast, save_failed_toast(path, e));
         }
     }

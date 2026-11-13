@@ -1,5 +1,6 @@
 use crate::components::file_io::refresh::on_file_change_notify;
 use crate::constants::FILE_CHANGE_EVENTS_URL;
+use crate::info_messages::EVENT_STREAM_OPEN_FAILED_WARNING;
 use crate::state::AppState;
 use std::cell::RefCell;
 use wasm_bindgen::closure::Closure;
@@ -14,7 +15,7 @@ thread_local! {
 /// Open a standing EventSource and refresh the GUI on each file-change ping.
 pub fn listen_file_changes(state: AppState) {
     let Ok(source) = EventSource::new(FILE_CHANGE_EVENTS_URL) else {
-        web_sys::console::warn_1(&"Could not open file-change event stream".into());
+        web_sys::console::warn_1(&EVENT_STREAM_OPEN_FAILED_WARNING.into());
         return;
     };
 

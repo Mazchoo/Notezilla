@@ -1,6 +1,7 @@
 use crate::default_settings::TOAST_DISMISS_MS;
 use crate::info_messages::{
-    CLIPBOARD_COPY_FAILED_TOAST, ERROR_COPIED_TOAST, ERROR_TOAST_COPY_TITLE,
+    APP_STATE_MISSING_PANIC, CLIPBOARD_COPY_FAILED_TOAST, CLIPBOARD_NO_WINDOW_ERROR,
+    ERROR_COPIED_TOAST, ERROR_TOAST_COPY_TITLE,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
@@ -42,7 +43,7 @@ fn error_toast_copy_feedback(succeeded: bool) -> &'static str {
 /// Copy an error toast without replacing the error message on failure.
 fn copy_error_toast_text(text: String, toast: RwSignal<Option<String>>) {
     let Some(window) = web_sys::window() else {
-        web_sys::console::error_1(&"Clipboard unavailable: no window".into());
+        web_sys::console::error_1(&CLIPBOARD_NO_WINDOW_ERROR.into());
         show_toast(toast, error_toast_copy_feedback(false));
         return;
     };
@@ -119,7 +120,7 @@ fn set_timed_toast(toast: RwSignal<Option<String>>, message: impl Into<String>) 
 /// Render stacked error, warning, and status toast messages.
 #[component]
 pub fn Toast() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let toast = state.toast;
     let warning_toast = state.warning_toast;
     let error_toast = state.error_toast;

@@ -2,6 +2,7 @@ use crate::components::{
     activity_bar::ActivityBar, diagram_modal::DiagramModal, editor::Editor, hotkeys::GlobalHotkeys,
     sidebar::Sidebar, toast::Toast, top_bar::TopBar,
 };
+use crate::info_messages::APP_STATE_MISSING_PANIC;
 use crate::state::AppState;
 use leptos::prelude::*;
 
@@ -9,7 +10,7 @@ use leptos::prelude::*;
 #[component]
 pub fn AppShell() -> impl IntoView {
     let export_progress = use_context::<AppState>()
-        .expect("AppState not provided")
+        .expect(APP_STATE_MISSING_PANIC)
         .export_progress;
 
     view! {

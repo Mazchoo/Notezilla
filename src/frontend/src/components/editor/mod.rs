@@ -2,6 +2,7 @@ pub mod actions;
 pub mod block;
 pub mod edit_area;
 
+use crate::info_messages::APP_STATE_MISSING_PANIC;
 use crate::state::AppState;
 use block::EditorEntryComponent;
 use leptos::prelude::*;
@@ -9,7 +10,7 @@ use leptos::prelude::*;
 /// Render every open editor entry in the main pane.
 #[component]
 pub fn Editor() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let entries = state.entries;
 
     view! {

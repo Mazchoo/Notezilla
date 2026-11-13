@@ -30,6 +30,7 @@ pub const CLOSE_ALL_TITLE: &str = "Close all open notes";
 pub const MCP_STATUS_LABEL: &str = "MCP";
 pub const MCP_AVAILABLE_TITLE: &str = "MCP backend available";
 pub const MCP_UNAVAILABLE_TITLE: &str = "MCP backend unavailable";
+pub const NO_BACKEND_TITLE: &str = "No backend available";
 pub const MCP_REFRESH_TITLE: &str = "Probe the MCP backend again";
 
 // --- File tree ---
@@ -206,6 +207,140 @@ pub const CLOSE_DIAGRAM_TITLE: &str = "Close (Esc)";
 pub const ERROR_TOAST_COPY_TITLE: &str = "Click to copy";
 pub const ERROR_COPIED_TOAST: &str = "Copied error";
 
+// --- Errors and console logs ---
+
+pub const APP_STATE_MISSING_PANIC: &str = "AppState not provided";
+pub const APP_STATE_OWNER_PANIC: &str =
+    "AppState::new must be called within a reactive Owner scope";
+pub const CHAR_BOUNDARY_PANIC: &str = "byte index is a boundary";
+pub const CLIPBOARD_NO_WINDOW_ERROR: &str = "Clipboard unavailable: no window";
+pub const EVENT_STREAM_OPEN_FAILED_WARNING: &str = "Could not open file-change event stream";
+pub const MCP_MISSING_NOTES_ERROR: &str = "Missing notes in MCP response";
+pub const MCP_MISSING_SESSION_HEADER_ERROR: &str =
+    "No mcp-session-id header in initialize response";
+pub const MCP_EMPTY_RESULT_ERROR: &str = "Empty RPC result";
+pub const OLLAMA_MISSING_RESPONSE_ERROR: &str = "Missing response in Ollama body";
+pub const GEMINI_MISSING_NAME_ERROR: &str = "Missing name in Gemini model body";
+pub const GEMINI_MISSING_TEXT_ERROR: &str = "Missing text in Gemini body";
+pub const FILE_READER_UNAVAILABLE_ERROR: &str = "FileReader not available";
+pub const FILE_READER_RESULT_UNAVAILABLE_ERROR: &str = "FileReader result unavailable";
+pub const FILE_READER_RESULT_NOT_STRING_ERROR: &str = "FileReader result is not a string";
+pub const FILE_READ_FAILED_ERROR: &str = "Failed to read file";
+pub const FILE_READ_START_FAILED_ERROR: &str = "Failed to start reading file";
+pub const PDF_ROOT_NOT_FOUND_ERROR: &str = "PDF trailer Root not found";
+pub const PDF_ROOT_ID_MISSING_ERROR: &str = "PDF trailer Root id missing";
+pub const PDF_ROOT_ID_NOT_NUMBER_ERROR: &str = "PDF trailer Root id is not a number";
+
+/// Return the error text when a response body fails to deserialize.
+pub fn parse_error(error: impl std::fmt::Display) -> String {
+    format!("Parse error: {error}")
+}
+
+/// Return the error text when a request body fails to serialize.
+pub fn serialize_error(error: impl std::fmt::Display) -> String {
+    format!("Serialize error: {error}")
+}
+
+/// Return the error text when a request cannot be sent.
+pub fn network_error(error: impl std::fmt::Display) -> String {
+    format!("Network error: {error}")
+}
+
+/// Return the error text when a response body cannot be read.
+pub fn body_read_error(error: impl std::fmt::Display) -> String {
+    format!("Body read error: {error}")
+}
+
+/// Return the error text for a non-2xx HTTP status.
+pub fn http_status_error(status: u16) -> String {
+    format!("HTTP {status}")
+}
+
+/// Return the error text when the backend has no file at `path`.
+pub fn file_not_found_error(path: &str) -> String {
+    format!("File not found at '{path}'")
+}
+
+/// Return the console message for a successful MCP initialize.
+pub fn mcp_ready_log(id: &str) -> String {
+    format!("MCP session ready: {id}")
+}
+
+/// Return the console warning when the MCP initialize handshake fails.
+pub fn mcp_init_failed_warning(error: impl std::fmt::Display) -> String {
+    format!("MCP init failed: {error}. Backend panels will be unavailable.")
+}
+
+/// Return the error text when an MCP response body has no JSON-RPC payload.
+pub fn sse_parse_error(body: &str) -> String {
+    format!("Could not parse SSE body: {body:?}")
+}
+
+/// Return the error text for a JSON-RPC error object.
+pub fn rpc_error(error: impl std::fmt::Display) -> String {
+    format!("RPC error: {error}")
+}
+
+/// Return the error text when a tool result lacks the expected content.
+pub fn unexpected_result_shape_error(result: impl std::fmt::Display) -> String {
+    format!("Unexpected result shape: {result}")
+}
+
+/// Return the error text when a tool replies with neither success nor error.
+pub fn unexpected_tool_message_error(message: &str) -> String {
+    format!("Unexpected tool message: {message}")
+}
+
+/// Return the console message for a successful Ollama connection.
+pub fn ollama_ready_log(base_url: &str) -> String {
+    format!("Ollama connection ready: {base_url}")
+}
+
+/// Return the console warning when Ollama cannot be reached.
+pub fn ollama_unreachable_log(error: &str) -> String {
+    format!("Ollama unreachable: {error}")
+}
+
+/// Return the console message for a successful Gemini connection.
+pub fn gemini_ready_log(origin: &str) -> String {
+    format!("Gemini connection ready: {origin}")
+}
+
+/// Return the console warning when Gemini cannot be reached.
+pub fn gemini_unreachable_log(error: &str) -> String {
+    format!("Gemini unreachable: {error}")
+}
+
+/// Return the console message after saving `path`.
+pub fn saved_log(path: &str) -> String {
+    format!("Saved {path}")
+}
+
+/// Return the console error when writing `path` fails.
+pub fn write_failed_log(path: &str, error: impl std::fmt::Display) -> String {
+    format!("Write failed for {path}: {error}")
+}
+
+/// Return the console error when moving `src` to `dst` fails.
+pub fn move_failed_log(src: &str, dst: &str, error: impl std::fmt::Display) -> String {
+    format!("Move failed for {src} → {dst}: {error}")
+}
+
+/// Return the console error when renaming `path` to `new_name` fails.
+pub fn rename_failed_log(path: &str, new_name: &str, error: impl std::fmt::Display) -> String {
+    format!("Rename failed for {path} → {new_name}: {error}")
+}
+
+/// Return the console warning when an open note cannot be refreshed.
+pub fn refresh_failed_warning(path: &str, error: impl std::fmt::Display) -> String {
+    format!("Could not refresh {path}: {error}")
+}
+
+/// Return the console warning when front matter YAML cannot be parsed on save.
+pub fn yaml_parse_failed_warning(error: impl std::fmt::Display) -> String {
+    format!("YAML parse failed, saving without front matter fields: {error}")
+}
+
 // --- Formatted messages ---
 
 const FILE_SINGULAR: &str = "file";
@@ -239,6 +374,15 @@ pub fn mcp_status_title(available: bool) -> &'static str {
     }
 }
 
+/// Return an activity button's tooltip, or the no-backend notice when it is disabled.
+pub fn panel_title(title: &'static str, disabled: bool) -> &'static str {
+    if disabled {
+        NO_BACKEND_TITLE
+    } else {
+        title
+    }
+}
+
 /// Return the title for the Gemini availability badge.
 pub fn gemini_status_title(available: bool) -> &'static str {
     if available {
@@ -260,7 +404,7 @@ pub fn gemini_send_failed_toast(error: impl std::fmt::Display) -> String {
 
 /// Return the toast text after writing the prompt response to `path`.
 pub fn prompt_response_saved_toast(path: &str) -> String {
-    format!("Saved {path}")
+    saved_log(path)
 }
 
 /// Return a count with the matching singular or plural file noun.
@@ -425,6 +569,16 @@ mod tests {
     fn mcp_status_title_marks_available_or_unavailable() {
         assert_eq!(mcp_status_title(true), MCP_AVAILABLE_TITLE);
         assert_eq!(mcp_status_title(false), MCP_UNAVAILABLE_TITLE);
+    }
+
+    #[test]
+    /// Assert a disabled activity button reads as having no backend.
+    fn panel_title_shows_no_backend_when_disabled() {
+        assert_eq!(
+            panel_title(ACTIVITY_SEARCH_TITLE, false),
+            ACTIVITY_SEARCH_TITLE
+        );
+        assert_eq!(panel_title(ACTIVITY_SEARCH_TITLE, true), NO_BACKEND_TITLE);
     }
 
     #[test]

@@ -13,8 +13,9 @@ use crate::components::toast::{show_error_toast, show_toast};
 use crate::constants::{DRAG_MIME, NEW_TEMPLATE_PATH};
 use crate::info_messages::{
     create_folder_failed_toast, created_folder_toast, delete_failed_toast,
-    delete_folder_failed_toast, deleted_folder_toast, deleted_toast, move_failed_toast,
-    moved_toast, rename_failed_toast, renamed_toast, CREATE_FOLDER_SEPARATORS_TOAST,
+    delete_folder_failed_toast, deleted_folder_toast, deleted_toast, move_failed_log,
+    move_failed_toast, moved_toast, rename_failed_log, rename_failed_toast, renamed_toast,
+    APP_STATE_MISSING_PANIC, CREATE_FOLDER_SEPARATORS_TOAST, MCP_SESSION_NOT_READY_TOAST,
     NEW_FOLDER_TITLE, NEW_TEMPLATE_TITLE, RENAME_SEPARATORS_TOAST,
 };
 use crate::models::block::EditorEntry;
@@ -83,7 +84,7 @@ fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: Strin
     let sid = match state.session_id.get_untracked() {
         Some(s) => s,
         None => {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             return;
         }
     };
@@ -122,7 +123,7 @@ fn perform_move(state: &AppState, ctx: FileTreeCtx, dnd: FileTreeDnD, src: Strin
                 show_toast(toast, moved_toast(name, dest_label));
             }
             Err(e) => {
-                web_sys::console::error_1(&format!("Move failed for {src} → {dst}: {e}").into());
+                web_sys::console::error_1(&move_failed_log(&src, &dst, &e).into());
                 show_error_toast(error_toast, move_failed_toast(&src, e));
             }
         }
@@ -196,7 +197,7 @@ fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, n
     let sid = match state.session_id.get_untracked() {
         Some(s) => s,
         None => {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             return;
         }
     };
@@ -214,7 +215,7 @@ fn perform_new_folder(state: &AppState, ctx: FileTreeCtx, parent_path: String, n
                 show_toast(toast, created_folder_toast(&path));
             }
             Err(e) => {
-                web_sys::console::error_1(&format!("Create folder failed for {path}: {e}").into());
+                web_sys::console::error_1(&create_folder_failed_toast(&path, &e).into());
                 show_error_toast(error_toast, create_folder_failed_toast(&path, e));
             }
         }
@@ -247,7 +248,7 @@ fn perform_rename(
     let sid = match state.session_id.get_untracked() {
         Some(s) => s,
         None => {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             return;
         }
     };
@@ -279,9 +280,7 @@ fn perform_rename(
                 show_toast(toast, renamed_toast(&resolved));
             }
             Err(e) => {
-                web_sys::console::error_1(
-                    &format!("Rename failed for {path} → {new_name}: {e}").into(),
-                );
+                web_sys::console::error_1(&rename_failed_log(&path, &new_name, &e).into());
                 show_error_toast(error_toast, rename_failed_toast(&path, e));
             }
         }
@@ -296,7 +295,7 @@ pub fn FileTree(
     root_label: &'static str,
     epoch: RwSignal<u64>,
 ) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let session = state.session_id;
     let dir_contents = RwSignal::new(None::<DirectoryContents>);
     let dnd = FileTreeDnD {
@@ -431,7 +430,7 @@ pub fn FileTree(
 /// Render an expandable folder row and its children.
 #[component]
 fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let ctx = scope.ctx;
     let dnd = scope.dnd;
     let rename_ctrl = scope.rename_ctrl;
@@ -475,7 +474,7 @@ fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
             let sid = match session.get_untracked() {
                 Some(s) => s,
                 None => {
-                    web_sys::console::warn_1(&"MCP session not ready".into());
+                    web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
                     return;
                 }
             };
@@ -487,9 +486,7 @@ fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
                         show_toast(toast, deleted_folder_toast(&path));
                     }
                     Err(e) => {
-                        web_sys::console::error_1(
-                            &format!("Delete folder failed for {path}: {e}").into(),
-                        );
+                        web_sys::console::error_1(&delete_folder_failed_toast(&path, &e).into());
                         show_error_toast(error_toast, delete_folder_failed_toast(&path, e));
                     }
                 }
@@ -631,7 +628,7 @@ fn TreeFolder(name: String, path: String, scope: FileTreeScope) -> AnyView {
 /// Render a file row that opens, renames, deletes, or drags the note.
 #[component]
 fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let ctx = scope.ctx;
     let dnd = scope.dnd;
     let rename_ctrl = scope.rename_ctrl;
@@ -661,7 +658,7 @@ fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
             let sid = match session.get_untracked() {
                 Some(s) => s,
                 None => {
-                    web_sys::console::warn_1(&"MCP session not ready".into());
+                    web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
                     return;
                 }
             };
@@ -673,7 +670,7 @@ fn TreeFile(name: String, path: String, scope: FileTreeScope) -> impl IntoView {
                         show_toast(toast, deleted_toast(&path));
                     }
                     Err(e) => {
-                        web_sys::console::error_1(&format!("Delete failed for {path}: {e}").into());
+                        web_sys::console::error_1(&delete_failed_toast(&path, &e).into());
                         show_error_toast(error_toast, delete_failed_toast(&path, e));
                     }
                 }

@@ -1,6 +1,7 @@
 //! Renders a Mermaid diagram block to inline SVG.
 
 use super::marker_arrow::expand_path_markers;
+use super::mermaid_directive::apply_directives;
 use super::mermaid_label::flatten_label;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
@@ -19,11 +20,12 @@ impl MermaidRender {
     ///
     /// Returns the rusty-mermaid parse error when `source` is not a diagram.
     pub fn render_svg(&self, source: &str) -> Result<String, String> {
-        let theme = diagram_theme();
-        let scene = render(source, &theme).map_err(|e| e.to_string())?;
+        let mut theme = diagram_theme();
+        let source = apply_directives(source, &mut theme);
+        let scene = render(&source, &theme).map_err(|e| e.to_string())?;
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
-        Ok(prepare_svg(&svg, source))
+        Ok(prepare_svg(&svg, &source))
     }
 }
 
@@ -656,6 +658,45 @@ mod tests {
             "{html}"
         );
         assert!(!html.contains("<b>x</b>"), "{html}");
+    }
+
+    #[test]
+    /// Assert a multi-line `init` directive renders instead of failing to parse.
+    fn multiline_init_directive_renders() {
+        let source = "%%{init: {\n  'theme': 'base',\n  'themeVariables': {\n    \
+                      'primaryColor': '#4f46e5'\n  }\n}}%%\nflowchart LR\n    \
+                      Primary[Primary Color Node] --> Secondary[Secondary Color Node]\n";
+        let svg = MermaidRender.render_svg(source).unwrap();
+        assert!(svg.contains("Primary Color Node"), "{svg}");
+    }
+
+    #[test]
+    /// Assert a multi-line directive before `pie` still applies day separators.
+    fn multiline_directive_keeps_pie_detection() {
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        let svg = MermaidRender
+            .render_svg("%%{init: {\n'theme': 'base'\n}}%%\npie\n\"A\" : 1\n\"B\" : 2\n")
+            .unwrap();
+        assert!(!svg.contains("stroke=\"#ffffff\""), "{svg}");
+    }
+
+    #[test]
+    /// Assert `themeVariables` colours reach the rendered SVG.
+    fn init_theme_variables_colour_the_svg() {
+        let source = "%%{init: {
+  'themeVariables': {
+    'primaryColor': '#4f46e5',
+                          'primaryBorderColor': '#312e81',
+    'lineColor': '#f59e0b'
+  }
+}}%%
+                      flowchart LR
+    A[One] --> B[Two]
+";
+        let svg = MermaidRender.render_svg(source).unwrap().to_ascii_lowercase();
+        assert!(svg.contains("fill=\"#4f46e5\""), "{svg}");
+        assert!(svg.contains("stroke=\"#312e81\""), "{svg}");
+        assert!(svg.contains("#f59e0b"), "{svg}");
     }
 
     #[test]

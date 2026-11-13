@@ -11,6 +11,7 @@ use crate::default_settings::{
     DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
     DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
+use crate::info_messages::APP_STATE_OWNER_PANIC;
 use crate::models::{block::EditorEntry, note::NoteFile};
 use crate::theme::ColorTheme;
 use leptos::prelude::*;
@@ -99,8 +100,7 @@ impl AppState {
     /// Construct default application state inside a reactive owner.
     pub fn new() -> Self {
         Self {
-            root_owner: Owner::current()
-                .expect("AppState::new must be called within a reactive Owner scope"),
+            root_owner: Owner::current().expect(APP_STATE_OWNER_PANIC),
             session_id: RwSignal::new(None),
             mcp_available: RwSignal::new(false),
             mcp_probing: RwSignal::new(false),
@@ -156,6 +156,15 @@ impl AppState {
             "activity-btn"
         }
     }
+
+    /// Return the CSS class for an activity button that may be disabled.
+    pub fn panel_btn_class(active: bool, disabled: bool) -> &'static str {
+        if disabled {
+            "activity-btn is-disabled"
+        } else {
+            Self::activity_btn_class(active)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -178,6 +187,20 @@ mod tests {
     fn activity_btn_class_marks_the_active_button() {
         assert_eq!(AppState::activity_btn_class(true), "activity-btn active");
         assert_eq!(AppState::activity_btn_class(false), "activity-btn");
+    }
+
+    #[test]
+    /// Assert a disabled panel button drops `active` and adds `is-disabled`.
+    fn panel_btn_class_marks_disabled_buttons() {
+        assert_eq!(
+            AppState::panel_btn_class(true, false),
+            "activity-btn active"
+        );
+        assert_eq!(AppState::panel_btn_class(false, false), "activity-btn");
+        assert_eq!(
+            AppState::panel_btn_class(true, true),
+            "activity-btn is-disabled"
+        );
     }
 
     #[test]

@@ -1,4 +1,5 @@
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
+use crate::info_messages::MCP_SESSION_NOT_READY_TOAST;
 use crate::models::block::EditorEntry;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -29,7 +30,7 @@ pub fn open_file_at_path(
     let sid = match session.get_untracked() {
         Some(s) => s,
         None => {
-            web_sys::console::warn_1(&"MCP session not ready".into());
+            web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             return;
         }
     };

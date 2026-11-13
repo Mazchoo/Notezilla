@@ -11,7 +11,8 @@ pub mod sync_panel;
 
 use crate::constants::{SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH};
 use crate::info_messages::{
-    NOTES_HEADING, NOTE_FOLDER_ROOT_LABEL, TEMPLATES_HEADING, TEMPLATE_FOLDER_ROOT_LABEL,
+    APP_STATE_MISSING_PANIC, NOTES_HEADING, NOTE_FOLDER_ROOT_LABEL, TEMPLATES_HEADING,
+    TEMPLATE_FOLDER_ROOT_LABEL,
 };
 use crate::state::{ActivePanel, AppState};
 use file_tree::FileTree;
@@ -25,7 +26,7 @@ use sync_panel::SyncPanel;
 /// Render the resizable sidebar and the active files, templates, search, prompt, sync, or settings panel.
 #[component]
 pub fn Sidebar() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let sidebar_width = state.sidebar_width;
     let resizing = RwSignal::new(false);
     let drag_start = RwSignal::new(None::<(i32, f64)>);

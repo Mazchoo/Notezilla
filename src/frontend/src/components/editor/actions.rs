@@ -1,5 +1,7 @@
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::info_messages::{CLIPBOARD_COPY_FAILED_TOAST, MARKDOWN_COPIED_TOAST};
+use crate::info_messages::{
+    CLIPBOARD_COPY_FAILED_TOAST, CLIPBOARD_NO_WINDOW_ERROR, MARKDOWN_COPIED_TOAST,
+};
 use crate::models::block::{EditorEntry, FrontMatterBlock};
 use crate::state::AppState;
 use leptos::prelude::*;
@@ -48,7 +50,7 @@ pub fn copy_markdown(state: &AppState, entry_id: u64) {
         return;
     };
     let Some(window) = web_sys::window() else {
-        web_sys::console::error_1(&"Clipboard unavailable: no window".into());
+        web_sys::console::error_1(&CLIPBOARD_NO_WINDOW_ERROR.into());
         show_error_toast(state.error_toast, CLIPBOARD_COPY_FAILED_TOAST);
         return;
     };

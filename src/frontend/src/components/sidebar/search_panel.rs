@@ -2,8 +2,9 @@ use crate::components::file_io::open_note_at_path;
 use crate::components::toast::show_error_toast;
 use crate::default_settings::DEFAULT_SEARCH_PREVIEW_CHARS;
 use crate::info_messages::{
-    FRONT_MATTER_FILTER_LABEL, FRONT_MATTER_FILTER_PLACEHOLDER, NEXT_BUTTON, PATH_FILTER_LABEL,
-    PATH_FILTER_PLACEHOLDER, PREV_BUTTON, SEARCH_GO_BUTTON, SEARCH_HEADING, SEARCH_PLACEHOLDER,
+    APP_STATE_MISSING_PANIC, FRONT_MATTER_FILTER_LABEL, FRONT_MATTER_FILTER_PLACEHOLDER,
+    MCP_SESSION_NOT_READY_TOAST, NEXT_BUTTON, PATH_FILTER_LABEL, PATH_FILTER_PLACEHOLDER,
+    PREV_BUTTON, SEARCH_GO_BUTTON, SEARCH_HEADING, SEARCH_PLACEHOLDER,
 };
 use crate::mcp::tools::search_by_text;
 use crate::models::note::NoteFile;
@@ -28,7 +29,7 @@ fn run_search(
         Some(s) => s,
         None => {
             if warn_no_session {
-                web_sys::console::warn_1(&"MCP session not ready".into());
+                web_sys::console::warn_1(&MCP_SESSION_NOT_READY_TOAST.into());
             }
             return;
         }
@@ -80,7 +81,7 @@ fn search_on_enter(
 /// Render the note search form, results list, and pagination.
 #[component]
 pub fn SearchPanel() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let query = state.search_query;
     let results = state.search_results;
     let session = state.session_id;

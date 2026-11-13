@@ -9,6 +9,15 @@ pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
 pub const MCP_URL: &str = "/mcp";
 /// SSE stream of filesystem change pings. Proxied by Trunk to the FastMCP backend.
 pub const FILE_CHANGE_EVENTS_URL: &str = "/events";
+pub const CONTENT_TYPE_HEADER: &str = "Content-Type";
+pub const ACCEPT_HEADER: &str = "Accept";
+pub const JSON_CONTENT_TYPE: &str = "application/json";
+pub const MCP_ACCEPT: &str = "application/json, text/event-stream";
+pub const MCP_SESSION_HEADER: &str = "mcp-session-id";
+/// Prefix the MCP server puts on a failed tool's text content.
+pub const MCP_TOOL_ERROR_PREFIX: &str = "Error: ";
+/// Text content the MCP server returns for a successful tool call.
+pub const MCP_TOOL_SUCCESS: &str = "Success";
 /// Loopback host of the local Ollama HTTP API. The TCP port is user-configurable.
 pub const OLLAMA_HOST: &str = "127.0.0.1";
 pub const OLLAMA_TAGS_PATH: &str = "/api/tags";

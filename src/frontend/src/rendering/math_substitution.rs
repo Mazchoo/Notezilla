@@ -4,6 +4,7 @@
 //! parsed as emphasis, and so display math becomes a block-level element.
 
 use super::renders::{MathRender, RenderPdf, RenderTarget};
+use crate::info_messages::CHAR_BOUNDARY_PANIC;
 use math_core::MathDisplay;
 
 /// Render one delimited LaTeX expression for `target`.
@@ -89,7 +90,7 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             }
         }
 
-        let ch = src[i..].chars().next().expect("byte index is a boundary");
+        let ch = src[i..].chars().next().expect(CHAR_BOUNDARY_PANIC);
         out.push(ch);
         i += ch.len_utf8();
     }

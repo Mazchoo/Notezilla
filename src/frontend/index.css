@@ -129,8 +129,8 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
 .activity-btn:hover  { color: var(--text); background: var(--bg-3); }
 .activity-btn.active { color: var(--accent); background: var(--bg-3); }
 .activity-btn svg    { width: 20px; height: 20px; }
-.activity-btn:disabled,
-.activity-btn:disabled:hover { color: var(--text-muted); background: none; opacity: 0.4; cursor: not-allowed; }
+.activity-btn.is-disabled,
+.activity-btn.is-disabled:hover { color: var(--text-muted); background: none; opacity: 0.4; cursor: default; }
 
 /* ── Sidebar panel ─────────────────────────────────────────────── */
 .sidebar-panel {

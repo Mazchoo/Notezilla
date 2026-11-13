@@ -1,7 +1,11 @@
 use super::save::display_note_path;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::toast::show_toast;
-use crate::info_messages::FILE_READ_ERROR_TOAST;
+use crate::info_messages::{
+    FILE_READER_RESULT_NOT_STRING_ERROR, FILE_READER_RESULT_UNAVAILABLE_ERROR,
+    FILE_READER_UNAVAILABLE_ERROR, FILE_READ_ERROR_TOAST, FILE_READ_FAILED_ERROR,
+    FILE_READ_START_FAILED_ERROR,
+};
 use crate::models::block::{split_front_matter, EditorEntry, FrontMatterBlock};
 use leptos::prelude::*;
 use serde_json::Value;
@@ -85,7 +89,7 @@ pub fn load_markdown_file(
     let file_path = display_note_path(&relative_path_from_file(&file));
 
     let Some(reader) = FileReader::new().ok() else {
-        report_file_read_error("FileReader not available", toast, &input);
+        report_file_read_error(FILE_READER_UNAVAILABLE_ERROR, toast, &input);
         return;
     };
     let reader_clone = reader.clone();
@@ -96,12 +100,12 @@ pub fn load_markdown_file(
         let result = match reader_clone.result() {
             Ok(value) => value,
             Err(_) => {
-                report_file_read_error("FileReader result unavailable", toast, &input_onload);
+                report_file_read_error(FILE_READER_RESULT_UNAVAILABLE_ERROR, toast, &input_onload);
                 return;
             }
         };
         let Some(text) = result.as_string() else {
-            report_file_read_error("FileReader result is not a string", toast, &input_onload);
+            report_file_read_error(FILE_READER_RESULT_NOT_STRING_ERROR, toast, &input_onload);
             return;
         };
 
@@ -112,7 +116,7 @@ pub fn load_markdown_file(
     });
 
     let onerror = Closure::once(move || {
-        report_file_read_error("Failed to read file", toast, &input_onerror);
+        report_file_read_error(FILE_READ_FAILED_ERROR, toast, &input_onerror);
     });
 
     reader.set_onload(Some(onload.as_ref().unchecked_ref()));
@@ -121,7 +125,7 @@ pub fn load_markdown_file(
     onerror.forget();
 
     if reader.read_as_text(&file).is_err() {
-        report_file_read_error("Failed to start reading file", toast, &input);
+        report_file_read_error(FILE_READ_START_FAILED_ERROR, toast, &input);
     }
 }
 

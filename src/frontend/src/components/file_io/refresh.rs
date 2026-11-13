@@ -1,6 +1,7 @@
 use super::import::entry_from_note;
 use super::save::normalize_note_path;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
+use crate::info_messages::refresh_failed_warning;
 use crate::models::block::EditorEntry;
 use crate::models::note::NoteFile;
 use crate::state::AppState;
@@ -46,7 +47,7 @@ pub fn on_file_change_notify(state: &AppState) {
             match FileTreeBackend::Notes.get_file(&session_id, &path).await {
                 Ok(note) => apply_fetched_note(entry, &note, &root_owner),
                 Err(e) => {
-                    web_sys::console::warn_1(&format!("Could not refresh {path}: {e}").into());
+                    web_sys::console::warn_1(&refresh_failed_warning(&path, e).into());
                 }
             }
         }

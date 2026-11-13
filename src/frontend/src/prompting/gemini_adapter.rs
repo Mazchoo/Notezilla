@@ -1,5 +1,10 @@
 use crate::constants::{
-    gemini_model_url, GEMINI_API_ORIGIN, GEMINI_GENERATE_CONTENT_ACTION, GEMINI_MODELS_PATH,
+    gemini_model_url, CONTENT_TYPE_HEADER, GEMINI_API_ORIGIN, GEMINI_GENERATE_CONTENT_ACTION,
+    GEMINI_MODELS_PATH, JSON_CONTENT_TYPE,
+};
+use crate::info_messages::{
+    body_read_error, gemini_ready_log, gemini_unreachable_log, http_status_error, network_error,
+    parse_error, serialize_error, GEMINI_MISSING_NAME_ERROR, GEMINI_MISSING_TEXT_ERROR,
 };
 use gloo_net::http::Request;
 use leptos::prelude::{Effect, Get, RwSignal, Set};
@@ -61,19 +66,17 @@ fn generate_request_body(prompt: &str) -> Value {
 
 /// Parse GET `/v1beta/models/{model}` and require a `name` field.
 fn parse_model_metadata(body: &str) -> Result<(), String> {
-    let parsed: ModelMetadata =
-        serde_json::from_str(body).map_err(|e| format!("Parse error: {e}"))?;
+    let parsed: ModelMetadata = serde_json::from_str(body).map_err(parse_error)?;
     parsed
         .name
         .filter(|name| !name.is_empty())
         .map(|_| ())
-        .ok_or_else(|| "Missing name in Gemini model body".to_string())
+        .ok_or_else(|| GEMINI_MISSING_NAME_ERROR.to_string())
 }
 
 /// Parse a `generateContent` body and return concatenated candidate text.
 fn parse_generate_response(body: &str) -> Result<String, String> {
-    let parsed: GenerateResponse =
-        serde_json::from_str(body).map_err(|e| format!("Parse error: {e}"))?;
+    let parsed: GenerateResponse = serde_json::from_str(body).map_err(parse_error)?;
     if let Some(message) = parsed
         .error
         .and_then(|e| e.message)
@@ -92,22 +95,16 @@ fn parse_generate_response(body: &str) -> Result<String, String> {
         .collect::<Vec<_>>()
         .join("");
     if text.is_empty() {
-        return Err("Missing text in Gemini body".to_string());
+        return Err(GEMINI_MISSING_TEXT_ERROR.to_string());
     }
     Ok(text)
 }
 
 /// GET `url` and return the response body when the status is 2xx.
 async fn gemini_get(url: &str) -> Result<String, String> {
-    let response = Request::get(url)
-        .send()
-        .await
-        .map_err(|e| format!("Network error: {e}"))?;
+    let response = Request::get(url).send().await.map_err(network_error)?;
     let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Body read error: {e}"))?;
+    let body = response.text().await.map_err(body_read_error)?;
     if !(200..300).contains(&status) {
         return Err(http_error(status, &body));
     }
@@ -117,17 +114,14 @@ async fn gemini_get(url: &str) -> Result<String, String> {
 /// POST JSON to `url` and return the response body when the status is 2xx.
 async fn gemini_post_json(url: &str, body: &Value) -> Result<String, String> {
     let response = Request::post(url)
-        .header("Content-Type", "application/json")
+        .header(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE)
         .json(body)
-        .map_err(|e| format!("Serialize error: {e}"))?
+        .map_err(serialize_error)?
         .send()
         .await
-        .map_err(|e| format!("Network error: {e}"))?;
+        .map_err(network_error)?;
     let status = response.status();
-    let text = response
-        .text()
-        .await
-        .map_err(|e| format!("Body read error: {e}"))?;
+    let text = response.text().await.map_err(body_read_error)?;
     if !(200..300).contains(&status) {
         return Err(http_error(status, &text));
     }
@@ -145,7 +139,7 @@ fn http_error(status: u16, body: &str) -> String {
             return message;
         }
     }
-    format!("HTTP {status}")
+    http_status_error(status)
 }
 
 /// GET model metadata for `model` and return when the body names a model.
@@ -153,16 +147,6 @@ async fn fetch_model_body(model: &str, api_key: &str) -> Result<String, String> 
     let body = gemini_get(&gemini_model_url(model, api_key)).await?;
     parse_model_metadata(&body)?;
     Ok(body)
-}
-
-/// Return the console message for a successful Gemini connection.
-fn gemini_ready_log() -> String {
-    format!("Gemini connection ready: {GEMINI_API_ORIGIN}")
-}
-
-/// Return the console warning when Gemini cannot be reached.
-fn gemini_unreachable_log(error: &str) -> String {
-    format!("Gemini unreachable: {error}")
 }
 
 /// Probe whether GET `/v1beta/models/{model}` accepts `api_key`.
@@ -182,7 +166,7 @@ pub fn probe_gemini(api_key: RwSignal<String>, model: RwSignal<String>, availabl
             }
             match check_connection(&model, &api_key).await {
                 Ok(()) => {
-                    web_sys::console::log_1(&gemini_ready_log().into());
+                    web_sys::console::log_1(&gemini_ready_log(GEMINI_API_ORIGIN).into());
                     available.set(true);
                 }
                 Err(e) => {
@@ -225,7 +209,7 @@ mod tests {
     /// Assert a successful Gemini probe logs the Generative Language API origin.
     fn gemini_ready_log_names_the_api_origin() {
         assert_eq!(
-            gemini_ready_log(),
+            gemini_ready_log(GEMINI_API_ORIGIN),
             format!("Gemini connection ready: {GEMINI_API_ORIGIN}")
         );
     }

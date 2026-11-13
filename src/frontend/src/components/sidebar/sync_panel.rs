@@ -1,10 +1,10 @@
 use crate::components::toast::show_error_toast;
 use crate::info_messages::{
-    MCP_SESSION_NOT_READY_TOAST, SYNC_CHECKING_LABEL, SYNC_CHECK_TITLE, SYNC_DB_ONLY_HEADING,
-    SYNC_DELETE_ALL_FILES_TITLE, SYNC_DELETE_ALL_FROM_DB_TITLE, SYNC_DELETE_FILE_TITLE,
-    SYNC_DELETE_FROM_DB_TITLE, SYNC_DIR_ONLY_HEADING, SYNC_HEADING, SYNC_NONE_LABEL,
-    SYNC_NOT_CHECKED_LABEL, SYNC_RESTORE_ALL_TO_DB_TITLE, SYNC_RESTORE_ALL_TO_DISK_TITLE,
-    SYNC_RESTORE_TO_DB_TITLE, SYNC_RESTORE_TO_DISK_TITLE,
+    APP_STATE_MISSING_PANIC, MCP_SESSION_NOT_READY_TOAST, SYNC_CHECKING_LABEL, SYNC_CHECK_TITLE,
+    SYNC_DB_ONLY_HEADING, SYNC_DELETE_ALL_FILES_TITLE, SYNC_DELETE_ALL_FROM_DB_TITLE,
+    SYNC_DELETE_FILE_TITLE, SYNC_DELETE_FROM_DB_TITLE, SYNC_DIR_ONLY_HEADING, SYNC_HEADING,
+    SYNC_NONE_LABEL, SYNC_NOT_CHECKED_LABEL, SYNC_RESTORE_ALL_TO_DB_TITLE,
+    SYNC_RESTORE_ALL_TO_DISK_TITLE, SYNC_RESTORE_TO_DB_TITLE, SYNC_RESTORE_TO_DISK_TITLE,
 };
 use crate::mcp::tools::{
     delete_db_only_note, delete_db_only_notes, delete_dir_only_notes, delete_note,
@@ -304,7 +304,7 @@ fn SyncPathList(side: SyncSide, ctx: SyncCtx) -> impl IntoView {
 /// Render the database sync panel: a check button and the db-only and disk-only path lists.
 #[component]
 pub fn SyncPanel() -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let ctx = SyncCtx {
         session: state.session_id,
         error_toast: state.error_toast,

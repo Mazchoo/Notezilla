@@ -1,4 +1,4 @@
-use crate::info_messages::{CLOSE_DIAGRAM_TITLE, DIAGRAM_MODAL_LABEL};
+use crate::info_messages::{APP_STATE_MISSING_PANIC, CLOSE_DIAGRAM_TITLE, DIAGRAM_MODAL_LABEL};
 use crate::state::AppState;
 use icondata as id;
 use leptos::ev;
@@ -33,7 +33,7 @@ pub fn diagram_svg_from_event(ev: &web_sys::MouseEvent) -> Option<String> {
 #[component]
 pub fn DiagramModal() -> impl IntoView {
     let svg = use_context::<AppState>()
-        .expect("AppState not provided")
+        .expect(APP_STATE_MISSING_PANIC)
         .diagram_modal_svg;
 
     let handle = window_event_listener(ev::keydown, move |ev: web_sys::KeyboardEvent| {

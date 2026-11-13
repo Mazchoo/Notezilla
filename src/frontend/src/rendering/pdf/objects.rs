@@ -5,6 +5,9 @@
 //! apart, edited, and written back with a rebuilt xref table and trailer.
 
 use crate::constants::PDF_HEADER;
+use crate::info_messages::{
+    PDF_ROOT_ID_MISSING_ERROR, PDF_ROOT_ID_NOT_NUMBER_ERROR, PDF_ROOT_NOT_FOUND_ERROR,
+};
 use memchr::{memchr_iter, memmem};
 
 /// Parse the catalog object id from a PDF trailer.
@@ -13,14 +16,14 @@ pub fn parse_catalog_id(trailer: &[u8]) -> Result<usize, String> {
     let marker = "/Root ";
     let start = text
         .find(marker)
-        .ok_or_else(|| "PDF trailer Root not found".to_string())?
+        .ok_or_else(|| PDF_ROOT_NOT_FOUND_ERROR.to_string())?
         + marker.len();
     text[start..]
         .split_whitespace()
         .next()
-        .ok_or_else(|| "PDF trailer Root id missing".to_string())?
+        .ok_or_else(|| PDF_ROOT_ID_MISSING_ERROR.to_string())?
         .parse()
-        .map_err(|_| "PDF trailer Root id is not a number".to_string())
+        .map_err(|_| PDF_ROOT_ID_NOT_NUMBER_ERROR.to_string())
 }
 
 /// Split a PDF body into slices of its individual objects.

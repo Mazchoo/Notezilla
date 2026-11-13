@@ -6,8 +6,8 @@ use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
 };
 use crate::info_messages::{
-    ADD_FRONTMATTER_TITLE, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE, DELETE_BLOCK_TITLE,
-    DELETE_FRONT_MATTER_TITLE, EXPAND_SECTION_TITLE,
+    ADD_FRONTMATTER_TITLE, APP_STATE_MISSING_PANIC, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE,
+    DELETE_BLOCK_TITLE, DELETE_FRONT_MATTER_TITLE, EXPAND_SECTION_TITLE,
 };
 use crate::models::block::{EditorEntry, FrontMatterBlock, MarkdownBlock, TitleBlock};
 use crate::state::AppState;
@@ -49,7 +49,7 @@ pub fn TitleBlockComponent(
     entry_id: u64,
     front_matter: RwSignal<Option<FrontMatterBlock>>,
 ) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let input_ref = NodeRef::<Input>::new();
 
     // Focus the input when entering edit mode.
@@ -181,7 +181,7 @@ pub fn TitleBlockComponent(
 /// Render YAML front matter as a key-value table or editable textarea.
 #[component]
 pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let textarea_ref = NodeRef::<Textarea>::new();
     let enter_scroll_top = RwSignal::new(None::<i32>);
 
@@ -263,7 +263,7 @@ pub fn FrontMatterBlockComponent(block: FrontMatterBlock, entry_id: u64) -> impl
 /// Render a markdown block in view mode or as an editable textarea.
 #[component]
 pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
-    let state = use_context::<AppState>().expect("AppState not provided");
+    let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
     let markdown_editing_enabled = state.markdown_editing_enabled;
     let color_theme = state.color_theme;
     let textarea_ref = NodeRef::<Textarea>::new();

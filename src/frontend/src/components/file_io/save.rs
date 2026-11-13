@@ -1,3 +1,4 @@
+use crate::info_messages::yaml_parse_failed_warning;
 use crate::models::block::EditorEntry;
 use leptos::prelude::GetUntracked;
 use serde_json::{json, Value};
@@ -27,9 +28,7 @@ fn yaml_to_fields(raw: &str) -> Value {
     match serde_yaml::from_str::<Value>(raw) {
         Ok(v) => v,
         Err(e) => {
-            web_sys::console::warn_1(
-                &format!("YAML parse failed, saving without front matter fields: {e}").into(),
-            );
+            web_sys::console::warn_1(&yaml_parse_failed_warning(e).into());
             json!({})
         }
     }
