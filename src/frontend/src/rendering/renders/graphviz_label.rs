@@ -164,8 +164,8 @@ fn tspan_lines(inner: &str) -> Vec<(Option<f64>, String)> {
 #[cfg(test)]
 mod tests {
     use super::{
-        flatten_edge_label, flatten_node_label, line_baseline,
-        parse_path_geometry, tspan_lines, BASELINE_FROM_CENTER, GRAPHVIZ_LABEL_FONT_FAMILY,
+        flatten_edge_label, flatten_node_label, line_baseline, parse_path_geometry, tspan_lines,
+        BASELINE_FROM_CENTER, GRAPHVIZ_LABEL_FONT_FAMILY,
     };
     use crate::constants::TEXT;
     use std::collections::HashMap;
@@ -320,9 +320,8 @@ mod tests {
     #[test]
     /// Assert raw markup in a tspan line cannot close the `<text>` element.
     fn node_label_markup_is_escaped() {
-        let html = flatten_node_label(
-            r#"<text x="1" y="2"><tspan x="1">a</text><b>&amp;</tspan></text>"#,
-        );
+        let html =
+            flatten_node_label(r#"<text x="1" y="2"><tspan x="1">a</text><b>&amp;</tspan></text>"#);
         assert!(!html.contains("<b>"), "{html}");
         assert!(
             html.contains(">a&lt;/text&gt;&lt;b&gt;&amp;</text>"),

@@ -9,7 +9,9 @@ use crate::constants::{MERMAID_ERROR_CLASS, MERMAID_STROKE_SLOP};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
-use rusty_mermaid::{render, Color, Point, Primitive, Scene, Style, TextAnchor, Theme};
+use rusty_mermaid::{
+    render, Color, ParseError, Point, Primitive, Scene, Style, TextAnchor, TextStyle, Theme,
+};
 use rusty_mermaid_core::{PathSegment, SimpleTextMeasure, TextMeasure, Transform};
 
 /// Mermaid diagram render.
@@ -21,12 +23,59 @@ impl MermaidRender {
     /// Returns the rusty-mermaid parse error when `source` is not a diagram.
     pub fn render_svg(&self, source: &str) -> Result<String, String> {
         let mut theme = diagram_theme();
-        let source = apply_directives(source, &mut theme);
-        let scene = render(&source, &theme).map_err(|e| e.to_string())?;
+        let directives = apply_directives(source, &mut theme);
+        let source = &directives.body;
+        let scene = match directives.node_label_color {
+            None => render(source, &theme),
+            Some(color) => render_with_node_labels(source, &theme, color),
+        }
+        .map_err(|e| e.to_string())?;
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
-        Ok(prepare_svg(&svg, &source))
+        Ok(prepare_svg(&svg, source))
     }
+}
+
+/// Stand-in composite-state label colour that marks those labels in a scene.
+///
+/// Fully transparent near-black, which no theme or directive produces.
+const COMPOSITE_LABEL_MARKER: Color = Color::rgba(1, 2, 3, 0);
+
+/// Render `source`, painting flowchart and state node labels `color`.
+///
+/// rusty-mermaid ignores `theme.node_text` for those labels on very dark or
+/// light fills and uses white or black instead, so an explicit text colour
+/// would be lost. Node labels are the only text drawn in the default label
+/// style apart from state composite titles, which are rendered with a marker
+/// colour here so they can be told apart and restored.
+fn render_with_node_labels(source: &str, theme: &Theme, color: Color) -> Result<Scene, ParseError> {
+    let marked = Theme {
+        composite_label: COMPOSITE_LABEL_MARKER,
+        ..theme.clone()
+    };
+    let scene = render(source, &marked)?;
+    let label = TextStyle::default();
+    let mut painted = Scene::new(scene.width, scene.height);
+    for element in scene.elements() {
+        let mut primitive = element.primitive.clone();
+        if let Primitive::Text {
+            anchor: TextAnchor::Middle,
+            style,
+            ..
+        } = &mut primitive
+        {
+            if style.fill == Some(COMPOSITE_LABEL_MARKER) {
+                style.fill = Some(theme.composite_label);
+            } else if style.font_size == label.font_size && style.font_weight == label.font_weight {
+                style.fill = Some(color);
+            }
+        }
+        match &element.id {
+            Some(id) => painted.push_identified(primitive, id.clone()),
+            None => painted.push(primitive),
+        }
+    }
+    Ok(painted)
 }
 
 impl Render for MermaidRender {
@@ -680,23 +729,256 @@ mod tests {
         assert!(!svg.contains("stroke=\"#ffffff\""), "{svg}");
     }
 
+    /// Flowchart with a subgraph and a labelled edge.
+    const FLOWCHART: &str =
+        "flowchart LR\n    subgraph G\n        A[One] -->|label| B[Two]\n    end\n";
+    /// Sequence diagram with an activation, a loop frame and a note.
+    const SEQUENCE: &str = "sequenceDiagram\n    participant A\n    participant B\n    \
+                            A->>B: hello\n    activate B\n    loop Every minute\n        \
+                            B-->>A: reply\n    end\n    deactivate B\n    \
+                            Note right of A: a note\n";
+    /// State diagram with start/end states, a composite state and a note.
+    const STATE: &str = "stateDiagram-v2\n    [*] --> Still\n    Still --> Moving: push\n    \
+                         Moving --> [*]\n    state Comp {\n        X --> Y\n    }\n    \
+                         note right of Still: a note\n";
+    /// Class diagram with one class.
+    const CLASS: &str = "classDiagram\n    class Animal {\n        +name\n    }\n";
+    /// ER diagram with two attribute rows.
+    const ER: &str =
+        "erDiagram\n    CUSTOMER {\n        string name\n        string id\n    }\n    \
+                      CUSTOMER ||--o{ ORDER : places\n";
+    /// Requirement diagram with one relation.
+    const REQUIREMENT: &str = "requirementDiagram\n    requirement r {\n        id: 1\n        \
+                               text: t\n    }\n    element e {\n        type: sim\n    }\n    \
+                               e - satisfies -> r\n";
+    /// Gantt chart with one task.
+    const GANTT: &str = "gantt\n    title Plan\n    dateFormat YYYY-MM-DD\n    section S\n    \
+                         Task :a1, 2024-01-01, 3d\n";
+    /// Git graph with a tagged commit.
+    const GIT: &str = "gitGraph\n    commit id: \"one\" tag: \"v1\"\n    commit\n";
+    /// User journey with one task.
+    const JOURNEY: &str = "journey\n    title Day\n    section Work\n      Code: 5: Me\n";
+    /// Pie chart with a title and legend.
+    const PIE: &str = "pie title Pets\n    \"Dogs\" : 2\n    \"Cats\" : 3\n";
+    /// Quadrant chart with one point.
+    const QUADRANT: &str = "quadrantChart\n    title Reach\n    x-axis Low --> High\n    \
+                            y-axis Low --> High\n    A: [0.3, 0.6]\n";
+    /// XY chart with one bar series.
+    const XYCHART: &str = "xychart-beta\n    title \"Sales\"\n    x-axis [jan, feb]\n    \
+                           y-axis \"Revenue\" 0 --> 100\n    bar [10, 20]\n";
+    /// Radar chart with one curve.
+    const RADAR: &str = "radar-beta\n    axis a, b, c\n    curve c1{1, 2, 3}\n";
+
+    /// Each theme variable, a diagram that draws it, and the colour it sets.
+    const VARIABLE_CASES: &[(&str, &str, &str)] = &[
+        ("'primaryColor': '#a10001'", FLOWCHART, "#a10001"),
+        ("'primaryTextColor': '#a10002'", FLOWCHART, "#a10002"),
+        ("'primaryBorderColor': '#a10003'", FLOWCHART, "#a10003"),
+        ("'secondaryColor': '#a10004'", FLOWCHART, "#a10004"),
+        ("'tertiaryColor': '#a10005'", FLOWCHART, "#a10005"),
+        ("'tertiaryBorderColor': '#a10006'", FLOWCHART, "#a10006"),
+        ("'tertiaryTextColor': '#a10007'", FLOWCHART, "#a10007"),
+        ("'lineColor': '#a10008'", FLOWCHART, "#a10008"),
+        ("'textColor': '#a10009'", FLOWCHART, "#a10009"),
+        ("'background': '#a1000a'", FLOWCHART, "#a1000a"),
+        ("'mainBkg': '#a1000b'", FLOWCHART, "#a1000b"),
+        ("'nodeBkg': '#a1000c'", FLOWCHART, "#a1000c"),
+        ("'nodeBorder': '#a1000d'", FLOWCHART, "#a1000d"),
+        ("'nodeTextColor': '#a1000e'", FLOWCHART, "#a1000e"),
+        ("'clusterBkg': '#a1000f'", FLOWCHART, "#a1000f"),
+        ("'clusterBorder': '#a10010'", FLOWCHART, "#a10010"),
+        ("'titleColor': '#a10011'", FLOWCHART, "#a10011"),
+        ("'defaultLinkColor': '#a10012'", FLOWCHART, "#a10012"),
+        ("'edgeLabelBackground': '#a10013'", FLOWCHART, "#a10013"),
+        ("'actorBkg': '#a20001'", SEQUENCE, "#a20001"),
+        ("'actorBorder': '#a20002'", SEQUENCE, "#a20002"),
+        ("'actorTextColor': '#a20003'", SEQUENCE, "#a20003"),
+        ("'actorLineColor': '#a20004'", SEQUENCE, "#a20004"),
+        ("'signalColor': '#a20005'", SEQUENCE, "#a20005"),
+        ("'signalTextColor': '#a20006'", SEQUENCE, "#a20006"),
+        ("'labelBoxBkgColor': '#a20007'", SEQUENCE, "#a20007"),
+        ("'labelBoxBorderColor': '#a20008'", SEQUENCE, "#a20008"),
+        ("'labelTextColor': '#a20009'", SEQUENCE, "#a20009"),
+        ("'loopTextColor': '#a2000a'", SEQUENCE, "#a2000a"),
+        ("'activationBkgColor': '#a2000b'", SEQUENCE, "#a2000b"),
+        ("'activationBorderColor': '#a2000c'", SEQUENCE, "#a2000c"),
+        ("'noteBkgColor': '#a2000d'", SEQUENCE, "#a2000d"),
+        ("'noteBorderColor': '#a2000e'", SEQUENCE, "#a2000e"),
+        ("'noteTextColor': '#a2000f'", SEQUENCE, "#a2000f"),
+        ("'secondaryColor': '#a20010'", SEQUENCE, "#a20010"),
+        ("'stateBkg': '#a30001'", STATE, "#a30001"),
+        ("'stateBorder': '#a30002'", STATE, "#a30002"),
+        ("'stateLabelColor': '#a30003'", STATE, "#a30003"),
+        ("'transitionColor': '#a30004'", STATE, "#a30004"),
+        ("'transitionLabelColor': '#a30005'", STATE, "#a30005"),
+        ("'specialStateColor': '#a30006'", STATE, "#a30006"),
+        ("'innerEndBackground': '#a30007'", STATE, "#a30007"),
+        ("'compositeBackground': '#a30008'", STATE, "#a30008"),
+        ("'compositeBorder': '#a30009'", STATE, "#a30009"),
+        ("'noteBkgColor': '#a3000a'", STATE, "#a3000a"),
+        ("'noteBorderColor': '#a3000b'", STATE, "#a3000b"),
+        ("'noteTextColor': '#a3000c'", STATE, "#a3000c"),
+        ("'classText': '#a40001'", CLASS, "#a40001"),
+        ("'primaryColor': '#a40002'", CLASS, "#a40002"),
+        ("'attributeBackgroundColorEven': '#a50001'", ER, "#a50001"),
+        ("'attributeBackgroundColorOdd': '#a50002'", ER, "#a50002"),
+        ("'requirementBackground': '#a60001'", REQUIREMENT, "#a60001"),
+        (
+            "'requirementBorderColor': '#a60002'",
+            REQUIREMENT,
+            "#a60002",
+        ),
+        ("'requirementTextColor': '#a60003'", REQUIREMENT, "#a60003"),
+        ("'relationColor': '#a60004'", REQUIREMENT, "#a60004"),
+        (
+            "'relationLabelBackground': '#a60005'",
+            REQUIREMENT,
+            "#a60005",
+        ),
+        ("'relationLabelColor': '#a60006'", REQUIREMENT, "#a60006"),
+        ("'titleColor': '#a70001'", GANTT, "#a70001"),
+        ("'taskTextColor': '#a70002'", GANTT, "#a70002"),
+        ("'taskTextOutsideColor': '#a70003'", GANTT, "#a70003"),
+        ("'gridColor': '#a70004'", GANTT, "#a70004"),
+        ("'commitLabelColor': '#a80001'", GIT, "#a80001"),
+        ("'tagLabelBackground': '#a80002'", GIT, "#a80002"),
+        ("'tagLabelColor': '#a80003'", GIT, "#a80003"),
+        ("'faceColor': '#a90001'", JOURNEY, "#a90001"),
+        ("'pieTitleTextColor': '#aa0001'", PIE, "#aa0001"),
+        ("'pieLegendTextColor': '#aa0002'", PIE, "#aa0002"),
+        ("'quadrantTitleFill': '#ab0001'", QUADRANT, "#ab0001"),
+        ("'quadrantXAxisTextFill': '#ab0002'", QUADRANT, "#ab0002"),
+        ("'quadrantYAxisTextFill': '#ab0003'", QUADRANT, "#ab0003"),
+        ("'quadrantPointTextFill': '#ab0004'", QUADRANT, "#ab0004"),
+        (
+            "'quadrantInternalBorderStrokeFill': '#ab0005'",
+            QUADRANT,
+            "#ab0005",
+        ),
+        (
+            "'quadrantExternalBorderStrokeFill': '#ab0006'",
+            QUADRANT,
+            "#ab0006",
+        ),
+        (
+            "'xyChart': {'backgroundColor': '#ac0001'}",
+            XYCHART,
+            "#ac0001",
+        ),
+        ("'xyChart': {'titleColor': '#ac0002'}", XYCHART, "#ac0002"),
+        (
+            "'xyChart': {'xAxisLabelColor': '#ac0003'}",
+            XYCHART,
+            "#ac0003",
+        ),
+        (
+            "'xyChart': {'xAxisTitleColor': '#ac0004'}",
+            XYCHART,
+            "#ac0004",
+        ),
+        (
+            "'xyChart': {'yAxisLabelColor': '#ac0005'}",
+            XYCHART,
+            "#ac0005",
+        ),
+        (
+            "'xyChart': {'yAxisTitleColor': '#ac0006'}",
+            XYCHART,
+            "#ac0006",
+        ),
+        (
+            "'xyChart': {'xAxisLineColor': '#ac0007'}",
+            XYCHART,
+            "#ac0007",
+        ),
+        (
+            "'xyChart': {'xAxisTickColor': '#ac0008'}",
+            XYCHART,
+            "#ac0008",
+        ),
+        (
+            "'xyChart': {'yAxisLineColor': '#ac0009'}",
+            XYCHART,
+            "#ac0009",
+        ),
+        (
+            "'xyChart': {'yAxisTickColor': '#ac000a'}",
+            XYCHART,
+            "#ac000a",
+        ),
+        ("'radar': {'axisColor': '#ad0001'}", RADAR, "#ad0001"),
+        ("'radar': {'graticuleColor': '#ad0002'}", RADAR, "#ad0002"),
+    ];
+
+    /// Return the SVG for `diagram` with `variables` in a multi-line `init` directive.
+    fn render_with_variables(variables: &str, diagram: &str) -> String {
+        let source = format!(
+            "%%{{init: {{\n  'themeVariables': {{\n    {variables}\n  }}\n}}}}%%\n{diagram}"
+        );
+        MermaidRender
+            .render_svg(&source)
+            .unwrap_or_else(|error| panic!("{variables} on {diagram}: {error}"))
+            .to_ascii_lowercase()
+    }
+
+    /// Return each `VARIABLE_CASES` entry whose colour is missing from its SVG.
+    fn undrawn_variables() -> Vec<String> {
+        VARIABLE_CASES
+            .iter()
+            .filter(|(variables, diagram, colour)| {
+                !render_with_variables(variables, diagram).contains(colour)
+            })
+            .map(|(variables, diagram, _)| {
+                format!(
+                    "{variables} on {}",
+                    diagram.lines().next().unwrap_or_default()
+                )
+            })
+            .collect()
+    }
+
     #[test]
-    /// Assert `themeVariables` colours reach the rendered SVG.
-    fn init_theme_variables_colour_the_svg() {
-        let source = "%%{init: {
-  'themeVariables': {
-    'primaryColor': '#4f46e5',
-                          'primaryBorderColor': '#312e81',
-    'lineColor': '#f59e0b'
-  }
-}}%%
-                      flowchart LR
-    A[One] --> B[Two]
-";
-        let svg = MermaidRender.render_svg(source).unwrap().to_ascii_lowercase();
+    /// Assert every supported theme variable reaches the SVG in night mode.
+    fn every_theme_variable_reaches_the_night_svg() {
+        let missing = undrawn_variables();
+        assert!(missing.is_empty(), "not drawn:\n{}", missing.join("\n"));
+    }
+
+    #[test]
+    /// Assert every supported theme variable reaches the SVG in day mode.
+    fn every_theme_variable_reaches_the_day_svg() {
+        let _guard = ThemeGuard::set(ColorTheme::Day);
+        let missing = undrawn_variables();
+        assert!(missing.is_empty(), "not drawn:\n{}", missing.join("\n"));
+    }
+
+    #[test]
+    /// Assert explicit state label colour leaves composite titles their own.
+    fn state_label_colour_keeps_composite_title_colour() {
+        let svg = render_with_variables(
+            "'stateBkg': '#101010', 'primaryTextColor': '#b10001'",
+            "stateDiagram-v2\n    [*] --> Still\n    state Comp {\n        X --> Y\n    }\n",
+        );
+        let composite = Theme::dark().composite_label.to_string();
+        assert!(svg.contains("#b10001"), "{svg}");
+        assert!(svg.contains(&composite), "composite title {composite}: {svg}");
+        assert!(!svg.contains("#01020300"), "marker colour leaked: {svg}");
+    }
+
+    #[test]
+    /// Assert the multi-line flowchart example takes its colours.
+    fn multiline_init_colours_the_flowchart() {
+        let svg = render_with_variables(
+            "'primaryColor': '#4f46e5',\n    'primaryBorderColor': '#312e81',\n    \
+             'lineColor': '#f59e0b',\n    'secondaryColor': '#ec4899',\n    \
+             'tertiaryColor': '#f3f4f6'",
+            FLOWCHART,
+        );
         assert!(svg.contains("fill=\"#4f46e5\""), "{svg}");
         assert!(svg.contains("stroke=\"#312e81\""), "{svg}");
         assert!(svg.contains("#f59e0b"), "{svg}");
+        assert!(svg.contains("fill=\"#ec4899\""), "{svg}");
+        assert!(svg.contains("fill=\"#f3f4f6\""), "{svg}");
     }
 
     #[test]
@@ -709,3 +991,4 @@ mod tests {
         );
     }
 }
+

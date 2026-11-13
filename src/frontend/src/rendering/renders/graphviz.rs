@@ -1,8 +1,6 @@
 //! Renders a Graphviz DOT block to inline SVG.
 
-use super::graphviz_label::{
-    flatten_edge_label, flatten_node_label, parse_path_geometry,
-};
+use super::graphviz_label::{flatten_edge_label, flatten_node_label, parse_path_geometry};
 use super::marker_arrow::expand_path_markers;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};

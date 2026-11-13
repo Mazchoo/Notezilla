@@ -9,7 +9,7 @@
 //! section palettes, C4 and packet fills) have no theme field and are not
 //! overridable.
 
-use rusty_mermaid::{Color, Theme};
+use rusty_mermaid::{detect, Color, DiagramKind, Theme};
 use std::borrow::Cow;
 
 /// Opening marker of a mermaid directive.
@@ -18,25 +18,6 @@ const DIRECTIVE_OPEN: &str = "%%{";
 const DIRECTIVE_CLOSE: &str = "}%%";
 /// Object that holds the top-level mermaid theme variables.
 const THEME_VARIABLES_KEY: &str = "themeVariables";
-
-/// Diagram types that have theme variables of their own.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Diagram {
-    Sequence,
-    State,
-    Class,
-    Er,
-    Requirement,
-    Gantt,
-    Git,
-    Journey,
-    Pie,
-    Quadrant,
-    XyChart,
-    Radar,
-    /// Any other diagram; only the general variables apply.
-    Other,
-}
 
 /// Sets one or more theme colours from a mermaid theme variable.
 type ApplyColor = fn(&mut Theme, Color);
@@ -48,7 +29,7 @@ struct ThemeVariable {
     /// Variable name inside `parent`.
     name: &'static str,
     /// Diagrams the variable applies to; empty means every diagram.
-    diagrams: &'static [Diagram],
+    diagrams: &'static [DiagramKind],
     /// Writes the colour into the theme.
     apply: ApplyColor,
 }
@@ -60,14 +41,14 @@ impl ThemeVariable {
     }
 
     /// A `themeVariables` entry that applies to `diagrams` only.
-    const fn only(diagrams: &'static [Diagram], name: &'static str, apply: ApplyColor) -> Self {
+    const fn only(diagrams: &'static [DiagramKind], name: &'static str, apply: ApplyColor) -> Self {
         Self::nested(THEME_VARIABLES_KEY, diagrams, name, apply)
     }
 
     /// An entry inside a nested object such as `themeVariables.xyChart`.
     const fn nested(
         parent: &'static str,
-        diagrams: &'static [Diagram],
+        diagrams: &'static [DiagramKind],
         name: &'static str,
         apply: ApplyColor,
     ) -> Self {
@@ -79,14 +60,14 @@ impl ThemeVariable {
         }
     }
 
-    /// Return whether this variable affects `diagram`.
-    fn applies_to(&self, diagram: Diagram) -> bool {
-        self.diagrams.is_empty() || self.diagrams.contains(&diagram)
+    /// Return whether this variable affects `diagram`; `None` is unrecognised.
+    fn applies_to(&self, diagram: Option<DiagramKind>) -> bool {
+        self.diagrams.is_empty() || diagram.is_some_and(|kind| self.diagrams.contains(&kind))
     }
 }
 
 /// Diagrams that draw notes from the theme note colours.
-const NOTE_DIAGRAMS: &[Diagram] = &[Diagram::Sequence, Diagram::State];
+const NOTE_DIAGRAMS: &[DiagramKind] = &[DiagramKind::Sequence, DiagramKind::State];
 
 /// Every supported mermaid theme variable.
 ///
@@ -128,183 +109,277 @@ const THEME_VARIABLES: &[ThemeVariable] = &[
     ThemeVariable::only(NOTE_DIAGRAMS, "noteBorderColor", |t, c| t.note_stroke = c),
     ThemeVariable::only(NOTE_DIAGRAMS, "noteTextColor", |t, c| t.note_text = c),
     // Sequence.
-    ThemeVariable::only(&[Diagram::Sequence], "actorBkg", |t, c| t.node_fill = c),
-    ThemeVariable::only(&[Diagram::Sequence], "actorBorder", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "actorBkg", |t, c| t.node_fill = c),
+    ThemeVariable::only(&[DiagramKind::Sequence], "actorBorder", |t, c| {
         t.node_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "actorTextColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "actorTextColor", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "actorLineColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "actorLineColor", |t, c| {
         t.lifeline_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "signalColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "signalColor", |t, c| {
         t.edge_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "signalTextColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "signalTextColor", |t, c| {
         t.edge_label_text = c;
     }),
     // rusty-mermaid fills the loop/alt label tab with its border colour.
-    ThemeVariable::only(&[Diagram::Sequence], "labelBoxBkgColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "labelBoxBkgColor", |t, c| {
         t.subgraph_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "labelBoxBorderColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "labelBoxBorderColor", |t, c| {
         t.subgraph_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "labelTextColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "labelTextColor", |t, c| {
         t.subgraph_label = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "loopTextColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "loopTextColor", |t, c| {
         t.subgraph_label = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "activationBkgColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "activationBkgColor", |t, c| {
         t.activation_fill = c;
     }),
-    ThemeVariable::only(&[Diagram::Sequence], "activationBorderColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Sequence], "activationBorderColor", |t, c| {
         t.activation_stroke = c;
     }),
     // State.
-    ThemeVariable::only(&[Diagram::State], "stateBkg", |t, c| t.node_fill = c),
-    ThemeVariable::only(&[Diagram::State], "stateBorder", |t, c| t.node_stroke = c),
-    ThemeVariable::only(&[Diagram::State], "stateLabelColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "stateBkg", |t, c| t.node_fill = c),
+    ThemeVariable::only(&[DiagramKind::State], "stateBorder", |t, c| {
+        t.node_stroke = c
+    }),
+    ThemeVariable::only(&[DiagramKind::State], "stateLabelColor", |t, c| {
         t.node_text = c;
         t.composite_label = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "transitionColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "transitionColor", |t, c| {
         t.edge_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "transitionLabelColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "transitionLabelColor", |t, c| {
         t.edge_label_text = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "specialStateColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "specialStateColor", |t, c| {
         t.start_fill = c;
         t.end_inner_fill = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "innerEndBackground", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "innerEndBackground", |t, c| {
         t.end_inner_fill = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "compositeBackground", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "compositeBackground", |t, c| {
         t.composite_fill = c;
     }),
-    ThemeVariable::only(&[Diagram::State], "compositeBorder", |t, c| {
+    ThemeVariable::only(&[DiagramKind::State], "compositeBorder", |t, c| {
         t.composite_stroke = c;
     }),
     // Class.
-    ThemeVariable::only(&[Diagram::Class], "classText", |t, c| t.node_text = c),
+    ThemeVariable::only(&[DiagramKind::Class], "classText", |t, c| t.node_text = c),
     // Entity relationship: even attribute rows share the entity fill.
-    ThemeVariable::only(&[Diagram::Er], "attributeBackgroundColorEven", |t, c| {
-        t.node_fill = c;
-    }),
-    ThemeVariable::only(&[Diagram::Er], "attributeBackgroundColorOdd", |t, c| {
+    ThemeVariable::only(
+        &[DiagramKind::Er],
+        "attributeBackgroundColorEven",
+        |t, c| {
+            t.node_fill = c;
+        },
+    ),
+    ThemeVariable::only(&[DiagramKind::Er], "attributeBackgroundColorOdd", |t, c| {
         t.composite_fill = c;
     }),
     // Requirement.
-    ThemeVariable::only(&[Diagram::Requirement], "requirementBackground", |t, c| {
-        t.node_fill = c;
-    }),
-    ThemeVariable::only(&[Diagram::Requirement], "requirementBorderColor", |t, c| {
-        t.node_stroke = c;
-    }),
-    ThemeVariable::only(&[Diagram::Requirement], "requirementTextColor", |t, c| {
-        t.node_text = c;
-    }),
-    ThemeVariable::only(&[Diagram::Requirement], "relationColor", |t, c| {
+    ThemeVariable::only(
+        &[DiagramKind::Requirement],
+        "requirementBackground",
+        |t, c| {
+            t.node_fill = c;
+        },
+    ),
+    ThemeVariable::only(
+        &[DiagramKind::Requirement],
+        "requirementBorderColor",
+        |t, c| {
+            t.node_stroke = c;
+        },
+    ),
+    ThemeVariable::only(
+        &[DiagramKind::Requirement],
+        "requirementTextColor",
+        |t, c| {
+            t.node_text = c;
+        },
+    ),
+    ThemeVariable::only(&[DiagramKind::Requirement], "relationColor", |t, c| {
         t.edge_stroke = c;
     }),
-    ThemeVariable::only(&[Diagram::Requirement], "relationLabelBackground", |t, c| {
-        t.edge_label_bg = c;
-    }),
-    ThemeVariable::only(&[Diagram::Requirement], "relationLabelColor", |t, c| {
+    ThemeVariable::only(
+        &[DiagramKind::Requirement],
+        "relationLabelBackground",
+        |t, c| {
+            t.edge_label_bg = c;
+        },
+    ),
+    ThemeVariable::only(&[DiagramKind::Requirement], "relationLabelColor", |t, c| {
         t.edge_label_text = c;
     }),
     // Gantt: title, axis and task text share one colour.
-    ThemeVariable::only(&[Diagram::Gantt], "titleColor", |t, c| t.node_text = c),
-    ThemeVariable::only(&[Diagram::Gantt], "taskTextColor", |t, c| t.node_text = c),
-    ThemeVariable::only(&[Diagram::Gantt], "taskTextOutsideColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Gantt], "titleColor", |t, c| t.node_text = c),
+    ThemeVariable::only(&[DiagramKind::Gantt], "taskTextColor", |t, c| {
+        t.node_text = c
+    }),
+    ThemeVariable::only(&[DiagramKind::Gantt], "taskTextOutsideColor", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::only(&[Diagram::Gantt], "gridColor", |t, c| t.grid_stroke = c),
+    ThemeVariable::only(&[DiagramKind::Gantt], "gridColor", |t, c| t.grid_stroke = c),
     // Git.
-    ThemeVariable::only(&[Diagram::Git], "commitLabelColor", |t, c| t.muted_text = c),
-    ThemeVariable::only(&[Diagram::Git], "tagLabelBackground", |t, c| t.note_fill = c),
-    ThemeVariable::only(&[Diagram::Git], "tagLabelColor", |t, c| t.node_text = c),
+    ThemeVariable::only(&[DiagramKind::GitGraph], "commitLabelColor", |t, c| {
+        t.muted_text = c
+    }),
+    ThemeVariable::only(&[DiagramKind::GitGraph], "tagLabelBackground", |t, c| {
+        t.note_fill = c
+    }),
+    ThemeVariable::only(&[DiagramKind::GitGraph], "tagLabelColor", |t, c| {
+        t.node_text = c
+    }),
     // Journey.
-    ThemeVariable::only(&[Diagram::Journey], "faceColor", |t, c| t.face_fill = c),
+    ThemeVariable::only(&[DiagramKind::UserJourney], "faceColor", |t, c| {
+        t.face_fill = c
+    }),
     // Pie: title and legend text share one colour.
-    ThemeVariable::only(&[Diagram::Pie], "pieTitleTextColor", |t, c| t.node_text = c),
-    ThemeVariable::only(&[Diagram::Pie], "pieLegendTextColor", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Pie], "pieTitleTextColor", |t, c| {
+        t.node_text = c
+    }),
+    ThemeVariable::only(&[DiagramKind::Pie], "pieLegendTextColor", |t, c| {
         t.node_text = c;
     }),
     // Quadrant: all text shares one colour, as do all borders.
-    ThemeVariable::only(&[Diagram::Quadrant], "quadrantTitleFill", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Quadrant], "quadrantTitleFill", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::only(&[Diagram::Quadrant], "quadrantXAxisTextFill", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Quadrant], "quadrantXAxisTextFill", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::only(&[Diagram::Quadrant], "quadrantYAxisTextFill", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Quadrant], "quadrantYAxisTextFill", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::only(&[Diagram::Quadrant], "quadrantPointTextFill", |t, c| {
+    ThemeVariable::only(&[DiagramKind::Quadrant], "quadrantPointTextFill", |t, c| {
         t.node_text = c;
     }),
     ThemeVariable::only(
-        &[Diagram::Quadrant],
+        &[DiagramKind::Quadrant],
         "quadrantInternalBorderStrokeFill",
         |t, c| t.grid_stroke = c,
     ),
     ThemeVariable::only(
-        &[Diagram::Quadrant],
+        &[DiagramKind::Quadrant],
         "quadrantExternalBorderStrokeFill",
         |t, c| t.grid_stroke = c,
     ),
     // XY chart (`themeVariables.xyChart`): text, axis lines and ticks.
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "backgroundColor", |t, c| {
-        t.background = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "titleColor", |t, c| {
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "backgroundColor",
+        |t, c| {
+            t.background = c;
+        },
+    ),
+    ThemeVariable::nested("xyChart", &[DiagramKind::XyChart], "titleColor", |t, c| {
         t.node_text = c;
     }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "xAxisLabelColor", |t, c| {
-        t.node_text = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "xAxisTitleColor", |t, c| {
-        t.node_text = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "yAxisLabelColor", |t, c| {
-        t.node_text = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "yAxisTitleColor", |t, c| {
-        t.node_text = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "xAxisLineColor", |t, c| {
-        t.edge_stroke = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "xAxisTickColor", |t, c| {
-        t.edge_stroke = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "yAxisLineColor", |t, c| {
-        t.edge_stroke = c;
-    }),
-    ThemeVariable::nested("xyChart", &[Diagram::XyChart], "yAxisTickColor", |t, c| {
-        t.edge_stroke = c;
-    }),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "xAxisLabelColor",
+        |t, c| {
+            t.node_text = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "xAxisTitleColor",
+        |t, c| {
+            t.node_text = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "yAxisLabelColor",
+        |t, c| {
+            t.node_text = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "yAxisTitleColor",
+        |t, c| {
+            t.node_text = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "xAxisLineColor",
+        |t, c| {
+            t.edge_stroke = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "xAxisTickColor",
+        |t, c| {
+            t.edge_stroke = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "yAxisLineColor",
+        |t, c| {
+            t.edge_stroke = c;
+        },
+    ),
+    ThemeVariable::nested(
+        "xyChart",
+        &[DiagramKind::XyChart],
+        "yAxisTickColor",
+        |t, c| {
+            t.edge_stroke = c;
+        },
+    ),
     // Radar (`themeVariables.radar`): axes and graticule share one colour.
-    ThemeVariable::nested("radar", &[Diagram::Radar], "axisColor", |t, c| {
+    ThemeVariable::nested("radar", &[DiagramKind::Radar], "axisColor", |t, c| {
         t.grid_stroke = c;
     }),
-    ThemeVariable::nested("radar", &[Diagram::Radar], "graticuleColor", |t, c| {
+    ThemeVariable::nested("radar", &[DiagramKind::Radar], "graticuleColor", |t, c| {
         t.grid_stroke = c;
     }),
 ];
 
+/// Diagrams whose node labels rusty-mermaid recolours for contrast.
+const CONTRAST_LABEL_DIAGRAMS: &[DiagramKind] = &[DiagramKind::Flowchart, DiagramKind::State];
+
+/// Diagram source with its directives applied.
+pub(super) struct Directives<'a> {
+    /// Diagram text without directives.
+    pub(super) body: Cow<'a, str>,
+    /// Node label colour the directives set explicitly, when rusty-mermaid
+    /// would otherwise replace it with white or black for contrast.
+    pub(super) node_label_color: Option<Color>,
+}
+
 /// Remove every `%%{ ... }%%` directive from `source` and apply its colours.
 ///
-/// Returns the diagram text without directives, borrowing `source` when it
-/// has none. Unknown variables and unparseable colours are ignored.
-pub(super) fn apply_directives<'a>(source: &'a str, theme: &mut Theme) -> Cow<'a, str> {
+/// The returned body borrows `source` when it has no directives. Unknown
+/// variables and unparseable colours are ignored.
+pub(super) fn apply_directives<'a>(source: &'a str, theme: &mut Theme) -> Directives<'a> {
     if !source.lines().any(is_directive_start) {
-        return Cow::Borrowed(source);
+        return Directives {
+            body: Cow::Borrowed(source),
+            node_label_color: None,
+        };
     }
     let mut body = String::with_capacity(source.len());
     let mut directives = String::new();
@@ -319,8 +394,17 @@ pub(super) fn apply_directives<'a>(source: &'a str, theme: &mut Theme) -> Cow<'a
         body.push_str(line);
         body.push('\n');
     }
-    apply_theme_variables(&directives, diagram_of(&body), theme);
-    Cow::Owned(body)
+    // The same detection rusty-mermaid uses to pick the diagram renderer.
+    let diagram = detect(&body);
+    let default_node_text = theme.node_text;
+    apply_theme_variables(&directives, diagram, theme);
+    let node_label_color = (diagram.is_some_and(|kind| CONTRAST_LABEL_DIAGRAMS.contains(&kind))
+        && theme.node_text != default_node_text)
+        .then_some(theme.node_text);
+    Directives {
+        body: Cow::Owned(body),
+        node_label_color,
+    }
 }
 
 /// Return whether `line` opens a directive.
@@ -328,39 +412,8 @@ fn is_directive_start(line: &str) -> bool {
     line.trim_start().starts_with(DIRECTIVE_OPEN)
 }
 
-/// Return the diagram type named by the first non-comment line of `body`.
-fn diagram_of(body: &str) -> Diagram {
-    let Some(line) = body
-        .lines()
-        .map(str::trim)
-        .find(|line| !line.is_empty() && !line.starts_with("%%"))
-    else {
-        return Diagram::Other;
-    };
-    let keyword = line
-        .split(|c: char| c.is_whitespace() || c == ':')
-        .next()
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    match keyword.as_str() {
-        "sequencediagram" => Diagram::Sequence,
-        "statediagram" | "statediagram-v2" => Diagram::State,
-        "classdiagram" | "classdiagram-v2" => Diagram::Class,
-        "erdiagram" => Diagram::Er,
-        "requirementdiagram" => Diagram::Requirement,
-        "gantt" => Diagram::Gantt,
-        "gitgraph" => Diagram::Git,
-        "journey" => Diagram::Journey,
-        "pie" => Diagram::Pie,
-        "quadrantchart" => Diagram::Quadrant,
-        "xychart" | "xychart-beta" => Diagram::XyChart,
-        "radar" | "radar-beta" => Diagram::Radar,
-        _ => Diagram::Other,
-    }
-}
-
 /// Apply every variable in `directives` that affects `diagram` to `theme`.
-fn apply_theme_variables(directives: &str, diagram: Diagram, theme: &mut Theme) {
+fn apply_theme_variables(directives: &str, diagram: Option<DiagramKind>, theme: &mut Theme) {
     let pairs = string_pairs(directives);
     for variable in THEME_VARIABLES {
         if !variable.applies_to(diagram) {
@@ -454,7 +507,7 @@ fn is_word_char(ch: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_directives, diagram_of, string_pairs, Diagram, StringPair};
+    use super::{apply_directives, string_pairs, StringPair};
     use rusty_mermaid::{Color, Theme};
     use std::borrow::Cow;
 
@@ -482,8 +535,9 @@ mod tests {
     /// Assert a multi-line directive is removed and its colours applied.
     fn multiline_directive_sets_theme_colours() {
         let mut theme = Theme::dark();
-        let body = apply_directives(MULTILINE, &mut theme);
-        assert_eq!(body, "flowchart LR\n    A --> B\n");
+        let directives = apply_directives(MULTILINE, &mut theme);
+        assert_eq!(directives.body, "flowchart LR\n    A --> B\n");
+        assert_eq!(directives.node_label_color, Some(Color::WHITE));
         assert_eq!(theme.node_fill, hex("#4f46e5"));
         assert_eq!(theme.node_text, Color::WHITE);
         assert_eq!(theme.node_stroke, hex("#312e81"));
@@ -497,7 +551,9 @@ mod tests {
     fn single_line_directive_sets_theme_colours() {
         let mut theme = Theme::dark();
         let source = "%%{init: {\"themeVariables\": {\"lineColor\": \"red\"}}}%%\ngraph LR\n";
-        assert_eq!(apply_directives(source, &mut theme), "graph LR\n");
+        let directives = apply_directives(source, &mut theme);
+        assert_eq!(directives.body, "graph LR\n");
+        assert_eq!(directives.node_label_color, None);
         assert_eq!(theme.edge_stroke, Color::rgb(255, 0, 0));
     }
 
@@ -592,17 +648,9 @@ mod tests {
         let mut theme = Theme::dark();
         let source = "%% a comment\ngraph LR\n    A --> B\n";
         assert!(matches!(
-            apply_directives(source, &mut theme),
+            apply_directives(source, &mut theme).body,
             Cow::Borrowed(s) if s == source
         ));
-    }
-
-    #[test]
-    /// Assert the diagram keyword is read past comments and blank lines.
-    fn diagram_keyword_is_detected() {
-        assert_eq!(diagram_of("\n%% note\nsequenceDiagram\n"), Diagram::Sequence);
-        assert_eq!(diagram_of("gitGraph:\n"), Diagram::Git);
-        assert_eq!(diagram_of("flowchart LR\n"), Diagram::Other);
     }
 
     #[test]

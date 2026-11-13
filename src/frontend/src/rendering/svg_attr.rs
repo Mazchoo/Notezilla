@@ -75,10 +75,7 @@ mod tests {
     #[test]
     /// Assert a double-quoted attribute value is read.
     fn reads_double_quoted_value() {
-        assert_eq!(
-            svg_attr(r#"<text x="10" y="20""#, "x"),
-            Some("10")
-        );
+        assert_eq!(svg_attr(r#"<text x="10" y="20""#, "x"), Some("10"));
     }
 
     #[test]
@@ -102,19 +99,13 @@ mod tests {
     #[test]
     /// Assert an attribute name inside another value is not returned.
     fn does_not_read_name_inside_another_value() {
-        assert_eq!(
-            svg_attr(r#"<text y="x='1'" x="2""#, "x"),
-            Some("2")
-        );
+        assert_eq!(svg_attr(r#"<text y="x='1'" x="2""#, "x"), Some("2"));
     }
 
     #[test]
     /// Assert `x` does not match the `x` inside `rx`.
     fn does_not_match_name_suffix_after_letter() {
-        assert_eq!(
-            svg_attr(r#"<ellipse rx="5" x="1""#, "x"),
-            Some("1")
-        );
+        assert_eq!(svg_attr(r#"<ellipse rx="5" x="1""#, "x"), Some("1"));
     }
 
     #[test]
