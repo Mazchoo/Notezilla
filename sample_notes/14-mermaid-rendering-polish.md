@@ -22,9 +22,12 @@ Ensure the GUI correctly renders Mermaid diagrams to satisfy the "extending user
 
 ## Acceptance Criteria
 
-- [ ] All major Mermaid diagram types render correctly in the preview pane.
+- [x] All major Mermaid diagram types render correctly in the preview pane. (As far as rusty mermaid supports them)
 - [x] Diagrams can be exported as SVG files via a download action.
 - [x] Theme changes (light/dark) are reflected in diagram colors without a page reload.
 - [x] In locked mode, clicking on an a diagram creates a modal that zooms into that diagram
 - [x] A Mermaid syntax reference is accessible from the editor for quick lookup.
 - [ ] Scrolling to links are supported when the document is locked
+- [ ] Graphviz has a manual in help
+- [ ] Latex rendering has a manual
+- [ ] Clicking help button to get a manual gets a pre-rendered manual
