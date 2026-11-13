@@ -6,13 +6,14 @@ use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
+use crate::constants::{MERMAID_HELP_MANUAL, MERMAID_HELP_MANUAL_PATH};
 use crate::info_messages::{
     format_save_summary, mcp_status_title, save_failed_toast, saved_log, with_hotkey,
     APP_STATE_MISSING_PANIC, CLOSE_ALL_TITLE, EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE,
     EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE,
-    IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE, MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL,
-    NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE,
-    THEME_SLIDER_ARIA,
+    HELP_MERMAID_MENU, HELP_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
+    MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
+    SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
 };
 use crate::mcp::client::probe_mcp;
 use crate::models::block::EditorEntry;
@@ -95,6 +96,25 @@ pub fn append_new_file(state: &AppState) {
         }
         FileTreeBackend::Notes.insert_in_editor(list, entry);
     });
+}
+
+/// Help-dropdown entries: menu label, editor path, and bundled manual text.
+const HELP_MANUALS: [(&str, &str, &str); 1] = [(
+    HELP_MERMAID_MENU,
+    MERMAID_HELP_MANUAL_PATH,
+    MERMAID_HELP_MANUAL,
+)];
+
+/// Open a bundled help manual as a note, replacing any open copy at the same path.
+pub fn open_help_manual(state: &AppState, path: &str, text: &str) {
+    state.entries.update(|list: &mut Vec<EditorEntry>| {
+        FileTreeBackend::Notes.open_in_editor(list, EditorEntry::new(path, text));
+    });
+}
+
+/// Open or close the top-bar help dropdown.
+pub fn toggle_help_menu(state: &AppState) {
+    state.help_menu_open.update(|open| *open = !*open);
 }
 
 /// Close every open editor entry, notes and templates alike.
@@ -225,6 +245,36 @@ pub fn TopBar() -> impl IntoView {
         })
         .collect_view();
 
+    let help_menu_open = state.help_menu_open;
+    let help_hotkey_key = state.help_hotkey_key;
+    let state_help_toggle = state.clone();
+    let on_help_toggle = move |_| {
+        toggle_help_menu(&state_help_toggle);
+    };
+    let close_help_menu = move |_| help_menu_open.set(false);
+
+    let state_help = state.clone();
+    let help_items = HELP_MANUALS
+        .into_iter()
+        .map(|(label, path, text)| {
+            let state_item = state_help.clone();
+            view! {
+                <li>
+                    <a
+                        class="context-menu-item"
+                        on:click=move |ev: web_sys::MouseEvent| {
+                            ev.prevent_default();
+                            help_menu_open.set(false);
+                            open_help_manual(&state_item, path, text);
+                        }
+                    >
+                        {label}
+                    </a>
+                </li>
+            }
+        })
+        .collect_view();
+
     let state_new = state.clone();
     let on_new_block = move |_| {
         append_new_file(&state_new);
@@ -257,14 +307,6 @@ pub fn TopBar() -> impl IntoView {
 
     view! {
         <div class="top-bar">
-            // Hidden file input — accepts markdown and plain-text files.
-            <input
-                type="file"
-                accept=".md,.markdown,text/markdown,text/plain"
-                style="display:none"
-                node_ref=file_input_ref
-                on:change=on_file_change
-            />
             // Import button — opens the file picker.
             <button
                 class="activity-btn"
@@ -331,6 +373,37 @@ pub fn TopBar() -> impl IntoView {
             >
                 {NEW_FILE_BUTTON}
             </button>
+            // Help — opens a dropdown of bundled manuals; each opens as a regular file.
+            <div class="top-bar-help">
+                <button
+                    class=move || AppState::activity_btn_class(help_menu_open.get())
+                    title=move || with_hotkey(HELP_TITLE, &format_ctrl_hotkey(help_hotkey_key.get()))
+                    aria-haspopup="menu"
+                    aria-expanded=move || help_menu_open.get().to_string()
+                    on:click=on_help_toggle
+                >
+                    <Icon icon=id::LuCircleHelp/>
+                </button>
+                <Show when=move || help_menu_open.get()>
+                    <div class="context-menu-backdrop" on:click=close_help_menu></div>
+                </Show>
+                <div
+                    class="file-context-menu menu help-menu"
+                    style:display=move || if help_menu_open.get() { "block" } else { "none" }
+                >
+                    <ul class="menu-list" role="menu">
+                        {help_items}
+                    </ul>
+                </div>
+            </div>
+            // Hidden file input — accepts markdown and plain-text files.
+            <input
+                type="file"
+                accept=".md,.markdown,text/markdown,text/plain"
+                style="display:none"
+                node_ref=file_input_ref
+                on:change=on_file_change
+            />
             // Close All — removes every open entry from the editor.
             <button
                 class="activity-btn top-bar-close-all"
@@ -424,6 +497,39 @@ mod tests {
             append_new_file(&state);
             let added = state.entries.get_untracked()[1];
             assert!(!added.content.focused.get_untracked());
+        });
+    }
+
+    #[test]
+    /// Assert a help manual opens after the default note and reopening it does not duplicate.
+    fn open_help_manual_opens_once_as_a_note() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            let (_, path, text) = HELP_MANUALS[0];
+            open_help_manual(&state, path, text);
+            open_help_manual(&state, path, text);
+            let entries = state.entries.get_untracked();
+            assert_eq!(entries.len(), 2);
+            assert_eq!(
+                entries[1].title.path.get_untracked(),
+                MERMAID_HELP_MANUAL_PATH
+            );
+            assert_eq!(entries[1].content.text.get_untracked(), MERMAID_HELP_MANUAL);
+            assert_eq!(entries[1].backend, FileTreeBackend::Notes);
+        });
+    }
+
+    #[test]
+    /// Assert the help dropdown flag flips on each call.
+    fn toggle_help_menu_flips_the_flag() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let state = AppState::new();
+            toggle_help_menu(&state);
+            assert!(state.help_menu_open.get_untracked());
+            toggle_help_menu(&state);
+            assert!(!state.help_menu_open.get_untracked());
         });
     }
 

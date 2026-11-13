@@ -11,16 +11,16 @@ use crate::info_messages::{
     with_hotkey, APP_STATE_MISSING_PANIC, DISPLAY_SETTINGS_HEADING, EXPORT_HOTKEY_LABEL,
     GEMINI_API_KEY_CONSTRAINT, GEMINI_API_KEY_LABEL, GEMINI_API_KEY_PLACEHOLDER,
     GEMINI_API_KEY_TITLE, GEMINI_MODEL_CONSTRAINT, GEMINI_MODEL_LABEL, GEMINI_MODEL_PLACEHOLDER,
-    GEMINI_MODEL_TITLE, GEMINI_SETTINGS_HEADING, HOTKEY_SETTINGS_HEADING, IMPORT_HOTKEY_LABEL,
-    NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL, OLLAMA_MODEL_PLACEHOLDER,
-    OLLAMA_MODEL_TITLE, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL, OLLAMA_NUM_CTX_TITLE,
-    OLLAMA_NUM_PREDICT_CONSTRAINT, OLLAMA_NUM_PREDICT_LABEL, OLLAMA_NUM_PREDICT_TITLE,
-    OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_PORT_TITLE, OLLAMA_SETTINGS_HEADING,
-    OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL, OLLAMA_TEMPERATURE_TITLE,
-    OLLAMA_THINK_LABEL, OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT, OLLAMA_TOP_K_LABEL,
-    OLLAMA_TOP_K_TITLE, OLLAMA_TOP_P_CONSTRAINT, OLLAMA_TOP_P_LABEL, OLLAMA_TOP_P_TITLE,
-    RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL, SETTINGS_HEADING,
-    TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
+    GEMINI_MODEL_TITLE, GEMINI_SETTINGS_HEADING, HELP_HOTKEY_LABEL, HOTKEY_SETTINGS_HEADING,
+    IMPORT_HOTKEY_LABEL, NEW_FILE_HOTKEY_LABEL, OLLAMA_MODEL_CONSTRAINT, OLLAMA_MODEL_LABEL,
+    OLLAMA_MODEL_PLACEHOLDER, OLLAMA_MODEL_TITLE, OLLAMA_NUM_CTX_CONSTRAINT, OLLAMA_NUM_CTX_LABEL,
+    OLLAMA_NUM_CTX_TITLE, OLLAMA_NUM_PREDICT_CONSTRAINT, OLLAMA_NUM_PREDICT_LABEL,
+    OLLAMA_NUM_PREDICT_TITLE, OLLAMA_PORT_CONSTRAINT, OLLAMA_PORT_LABEL, OLLAMA_PORT_TITLE,
+    OLLAMA_SETTINGS_HEADING, OLLAMA_TEMPERATURE_CONSTRAINT, OLLAMA_TEMPERATURE_LABEL,
+    OLLAMA_TEMPERATURE_TITLE, OLLAMA_THINK_LABEL, OLLAMA_THINK_TITLE, OLLAMA_TOP_K_CONSTRAINT,
+    OLLAMA_TOP_K_LABEL, OLLAMA_TOP_K_TITLE, OLLAMA_TOP_P_CONSTRAINT, OLLAMA_TOP_P_LABEL,
+    OLLAMA_TOP_P_TITLE, RESULTS_PER_PAGE_CONSTRAINT, RESULTS_PER_PAGE_LABEL, SAVE_HOTKEY_LABEL,
+    SETTINGS_HEADING, TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
 };
 use crate::state::AppState;
 use leptos::prelude::*;
@@ -48,6 +48,7 @@ pub fn SettingsPanel() -> impl IntoView {
     let import_hotkey_key = state.import_hotkey_key;
     let export_hotkey_key = state.export_hotkey_key;
     let toggle_markdown_editing_hotkey_key = state.toggle_markdown_editing_hotkey_key;
+    let help_hotkey_key = state.help_hotkey_key;
 
     view! {
         <div class="p-3">
@@ -482,6 +483,22 @@ pub fn SettingsPanel() -> impl IntoView {
                                 error_toast,
                                 TOGGLE_MARKDOWN_EDITING_HOTKEY_LABEL,
                             )
+                        }
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label is-small" style="color:var(--text-muted);">
+                    {move || with_hotkey(HELP_HOTKEY_LABEL, &format_ctrl_hotkey(help_hotkey_key.get()))}
+                </label>
+                <div class="control">
+                    <input
+                        class="input is-small"
+                        type="text"
+                        maxlength="1"
+                        prop:value=move || help_hotkey_key.get().to_string()
+                        on:keydown=move |ev| {
+                            on_hotkey_keydown(ev, help_hotkey_key, error_toast, HELP_HOTKEY_LABEL)
                         }
                     />
                 </div>

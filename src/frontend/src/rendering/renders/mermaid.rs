@@ -961,7 +961,10 @@ mod tests {
         );
         let composite = Theme::dark().composite_label.to_string();
         assert!(svg.contains("#b10001"), "{svg}");
-        assert!(svg.contains(&composite), "composite title {composite}: {svg}");
+        assert!(
+            svg.contains(&composite),
+            "composite title {composite}: {svg}"
+        );
         assert!(!svg.contains("#01020300"), "marker colour leaked: {svg}");
     }
 
@@ -991,4 +994,3 @@ mod tests {
         );
     }
 }
-

@@ -13,6 +13,8 @@ pub const DEFAULT_IMPORT_HOTKEY_KEY: char = 'i';
 pub const DEFAULT_EXPORT_HOTKEY_KEY: char = 'e';
 /// Default key for the markdown-editing toggle hotkey (used with Ctrl/Meta).
 pub const DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY: char = 'm';
+/// Default key for the help-menu hotkey (used with Ctrl/Meta).
+pub const DEFAULT_HELP_HOTKEY_KEY: char = 'h';
 /// Default path for the prompt response file in the Send prompt panel.
 pub const DEFAULT_PROMPT_OUTPUT_PATH: &str = "./prompt_response.md";
 /// Default TCP port for the local Ollama HTTP API.

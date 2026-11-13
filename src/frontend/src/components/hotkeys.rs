@@ -1,5 +1,5 @@
 use crate::components::top_bar::{
-    append_new_file, export_all_as_html, open_import_picker, save_all_entries,
+    append_new_file, export_all_as_html, open_import_picker, save_all_entries, toggle_help_menu,
     toggle_markdown_editing,
 };
 use crate::info_messages::{APP_STATE_MISSING_PANIC, CTRL_HOTKEY_PREFIX};
@@ -28,7 +28,7 @@ pub fn format_ctrl_hotkey(key: char) -> String {
     format!("{CTRL_HOTKEY_PREFIX}{}", key.to_ascii_uppercase())
 }
 
-/// Bind global Ctrl/Meta hotkeys for save, new file, import, export, and edit toggle.
+/// Bind global Ctrl/Meta hotkeys for save, new file, import, export, edit toggle, and help.
 #[component]
 pub fn GlobalHotkeys() -> impl IntoView {
     let state = use_context::<AppState>().expect(APP_STATE_MISSING_PANIC);
@@ -44,6 +44,7 @@ pub fn GlobalHotkeys() -> impl IntoView {
         let import_key = state.import_hotkey_key.get_untracked();
         let export_key = state.export_hotkey_key.get_untracked();
         let toggle_editing_key = state.toggle_markdown_editing_hotkey_key.get_untracked();
+        let help_key = state.help_hotkey_key.get_untracked();
 
         if keys_match(&pressed, save_key) {
             ev.prevent_default();
@@ -72,6 +73,12 @@ pub fn GlobalHotkeys() -> impl IntoView {
         if keys_match(&pressed, toggle_editing_key) {
             ev.prevent_default();
             toggle_markdown_editing(&state);
+            return;
+        }
+
+        if keys_match(&pressed, help_key) {
+            ev.prevent_default();
+            toggle_help_menu(&state);
         }
     });
 

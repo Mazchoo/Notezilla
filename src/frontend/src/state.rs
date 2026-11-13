@@ -5,11 +5,11 @@ pub use active_panel::ActivePanel;
 use crate::constants::DEFAULT_MARKDOWN_PATH;
 use crate::default_settings::{
     DEFAULT_COLOR_THEME, DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY, DEFAULT_GEMINI_MODEL,
-    DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE,
-    DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT,
-    DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
-    DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
-    DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+    DEFAULT_HELP_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
+    DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
+    DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
+    DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH,
+    DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
 };
 use crate::info_messages::APP_STATE_OWNER_PANIC;
 use crate::models::{block::EditorEntry, note::NoteFile};
@@ -60,6 +60,10 @@ pub struct AppState {
     pub export_hotkey_key: RwSignal<char>,
     /// Key letter for toggling markdown editing (Ctrl/Meta + this key). Stored lowercase.
     pub toggle_markdown_editing_hotkey_key: RwSignal<char>,
+    /// Key letter for opening the help menu (Ctrl/Meta + this key). Stored lowercase.
+    pub help_hotkey_key: RwSignal<char>,
+    /// Whether the top-bar help dropdown is open. Toggled by its button and hotkey.
+    pub help_menu_open: RwSignal<bool>,
     /// Hidden file input used by the Import button and import hotkey.
     pub import_file_input: NodeRef<leptos::html::Input>,
     /// Filename currently being generated during export. `None` when idle.
@@ -128,6 +132,8 @@ impl AppState {
             toggle_markdown_editing_hotkey_key: RwSignal::new(
                 DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
             ),
+            help_hotkey_key: RwSignal::new(DEFAULT_HELP_HOTKEY_KEY),
+            help_menu_open: RwSignal::new(false),
             import_file_input: NodeRef::new(),
             export_progress: RwSignal::new(None),
             diagram_modal_svg: RwSignal::new(None),
@@ -173,12 +179,12 @@ mod tests {
     use crate::constants::DEFAULT_MARKDOWN_PATH;
     use crate::default_settings::{
         DEFAULT_COLOR_THEME, DEFAULT_EXPORT_HOTKEY_KEY, DEFAULT_GEMINI_API_KEY,
-        DEFAULT_GEMINI_MODEL, DEFAULT_IMPORT_HOTKEY_KEY, DEFAULT_NEW_FILE_HOTKEY_KEY,
-        DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_NUM_CTX,
-        DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT, DEFAULT_OLLAMA_TEMPERATURE,
-        DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K, DEFAULT_OLLAMA_TOP_P,
-        DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY, DEFAULT_SIDEBAR_WIDTH,
-        DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
+        DEFAULT_GEMINI_MODEL, DEFAULT_HELP_HOTKEY_KEY, DEFAULT_IMPORT_HOTKEY_KEY,
+        DEFAULT_NEW_FILE_HOTKEY_KEY, DEFAULT_NUMBER_RESULTS_PER_PAGE, DEFAULT_OLLAMA_MODEL,
+        DEFAULT_OLLAMA_NUM_CTX, DEFAULT_OLLAMA_NUM_PREDICT, DEFAULT_OLLAMA_PORT,
+        DEFAULT_OLLAMA_TEMPERATURE, DEFAULT_OLLAMA_THINK, DEFAULT_OLLAMA_TOP_K,
+        DEFAULT_OLLAMA_TOP_P, DEFAULT_PROMPT_OUTPUT_PATH, DEFAULT_SAVE_HOTKEY_KEY,
+        DEFAULT_SIDEBAR_WIDTH, DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY,
     };
     use leptos::prelude::{GetUntracked, Owner};
 
@@ -247,6 +253,11 @@ mod tests {
                 state.toggle_markdown_editing_hotkey_key.get_untracked(),
                 DEFAULT_TOGGLE_MARKDOWN_EDITING_HOTKEY_KEY
             );
+            assert_eq!(
+                state.help_hotkey_key.get_untracked(),
+                DEFAULT_HELP_HOTKEY_KEY
+            );
+            assert!(!state.help_menu_open.get_untracked());
             assert_eq!(state.sidebar_width.get_untracked(), DEFAULT_SIDEBAR_WIDTH);
             assert_eq!(state.prompt_text.get_untracked(), "");
             assert_eq!(

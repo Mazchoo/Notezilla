@@ -1,6 +1,9 @@
 pub const DEFAULT_MARKDOWN_PATH: &str = "./example_folder/new_markdown.md";
 /// Editor path for a blank template created from the templates tree.
 pub const NEW_TEMPLATE_PATH: &str = "./new_template.md";
+/// Editor path of the mermaid help manual opened from the help dropdown.
+pub const MERMAID_HELP_MANUAL_PATH: &str = "./mermaid_help_manual.md";
+pub const MERMAID_HELP_MANUAL: &str = include_str!("../static/mermaid_help_manual.md");
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
