@@ -110,6 +110,8 @@ pub const GRAPHVIZ_LABEL_FONT_FAMILY: &str = "Helvetica, Arial, sans-serif";
 pub const GRAPHVIZ_EDGE_LABEL_GAP: f64 = 0.25;
 /// Extra mermaid padding so a stroke centered on the viewBox edge is not clipped.
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
+/// Optional mermaid statement terminator rusty-mermaid rejects at line end.
+pub const MERMAID_STATEMENT_TERMINATOR: char = ';';
 
 /// Syntect theme applied to fenced code blocks in the night theme.
 pub const CODE_THEME: &str = "base16-ocean.dark";

@@ -5,14 +5,16 @@ use super::mermaid_directive::apply_directives;
 use super::mermaid_label::flatten_label;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
-use crate::constants::{MERMAID_ERROR_CLASS, MERMAID_STROKE_SLOP};
+use crate::constants::{MERMAID_ERROR_CLASS, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
 use rusty_mermaid::{
-    render, Color, ParseError, Point, Primitive, Scene, Style, TextAnchor, TextStyle, Theme,
+    detect, render, Color, DiagramKind, ParseError, Point, Primitive, Scene, Style, TextAnchor,
+    TextStyle, Theme,
 };
 use rusty_mermaid_core::{PathSegment, SimpleTextMeasure, TextMeasure, Transform};
+use std::borrow::Cow;
 
 /// Mermaid diagram render.
 pub struct MermaidRender;
@@ -24,7 +26,7 @@ impl MermaidRender {
     pub fn render_svg(&self, source: &str) -> Result<String, String> {
         let mut theme = diagram_theme();
         let directives = apply_directives(source, &mut theme);
-        let source = &directives.body;
+        let source = &*strip_statement_semicolons(&directives.body);
         let scene = match directives.node_label_color {
             None => render(source, &theme),
             Some(color) => render_with_node_labels(source, &theme, color),
@@ -34,6 +36,27 @@ impl MermaidRender {
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
         Ok(prepare_svg(&svg, source))
     }
+}
+
+/// Remove trailing `;` statement terminators from flowchart lines.
+///
+/// mermaid accepts `classDef x fill:#fff;` and `linkStyle 1 stroke:red;`, but
+/// rusty-mermaid fails to parse them. Only flowcharts are touched, so text
+/// in other diagrams keeps its semicolons. Borrows `source` when unchanged.
+fn strip_statement_semicolons(source: &str) -> Cow<'_, str> {
+    let is_terminated = |line: &str| line.trim_end().ends_with(MERMAID_STATEMENT_TERMINATOR);
+    if detect(source) != Some(DiagramKind::Flowchart) || !source.lines().any(is_terminated) {
+        return Cow::Borrowed(source);
+    }
+    let mut body = String::with_capacity(source.len());
+    for line in source.lines() {
+        body.push_str(
+            line.trim_end()
+                .trim_end_matches(MERMAID_STATEMENT_TERMINATOR),
+        );
+        body.push('\n');
+    }
+    Cow::Owned(body)
 }
 
 /// Stand-in composite-state label colour that marks those labels in a scene.
@@ -428,8 +451,8 @@ fn recolor_day_pie_separators(source: &str, svg: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        content_mins, diagram_theme, padded_theme, MermaidRender, Render, RenderPdf,
-        MERMAID_ERROR_CLASS,
+        content_mins, diagram_theme, padded_theme, strip_statement_semicolons, MermaidRender,
+        Render, RenderPdf, MERMAID_ERROR_CLASS,
     };
     use crate::constants::{MERMAID_STROKE_SLOP, PDF_FONT_FAMILY};
     use crate::theme::{ColorTheme, ThemeGuard};
@@ -437,6 +460,7 @@ mod tests {
         render, BBox, Color, Point, Primitive, Scene, Style, TextAnchor, TextStyle, Theme,
     };
     use rusty_mermaid_core::{PathSegment, SimpleTextMeasure, TextMeasure, Transform};
+    use std::borrow::Cow;
 
     /// Return a scene holding one stroke-free rect spanning (10,10)-(50,30).
     fn scene_with_inner_rect() -> Scene {
@@ -727,6 +751,41 @@ mod tests {
             .render_svg("%%{init: {\n'theme': 'base'\n}}%%\npie\n\"A\" : 1\n\"B\" : 2\n")
             .unwrap();
         assert!(!svg.contains("stroke=\"#ffffff\""), "{svg}");
+    }
+
+    #[test]
+    /// Assert `;`-terminated classDef, style and linkStyle lines render.
+    fn flowchart_trailing_semicolons_render() {
+        let source = "flowchart LR\n    \
+            classDef success fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#065f46;\n    \
+            classDef danger fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#991b1b;\n    \
+            classDef default fill:#f8fafc,stroke:#64748b,stroke-width:1px;\n    \
+            A[Start Process] --> B{Health Check}\n    \
+            style A fill:#e0e7ff,stroke:#4338ca,stroke-width:3px,color:#1e1b4b\n    \
+            B -->|Pass| C[Deploy Service]:::success\n    \
+            B -->|Fail| D[Alert Team]:::danger\n    \
+            E[Post Incident Review]\n    \
+            class E danger\n    \
+            D --> E\n    \
+            linkStyle 1 stroke:#059669,stroke-width:3px;\n    \
+            linkStyle 2 stroke:#dc2626,stroke-width:3px,stroke-dasharray: 5 5;\n";
+        let svg = MermaidRender
+            .render_svg(source)
+            .unwrap()
+            .to_ascii_lowercase();
+        for colour in ["#d1fae5", "#fee2e2", "#e0e7ff", "#059669", "#dc2626"] {
+            assert!(svg.contains(colour), "{colour} missing: {svg}");
+        }
+    }
+
+    #[test]
+    /// Assert semicolons are kept outside flowcharts.
+    fn non_flowchart_keeps_semicolons() {
+        let source = "pie title Pets;\n\"Dogs\" : 2\n";
+        assert!(matches!(
+            strip_statement_semicolons(source),
+            Cow::Borrowed(s) if s == source
+        ));
     }
 
     /// Flowchart with a subgraph and a labelled edge.
