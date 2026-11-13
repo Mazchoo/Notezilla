@@ -155,7 +155,7 @@ You can customize colors, fonts, borders, and backgrounds per diagram type:
 }}%%
 flowchart LR
     subgraph Tertiary[Tertiary color: subgraph background]
-        A[Primary color] -->|Secondary color| B{}
+        A[Primary color] -->|Secondary color| B[Primary color]
     end
 ```
 
@@ -195,14 +195,12 @@ flowchart TD
     id8>"8. Asymmetric / Banner: id8>text]"]
     id9{"9. Rhombus / Decision: id9{text}"}
     id10{{"10. Hexagon: id10{{text}}"}}
-    id11[/"11. Parallelogram: id11[/text/]"/]
-    id12[\"12. Parallelogram Alt: id12[\text\]"\]
-    id13[/"13. Trapezoid: id13[/text\]"\]
-    id14[\"14. Inverted Trapezoid: id14[\text/]"/]
 
     id1 --> id2 --> id3 --> id4 --> id5 --> id6 --> id7
-    id7 --> id8 --> id9 --> id10 --> id11 --> id12 --> id13 --> id14
+    id7 --> id8 --> id9 --> id10
 ```
+
+Parallelograms and Trapezoids are not currently supported.
 
 ### All Line & Arrow Connectors
 
@@ -289,15 +287,16 @@ Mermaid provides 4 ways to style flowchart elements:
 4. **`linkStyle`**: Targets connectors by index (0-indexed order of appearance).
 
 ```mermaid
+%%{init: {'themeVariables': {'primaryTextColor': '#000000'}}}%%
 flowchart LR
     %% Reusable Class Definitions
-    classDef success fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#065f46;
-    classDef danger fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
-    classDef default fill:#f8fafc,stroke:#64748b,stroke-width:1px;
+    classDef success fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#000000;
+    classDef danger fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#000000;
+    classDef default fill:#f8fafc,stroke:#64748b,stroke-width:1px,color:#000000;
 
     %% Direct Inline Style
     A[Start Process] --> B{Health Check}
-    style A fill:#e0e7ff,stroke:#4338ca,stroke-width:3px,color:#1e1b4b
+    style A fill:#e0e7ff,stroke:#4338ca,stroke-width:3px,color:#000000
 
     %% Shorthand Class Application
     B -->|Pass| C[Deploy Service]:::success
