@@ -5,7 +5,7 @@
 pub enum RenderTarget {
     /// HTML for the editor preview, styled by `index.html`.
     Editor,
-    /// HTML for ironpress PDF conversion, styled by `templates/export-pdf.html`.
+    /// HTML for ironpress PDF conversion, styled by `static/export-pdf.html`.
     Pdf,
 }
 

@@ -107,7 +107,7 @@ impl AppState {
             active_panel: RwSignal::new(Some(ActivePanel::Files)),
             entries: RwSignal::new(vec![EditorEntry::new(
                 DEFAULT_MARKDOWN_PATH,
-                include_str!("../templates/new_markdown.md"),
+                include_str!("../static/new_markdown.md"),
             )]),
             current_path: RwSignal::new(None),
             search_query: RwSignal::new(String::new()),
@@ -214,7 +214,7 @@ mod tests {
             assert_eq!(entries[0].title.path.get_untracked(), DEFAULT_MARKDOWN_PATH);
             assert_eq!(
                 entries[0].content.text.get_untracked(),
-                include_str!("../templates/new_markdown.md")
+                include_str!("../static/new_markdown.md")
             );
             assert_eq!(state.active_panel.get_untracked(), Some(ActivePanel::Files));
             assert!(!state.mcp_available.get_untracked());

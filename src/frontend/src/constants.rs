@@ -42,14 +42,14 @@ pub const DRAG_MIME: &str = "text/plain";
 /// MIME type of downloaded mermaid and graphviz SVG files.
 pub const SVG_MIME: &str = "image/svg+xml;charset=utf-8";
 
-pub const EXPORT_TEMPLATE: &str = include_str!("../templates/export.html");
-pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../templates/export-pdf.html");
+pub const EXPORT_TEMPLATE: &str = include_str!("../static/export.html");
+pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../static/export-pdf.html");
 pub const NIGHT_CSS: &str = include_str!("../night.css");
 pub const DAY_CSS: &str = include_str!("../day.css");
-pub const PROMPT_TEMPLATE: &str = include_str!("../templates/prompt.md");
+pub const PROMPT_TEMPLATE: &str = include_str!("../static/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
-pub const IMAGE_MISSING_SVG: &str = include_str!("../templates/image-missing.svg");
+pub const IMAGE_MISSING_SVG: &str = include_str!("../static/image-missing.svg");
 /// Checkmark drawn on a checked settings checkbox. Served as a static file.
 #[allow(dead_code)]
 pub const CHECKBOX_CHECK_SVG_HREF: &str = "/checkbox-check.svg";
@@ -274,8 +274,8 @@ mod tests {
             DAY_CSS.contains(&day_url),
             "day checked checkbox must load {CHECKBOX_CHECK_DAY_SVG_HREF}"
         );
-        let night = include_str!("../templates/checkbox-check.svg");
-        let day = include_str!("../templates/checkbox-check-day.svg");
+        let night = include_str!("../static/checkbox-check.svg");
+        let day = include_str!("../static/checkbox-check-day.svg");
         for svg in [night, day] {
             assert!(svg.contains("<svg"), "{svg}");
             assert!(svg.contains("</svg>"), "{svg}");
