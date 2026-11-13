@@ -91,6 +91,7 @@ pub const GEMINI_UNAVAILABLE_TITLE: &str = "Gemini unavailable";
 pub const PROMPT_OUTPUT_PATH_TITLE: &str = "Save response to";
 pub const ENTER_OUTPUT_PATH_TOAST: &str = "Enter a response path";
 pub const MCP_SESSION_NOT_READY_TOAST: &str = "MCP session not ready";
+pub const BACKEND_NO_RESPONSE_TOAST: &str = "Backend failed to respond";
 pub const ENTER_GEMINI_API_KEY_TOAST: &str = "Enter a Gemini API key";
 pub const ENTER_GEMINI_MODEL_TOAST: &str = "Enter a Gemini model";
 

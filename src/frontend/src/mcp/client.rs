@@ -1,5 +1,6 @@
 use crate::components::toast::show_mcp_warnings;
 use crate::constants::MCP_URL;
+use crate::info_messages::BACKEND_NO_RESPONSE_TOAST;
 use gloo_net::http::Request;
 use leptos::prelude::{GetUntracked, RwSignal, Set};
 use leptos::task::spawn_local;
@@ -138,6 +139,10 @@ pub async fn call_tool(
         .text()
         .await
         .map_err(|e| format!("Body read error: {e}"))?;
+
+    if text.trim().is_empty() {
+        return Err(BACKEND_NO_RESPONSE_TOAST.to_string());
+    }
 
     let rpc = parse_sse(&text).ok_or_else(|| format!("Could not parse SSE body: {text:?}"))?;
 
