@@ -955,13 +955,13 @@ Timelines showcase historical milestones, version releases, or phased project ro
 timeline
     title Evolution of Web Frontend Engineering
     section 1990s : The Static Era
-        1991 : World Wide Web opened to public/1995 JavaScript invented/HTML 2.0 Standardized/1996 CSS Initial Specification
+        1991 : World Wide Web opened to public
+        1995 : JavaScript invented
+        1996 : CSS initial specification
     section 2000s : The Dynamic Web
-        2004 : Gmail proves AJAX feasibility/2006 jQuery Released/Google Chrome & V8 Engine
-    section 2010s : The SPA Revolution
-        2010 : AngularJS Launch/2013 React Introduced by Facebook/2015 ECMAScript 2015 (ES6) Standard
-    section 2020s : Modern Meta-Frameworks
-        2020 : Next.js & Svelte gain mass adoption/2024 React Server Components & Edge Runtimes
+        2004 : Gmail proves AJAX feasibility
+        2006 : jQuery released
+        2008 : Google Chrome & V8 engine
 ```
 
 ---

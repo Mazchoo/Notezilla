@@ -26,4 +26,5 @@ Ensure the GUI correctly renders Mermaid diagrams to satisfy the "extending user
 - [x] Diagrams can be exported as SVG files via a download action.
 - [x] Theme changes (light/dark) are reflected in diagram colors without a page reload.
 - [x] In locked mode, clicking on an a diagram creates a modal that zooms into that diagram
-- [ ] A Mermaid syntax reference is accessible from the editor for quick lookup.
+- [x] A Mermaid syntax reference is accessible from the editor for quick lookup.
+- [ ] Scrolling to links are supported when the document is locked
