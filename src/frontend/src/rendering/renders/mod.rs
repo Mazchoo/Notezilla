@@ -12,6 +12,7 @@ mod graphviz_label;
 mod marker_arrow;
 mod math;
 mod mermaid;
+mod mermaid_architecture;
 mod mermaid_block;
 mod mermaid_contrast;
 mod mermaid_directive;

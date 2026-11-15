@@ -1,6 +1,7 @@
 //! Renders a Mermaid diagram block to inline SVG.
 
 use super::marker_arrow::expand_path_markers;
+use super::mermaid_architecture::fit_service_labels;
 use super::mermaid_block::{label_blocks, render_block};
 use super::mermaid_contrast::fix_label_contrast;
 use super::mermaid_directive::apply_directives;
@@ -78,13 +79,14 @@ fn render_scene(source: &str, theme: &Theme) -> Result<Scene, ParseError> {
     }
 }
 
-/// Put back the labels rusty-mermaid leaves out of `scene` for being too wide.
+/// Put back or wrap the labels rusty-mermaid leaves out or lets overflow for being too wide.
 fn restore_dropped_labels(scene: Scene, source: &str, theme: &Theme) -> Scene {
     match detect(source) {
         Some(DiagramKind::UserJourney) => label_journey_tasks(scene, source, theme),
         Some(DiagramKind::Block) => label_blocks(scene, source, theme),
         Some(DiagramKind::Packet) => label_packet_fields(scene, source, theme),
         Some(DiagramKind::Treemap) => label_treemap_leaves(scene, source, theme),
+        Some(DiagramKind::Architecture) => fit_service_labels(scene),
         _ => scene,
     }
 }

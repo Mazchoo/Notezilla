@@ -129,6 +129,14 @@ pub const MERMAID_JOURNEY_TASK_WIDTH: f64 = 120.0;
 pub const MERMAID_JOURNEY_TASK_HEIGHT: f64 = 32.0;
 /// Horizontal space rusty-mermaid keeps between a journey task label and its box edges.
 pub const MERMAID_JOURNEY_LABEL_PADDING: f64 = 8.0;
+/// Width of a rusty-mermaid architecture service box.
+pub const MERMAID_ARCHITECTURE_SERVICE_WIDTH: f64 = 100.0;
+/// Height of a rusty-mermaid architecture service box.
+pub const MERMAID_ARCHITECTURE_SERVICE_HEIGHT: f64 = 80.0;
+/// Scene offset of an architecture service's icon circle from its box.
+pub const MERMAID_ARCHITECTURE_ICON_OFFSET: usize = 1;
+/// Scene offset of an architecture service's label from its box (after the icon text).
+pub const MERMAID_ARCHITECTURE_LABEL_OFFSET: usize = 3;
 /// Space kept between a restored mermaid label and the edges of its box.
 pub const MERMAID_LABEL_PADDING: f64 = 8.0;
 /// Smallest font size a restored mermaid label is shrunk to while fitting its box.

@@ -1,0 +1,4 @@
+# math-core 0.9 needs rustc 1.96 or newer.
+[toolchain]
+channel = "1.100.0"
+targets = ["wasm32-unknown-unknown"]
