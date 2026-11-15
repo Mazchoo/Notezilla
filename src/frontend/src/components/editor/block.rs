@@ -4,7 +4,8 @@ use crate::components::editor::actions::{
 };
 use crate::components::editor::caret_placement::{caret_placement_at, CaretPlacement};
 use crate::components::editor::edit_area::{
-    autosize_textarea, editor_area, focus_textarea, place_caret, sync_textarea_value,
+    autosize_textarea, editor_area, exit_anchor, focus_textarea, place_caret, restore_exit_anchor,
+    sync_textarea_value,
 };
 use crate::info_messages::{
     ADD_FRONTMATTER_TITLE, APP_STATE_MISSING_PANIC, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE,
@@ -311,11 +312,28 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         block.rerender();
     });
 
+    // Re-render markdown and leave edit mode. The source line the user was
+    // on is noted first; once the rendered HTML is back in place the editor
+    // scrolls so that line shows at the same height it had in the textarea.
+    let leave_edit_mode = move || {
+        let anchor = textarea_ref
+            .get_untracked()
+            .and_then(|el| block.text.with_untracked(|src| exit_anchor(&el, src)));
+        block.rerender();
+        block.focused.set(false);
+        if let Some(anchor) = anchor {
+            request_animation_frame(move || {
+                block
+                    .text
+                    .try_with_untracked(|src| restore_exit_anchor(&anchor, src));
+            });
+        }
+    };
+
     // Leave edit mode when main-text editing is turned off.
     Effect::new(move |_| {
         if !markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {
-            block.rerender();
-            block.focused.set(false);
+            leave_edit_mode();
         }
     });
 
@@ -351,11 +369,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         }
     });
 
-    // On blur: re-render markdown and leave edit mode.
-    let on_blur = move |_: web_sys::FocusEvent| {
-        block.rerender();
-        block.focused.set(false);
-    };
+    let on_blur = move |_: web_sys::FocusEvent| leave_edit_mode();
 
     let on_input = move |ev: web_sys::Event| {
         block.text.set(event_target_value(&ev));

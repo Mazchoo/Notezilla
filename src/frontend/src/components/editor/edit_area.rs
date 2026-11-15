@@ -1,9 +1,9 @@
-use crate::components::editor::caret_placement::CaretPlacement;
-use crate::constants::{CARET_MARKER_TEXT, TEXTAREA_MIRROR_STYLE};
-use crate::rendering::textarea_text_before;
+use crate::components::editor::caret_placement::{rendered_y_of, CaretPlacement};
+use crate::constants::{BLOCK_RENDER_SELECTOR, CARET_MARKER_TEXT, TEXTAREA_MIRROR_STYLE};
+use crate::rendering::{source_offset_at_textarea, textarea_text_before};
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{FocusOptions, HtmlElement, HtmlTextAreaElement};
+use web_sys::{Element, FocusOptions, HtmlElement, HtmlTextAreaElement};
 
 /// Return the `.editor-area` element from the document.
 pub(crate) fn editor_area() -> Option<HtmlElement> {
@@ -104,4 +104,70 @@ fn caret_line_center(el: &HtmlTextAreaElement, text_before: &str) -> Option<f64>
     let center = mirror.client_top() + marker.offset_top() + marker.offset_height() / 2;
     mirror.remove();
     Some(f64::from(center))
+}
+
+/// A source line and the height it showed at when edit mode was left.
+#[derive(Clone, Debug)]
+pub(crate) struct ExitAnchor {
+    /// Editor block that held the textarea and now holds the rendered HTML.
+    block: Element,
+    /// Byte offset of the anchored line in the markdown source.
+    source_offset: usize,
+    /// Viewport y the line's center had in the textarea.
+    view_y: f64,
+}
+
+/// Return the line of `src` to keep in place when `el` leaves edit mode.
+///
+/// The caret line is used while it is on screen. If the user scrolled it out
+/// of view, the line nearest the middle of the editor area is used instead.
+pub(crate) fn exit_anchor(el: &HtmlTextAreaElement, src: &str) -> Option<ExitAnchor> {
+    let area_rect = editor_area_for(el)?.get_bounding_client_rect();
+    let block = el.parent_element()?;
+    let top = el.get_bounding_client_rect().top();
+    let line_y = |offset: usize| {
+        caret_line_center(el, &textarea_text_before(src, offset)).map(|center| top + center)
+    };
+
+    let caret = el.selection_start().ok().flatten().unwrap_or(0);
+    let mut source_offset = source_offset_at_textarea(src, caret);
+    let mut view_y = line_y(source_offset)?;
+    if view_y < area_rect.top() || view_y > area_rect.bottom() {
+        let middle = (area_rect.top() + area_rect.bottom()) / 2.0;
+        let line_starts: Vec<usize> = std::iter::once(0)
+            .chain(src.match_indices('\n').map(|(at, _)| at + 1))
+            .collect();
+        // Last line that starts at or above the middle of the editor area.
+        let (mut low, mut high) = (0, line_starts.len() - 1);
+        while low < high {
+            let probe = (low + high).div_ceil(2);
+            if line_y(line_starts[probe])? <= middle {
+                low = probe;
+            } else {
+                high = probe - 1;
+            }
+        }
+        source_offset = line_starts[low];
+        view_y = line_y(source_offset)?;
+    }
+    Some(ExitAnchor {
+        block,
+        source_offset,
+        view_y,
+    })
+}
+
+/// Scroll the editor so the anchored line of `src` shows in the rendered
+/// HTML at the height it had in the textarea.
+pub(crate) fn restore_exit_anchor(anchor: &ExitAnchor, src: &str) -> Option<()> {
+    let rendered = anchor.block.query_selector(BLOCK_RENDER_SELECTOR).ok()??;
+    let area = rendered
+        .closest(".editor-area")
+        .ok()??
+        .dyn_into::<HtmlElement>()
+        .ok()?;
+    let rendered_y = rendered_y_of(&rendered, src, anchor.source_offset)?;
+    let scroll_top = f64::from(area.scroll_top()) + rendered_y - anchor.view_y;
+    area.set_scroll_top(scroll_top.round().max(0.0) as i32);
+    Some(())
 }

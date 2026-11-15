@@ -188,6 +188,77 @@ fn nearest_source_offset(root: &Element, x: f64, y: f64) -> Option<usize> {
     best.map(|(_, offset)| offset)
 }
 
+/// Return the viewport y at which source byte `offset` of `src` is rendered
+/// inside `root`.
+///
+/// The tagged element that starts closest before `offset` is used. Verbatim
+/// text gives the exact character, a line-mapped block gives its line, and
+/// anything else is placed in proportion between its start and the start of
+/// the next tagged element.
+pub(crate) fn rendered_y_of(root: &Element, src: &str, offset: usize) -> Option<f64> {
+    let candidates = root.query_selector_all(SOURCE_MAPPED_SELECTOR).ok()?;
+    let mut before: Option<MappedElement> = None;
+    let mut first: Option<MappedElement> = None;
+    let mut next_offset = src.len();
+    for index in 0..candidates.length() {
+        let Some(mapped) = candidates
+            .item(index)
+            .and_then(|node| node.dyn_into::<Element>().ok())
+            .and_then(MappedElement::from_element)
+        else {
+            continue;
+        };
+        if mapped.offset > offset {
+            next_offset = next_offset.min(mapped.offset);
+            if first.as_ref().is_none_or(|f| mapped.offset < f.offset) {
+                first = Some(mapped);
+            }
+        } else if before.as_ref().is_none_or(|b| mapped.offset > b.offset) {
+            before = Some(mapped);
+        }
+    }
+    let Some(mapped) = before else {
+        // The offset precedes all rendered content.
+        return first.map(|mapped| mapped.element.get_bounding_client_rect().top());
+    };
+    let rect = mapped.element.get_bounding_client_rect();
+    let passed = src.get(mapped.offset..offset).unwrap_or_default();
+    match mapped.kind {
+        SourceKind::Verbatim => {
+            verbatim_y(&mapped.element, passed).or(Some((rect.top() + rect.bottom()) / 2.0))
+        }
+        SourceKind::Lines => {
+            let text = mapped.element.text_content().unwrap_or_default();
+            let lines = text.trim_end_matches('\n').split('\n').count();
+            let line = passed.matches('\n').count().min(lines - 1);
+            Some(rect.top() + (line as f64 + 0.5) / lines as f64 * rect.height())
+        }
+        SourceKind::Atom => {
+            let span = next_offset.saturating_sub(mapped.offset).max(1);
+            let share = (passed.len() as f64 / span as f64).min(1.0);
+            Some(rect.top() + share * rect.height())
+        }
+    }
+}
+
+/// Return the viewport y of the character that follows `passed` in a
+/// verbatim element, or of its last character when the source runs past it.
+fn verbatim_y(element: &Element, passed: &str) -> Option<f64> {
+    let text_node = element.first_child()?;
+    let text = text_node.text_content().unwrap_or_default();
+    let reached = if text.starts_with(passed) {
+        passed
+    } else {
+        text.as_str()
+    };
+    let units = reached.encode_utf16().count() as u32;
+    let range = element.owner_document()?.create_range().ok()?;
+    range.set_start(&text_node, units).ok()?;
+    range.set_end(&text_node, units).ok()?;
+    let rect = range.get_bounding_client_rect();
+    (rect.height() > 0.0).then(|| (rect.top() + rect.bottom()) / 2.0)
+}
+
 /// Return how far `value` lies outside `low..=high`; zero when inside.
 fn distance_outside(value: f64, low: f64, high: f64) -> f64 {
     if value < low {

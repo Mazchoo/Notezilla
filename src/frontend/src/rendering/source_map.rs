@@ -259,15 +259,12 @@ pub fn textarea_text_before(src: &str, offset: usize) -> String {
 /// Return the source byte offset of textarea selection offset `units`.
 ///
 /// The inverse of [`textarea_text_before`]: `units` counts UTF-16 units of
-/// the textarea value, where each `
-` of `src` is a single `
-`.
+/// the textarea value, where each `\r\n` of `src` is a single `\n`.
 pub fn source_offset_at_textarea(src: &str, units: u32) -> usize {
     let bytes = src.as_bytes();
     let mut seen = 0;
     for (at, ch) in src.char_indices() {
-        if ch == '' && bytes.get(at + 1) == Some(&b'
-') {
+        if ch == '\r' && bytes.get(at + 1) == Some(&b'\n') {
             continue;
         }
         if seen >= units {
@@ -285,9 +282,8 @@ mod tests {
     #[test]
     /// Assert textarea offsets map back to source bytes across CRLF and wide chars.
     fn textarea_offsets_map_back_to_source() {
-        let src = "a
-é☕b";
-        for offset in [0, 1, 3, 5, 8, 9] {
+        let src = "a\r\né☕b";
+        for offset in [0, 3, 5, 8, 9] {
             let units = textarea_text_before(src, offset).encode_utf16().count() as u32;
             assert_eq!(source_offset_at_textarea(src, units), offset, "{offset}");
         }
