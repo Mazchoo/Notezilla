@@ -326,6 +326,12 @@ pub const SOURCE_KIND_ATOM: &str = "atom";
 pub const SOURCE_MAPPED_SELECTOR: &str = "[data-src]";
 /// Selector of the rendered markdown inside an editor block.
 pub const BLOCK_RENDER_SELECTOR: &str = ".block-render";
+/// Selector of a rendered markdown link.
+pub const LINK_SELECTOR: &str = "a[href]";
+/// Attribute holding a link's destination.
+pub const LINK_HREF_ATTR: &str = "href";
+/// Selector of every rendered heading carrying an anchor id.
+pub const ANCHORED_HEADING_SELECTOR: &str = "h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]";
 /// Document methods returning the caret under a viewport point, each with the
 /// result properties holding the caret's node and its offset in that node.
 pub const CARET_FROM_POINT_METHODS: &[(&str, &str, &str)] = &[

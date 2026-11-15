@@ -6,6 +6,7 @@
 //! mermaid, images, lists) are intercepted and handed to a render.
 
 mod block_kind;
+mod heading_slug;
 mod html_escape;
 mod math_substitution;
 mod pdf;
@@ -16,11 +17,14 @@ mod svg_path_ends;
 mod svg_text_elements;
 
 use block_kind::BlockKind;
+use heading_slug::HeadingSlugs;
 pub(crate) use html_escape::{escape_html, escape_html_comment, escape_svg_text};
 use math_substitution::{substitute_math, substitute_math_mapped};
 pub(crate) use pdf::{html_to_pdf_bytes, pdf_rgb_operator};
 use pdf::{pdf_list_item_open, PdfListKind};
-use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{
+    html, CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd,
+};
 use renders::{
     CodeRender, GraphvizRender, MermaidRender, MissingImageRender, RenderPdf, RenderTarget,
 };
@@ -149,6 +153,11 @@ struct InterceptedMarkdown<'a> {
     /// Parser offset where the fence or image being intercepted starts.
     intercept_start: usize,
     source_map: Option<SourceMap<'a>>,
+    /// Events of the heading being given an anchor id, held until its end.
+    heading_queue: VecDeque<Event<'a>>,
+    /// Plain text of the heading being buffered, used to derive its id.
+    heading_text: Option<String>,
+    heading_slugs: HeadingSlugs,
 }
 
 impl<'a> InterceptedMarkdown<'a> {
@@ -167,6 +176,9 @@ impl<'a> InterceptedMarkdown<'a> {
             pdf_list_stack: Vec::new(),
             intercept_start: 0,
             source_map: None,
+            heading_queue: VecDeque::new(),
+            heading_text: None,
+            heading_slugs: HeadingSlugs::default(),
         }
     }
 
@@ -253,6 +265,39 @@ impl<'a> InterceptedMarkdown<'a> {
         self.pending.push_back(Event::Html(html_fragment.into()));
     }
 
+    /// Buffer a heading's events and return its start tag carrying an anchor id.
+    fn anchor_heading(
+        &mut self,
+        level: HeadingLevel,
+        classes: Vec<CowStr<'a>>,
+        attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
+    ) -> Event<'a> {
+        self.heading_text = Some(String::new());
+        while let Some(event) = self.next_rewritten() {
+            let end = matches!(event, Event::End(TagEnd::Heading(_)));
+            self.heading_queue.push_back(event);
+            if end {
+                break;
+            }
+        }
+        let text = self.heading_text.take().unwrap_or_default();
+        Event::Start(Tag::Heading {
+            level,
+            id: Some(self.heading_slugs.next(&text).into()),
+            classes,
+            attrs,
+        })
+    }
+
+    /// Add the text of `event` to the heading being buffered, if any.
+    fn collect_heading_text(&mut self, event: &Event<'_>) {
+        if let (Some(heading), Event::Text(text) | Event::Code(text)) =
+            (self.heading_text.as_mut(), event)
+        {
+            heading.push_str(text);
+        }
+    }
+
     /// Render `source` with `render` for this stream's output target.
     fn render<R: RenderPdf>(&self, render: &R, source: &str) -> String {
         render.render_for(self.target, source)
@@ -302,13 +347,9 @@ impl<'a> InterceptedMarkdown<'a> {
             other => Some(other),
         }
     }
-}
 
-impl<'a> Iterator for InterceptedMarkdown<'a> {
-    type Item = Event<'a>;
-
-    /// Yield the next rewritten markdown event.
-    fn next(&mut self) -> Option<Event<'a>> {
+    /// Yield the next markdown event with code blocks, images and lists rewritten.
+    fn next_rewritten(&mut self) -> Option<Event<'a>> {
         loop {
             if let Some(event) = self.pending.pop_front() {
                 return Some(event);
@@ -339,8 +380,31 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
 
             match self.try_start_intercepted(event, range.start) {
                 None => continue,
-                Some(event) => return Some(self.tag_text(event, range)),
+                Some(event) => {
+                    self.collect_heading_text(&event);
+                    return Some(self.tag_text(event, range));
+                }
             }
+        }
+    }
+}
+
+impl<'a> Iterator for InterceptedMarkdown<'a> {
+    type Item = Event<'a>;
+
+    /// Yield the next rewritten markdown event, giving headings anchor ids.
+    fn next(&mut self) -> Option<Event<'a>> {
+        if let Some(event) = self.heading_queue.pop_front() {
+            return Some(event);
+        }
+        match self.next_rewritten()? {
+            Event::Start(Tag::Heading {
+                level,
+                id: None,
+                classes,
+                attrs,
+            }) => Some(self.anchor_heading(level, classes, attrs)),
+            event => Some(event),
         }
     }
 }
@@ -468,10 +532,29 @@ mod tests {
     }
 
     #[test]
+    /// Assert headings get anchor ids from their text, with or without source tags.
+    fn headings_carry_anchor_ids() {
+        let src = "## 3. Flowcharts (`flowchart` / `graph`)
+
+## Notes
+
+## Notes
+";
+        for html in [render_markdown(src), render_markdown_with_source_map(src)] {
+            assert!(
+                html.contains(r#"<h2 id="3-flowcharts-flowchart--graph">"#),
+                "{html}"
+            );
+            assert!(html.contains(r#"<h2 id="notes">"#), "{html}");
+            assert!(html.contains(r#"<h2 id="notes-1">"#), "{html}");
+        }
+    }
+
+    #[test]
     /// Assert plain markdown becomes HTML.
     fn renders_plain_markdown() {
         let html = render_markdown("# Title\n\ntext\n");
-        assert!(html.contains("<h1>Title</h1>"), "{html}");
+        assert!(html.contains(r#"<h1 id="title">Title</h1>"#), "{html}");
         assert!(html.contains("<p>text</p>"), "{html}");
     }
 

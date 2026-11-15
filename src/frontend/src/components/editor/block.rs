@@ -7,6 +7,7 @@ use crate::components::editor::edit_area::{
     autosize_textarea, editor_area, exit_anchor, focus_textarea, place_caret, restore_exit_anchor,
     sync_textarea_value,
 };
+use crate::components::editor::links::{clicked_link, link_fragment, scroll_to_heading};
 use crate::info_messages::{
     ADD_FRONTMATTER_TITLE, APP_STATE_MISSING_PANIC, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE,
     DELETE_BLOCK_TITLE, DELETE_FRONT_MATTER_TITLE, EXPAND_SECTION_TITLE,
@@ -379,15 +380,23 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     };
 
     // Click anywhere on the block wrapper to enter edit mode with the caret at
-    // the clicked text; when editing is
-    // locked, clicking a rendered diagram opens it full-screen instead.
+    // the clicked text; a clicked link is not followed. When editing is
+    // locked, an in-document link scrolls to its heading and clicking a
+    // rendered diagram opens it full-screen instead.
     let diagram_modal_svg = state.diagram_modal_svg;
     let on_block_click = move |ev: web_sys::MouseEvent| {
+        let link = clicked_link(&ev);
         if !markdown_editing_enabled.get_untracked() {
-            if let Some(svg) = diagram_svg_from_event(&ev) {
+            if let Some(fragment) = link.as_ref().and_then(link_fragment) {
+                ev.prevent_default();
+                scroll_to_heading(&ev, &fragment);
+            } else if let Some(svg) = diagram_svg_from_event(&ev) {
                 diagram_modal_svg.set(Some(svg));
             }
             return;
+        }
+        if link.is_some() {
+            ev.prevent_default();
         }
         if !block.focused.get_untracked() {
             enter_scroll_top.set(editor_area().map(|a| a.scroll_top()));
