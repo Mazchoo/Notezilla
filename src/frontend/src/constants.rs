@@ -4,6 +4,9 @@ pub const NEW_TEMPLATE_PATH: &str = "./new_template.md";
 /// Editor path of the mermaid help manual opened from the help dropdown.
 pub const MERMAID_HELP_MANUAL_PATH: &str = "./mermaid_help_manual.md";
 pub const MERMAID_HELP_MANUAL: &str = include_str!("../static/mermaid_help_manual.md");
+/// Editor path of the graphviz help manual opened from the help dropdown.
+pub const GRAPHVIZ_HELP_MANUAL_PATH: &str = "./graphviz_manual.md";
+pub const GRAPHVIZ_HELP_MANUAL: &str = include_str!("../static/graphviz_manual.md");
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
@@ -117,6 +120,12 @@ pub const MERMAID_STATEMENT_TERMINATOR: char = ';';
 pub const MERMAID_MIN_TEXT_CONTRAST: f64 = 3.0;
 /// Segments a circular path arc is split into when testing what a label sits on.
 pub const MERMAID_ARC_SAMPLES: usize = 16;
+/// Width of a rusty-mermaid journey task box.
+pub const MERMAID_JOURNEY_TASK_WIDTH: f64 = 120.0;
+/// Height of a rusty-mermaid journey task box.
+pub const MERMAID_JOURNEY_TASK_HEIGHT: f64 = 32.0;
+/// Horizontal space rusty-mermaid keeps between a journey task label and its box edges.
+pub const MERMAID_JOURNEY_LABEL_PADDING: f64 = 8.0;
 /// Offset WCAG adds to both luminances in a contrast ratio.
 pub const WCAG_CONTRAST_FLARE: f64 = 0.05;
 

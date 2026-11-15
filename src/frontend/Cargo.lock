@@ -1757,6 +1757,7 @@ dependencies = [
  "pulldown-cmark",
  "rusty-mermaid",
  "rusty-mermaid-core",
+ "rusty-mermaid-diagrams",
  "serde",
  "serde_json",
  "serde_yaml",

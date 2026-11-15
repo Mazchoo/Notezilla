@@ -3,6 +3,7 @@
 use super::marker_arrow::expand_path_markers;
 use super::mermaid_contrast::fix_label_contrast;
 use super::mermaid_directive::apply_directives;
+use super::mermaid_journey::label_journey_tasks;
 use super::mermaid_label::flatten_label;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
@@ -38,6 +39,10 @@ impl MermaidRender {
             Some(color) => render_with_node_labels(source, &theme, color),
         }
         .map_err(|e| e.to_string())?;
+        let scene = match detect(source) {
+            Some(DiagramKind::UserJourney) => label_journey_tasks(scene, source, &theme),
+            _ => scene,
+        };
         let chosen = chosen_text_colors(&default_theme, &theme);
         let scene = fix_label_contrast(&scene, page_color(), &chosen);
         let svg_theme = padded_theme(theme, &scene);

@@ -6,12 +6,14 @@ use crate::components::hotkeys::format_ctrl_hotkey;
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
 use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
-use crate::constants::{MERMAID_HELP_MANUAL, MERMAID_HELP_MANUAL_PATH};
+use crate::constants::{
+    GRAPHVIZ_HELP_MANUAL, GRAPHVIZ_HELP_MANUAL_PATH, MERMAID_HELP_MANUAL, MERMAID_HELP_MANUAL_PATH,
+};
 use crate::info_messages::{
     format_save_summary, mcp_status_title, save_failed_toast, saved_log, with_hotkey,
     APP_STATE_MISSING_PANIC, CLOSE_ALL_TITLE, EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE,
     EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE,
-    HELP_MERMAID_MENU, HELP_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
+    HELP_GRAPHVIZ_MENU, HELP_MERMAID_MENU, HELP_TITLE, IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE,
     MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL, NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE,
     SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
 };
@@ -99,11 +101,18 @@ pub fn append_new_file(state: &AppState) {
 }
 
 /// Help-dropdown entries: menu label, editor path, and bundled manual text.
-const HELP_MANUALS: [(&str, &str, &str); 1] = [(
-    HELP_MERMAID_MENU,
-    MERMAID_HELP_MANUAL_PATH,
-    MERMAID_HELP_MANUAL,
-)];
+const HELP_MANUALS: [(&str, &str, &str); 2] = [
+    (
+        HELP_MERMAID_MENU,
+        MERMAID_HELP_MANUAL_PATH,
+        MERMAID_HELP_MANUAL,
+    ),
+    (
+        HELP_GRAPHVIZ_MENU,
+        GRAPHVIZ_HELP_MANUAL_PATH,
+        GRAPHVIZ_HELP_MANUAL,
+    ),
+];
 
 /// Open a bundled help manual as a note, replacing any open copy at the same path.
 pub fn open_help_manual(state: &AppState, path: &str, text: &str) {

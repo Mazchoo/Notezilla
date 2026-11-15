@@ -13,6 +13,7 @@ pub const ACTIVITY_SETTINGS_TITLE: &str = "Settings";
 
 pub const HELP_TITLE: &str = "Help";
 pub const HELP_MERMAID_MENU: &str = "Mermaid";
+pub const HELP_GRAPHVIZ_MENU: &str = "Graphviz";
 pub const IMPORT_MARKDOWN_TITLE: &str = "Import Markdown";
 pub const SAVE_TITLE: &str = "Save";
 pub const EXPORT_TITLE: &str = "Export";

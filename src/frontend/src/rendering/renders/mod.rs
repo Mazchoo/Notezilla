@@ -14,6 +14,7 @@ mod math;
 mod mermaid;
 mod mermaid_contrast;
 mod mermaid_directive;
+mod mermaid_journey;
 mod mermaid_label;
 mod missing_image;
 mod render_error;
