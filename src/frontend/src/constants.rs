@@ -112,6 +112,13 @@ pub const GRAPHVIZ_EDGE_LABEL_GAP: f64 = 0.25;
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 /// Optional mermaid statement terminator rusty-mermaid rejects at line end.
 pub const MERMAID_STATEMENT_TERMINATOR: char = ';';
+/// Lowest WCAG contrast ratio a mermaid label may have against its fill
+/// before it is repainted black or white (the WCAG large-text minimum).
+pub const MERMAID_MIN_TEXT_CONTRAST: f64 = 3.0;
+/// Segments a circular path arc is split into when testing what a label sits on.
+pub const MERMAID_ARC_SAMPLES: usize = 16;
+/// Offset WCAG adds to both luminances in a contrast ratio.
+pub const WCAG_CONTRAST_FLARE: f64 = 0.05;
 
 /// Syntect theme applied to fenced code blocks in the night theme.
 pub const CODE_THEME: &str = "base16-ocean.dark";

@@ -854,31 +854,18 @@ Git graphs visualize branching strategies (GitFlow, Trunk-Based Development), co
 
 ```mermaid
 gitGraph
-    commit id: "Initial Commit"
-    commit id: "Setup Config" tag: "v0.1.0"
-    
-    branch feature/auth
-    checkout feature/auth
-    commit id: "Create Auth Controller"
-    commit id: "Add JWT Middleware"
-    
+    commit id: "init" tag: "v0.1"
+    branch feature
+    checkout feature
+    commit id: "auth"
     checkout main
-    commit id: "Fix Security Vulnerability" type: HIGHLIGHT
-    
-    checkout feature/auth
-    merge main id: "Merge main into auth"
-    commit id: "Complete Auth Integration"
-    
+    commit id: "fix" type: HIGHLIGHT
+    merge feature tag: "v1.0"
+    branch hotfix
+    checkout hotfix
+    commit id: "patch" type: REVERSE
     checkout main
-    merge feature/auth id: "Merge PR #42" tag: "v1.0.0"
-    
-    branch hotfix/patch-1
-    checkout hotfix/patch-1
-    commit id: "Hotfix DB Timeout" type: REVERSE
-    
-    checkout main
-    cherry-pick id: "Hotfix DB Timeout"
-    commit id: "Release Patch" tag: "v1.0.1"
+    cherry-pick id: "patch"
 ```
 
 ### Commit Types
@@ -968,14 +955,6 @@ journey
       Read customer reviews: 4: Customer
       Check delivery dates: 2: Customer, Warehouse
       Add item to shopping cart: 5: Customer
-    section Checkout & Payment
-      Enter shipping address: 3: Customer
-      Input credit card: 2: Customer, Payment Gateway
-      Authorize 3D Secure: 1: Customer, Bank API
-    section Delivery & Support
-      Receive order confirmation: 5: Customer
-      Track courier dispatch: 4: Customer, Courier
-      Item unboxing: 5: Customer
 ```
 
 ### Sentiment Scoring Scale
@@ -1014,7 +993,7 @@ quadrantChart
     title Technical Debt vs Feature Value Prioritization
     x-axis "Low Development Effort" --> "High Development Effort"
     y-axis "Low User Impact" --> "High User Impact"
-    quadrant-1 "Strategic Investments (Big Bets)"
+    quadrant-1 "Strategic Investments"
     quadrant-2 "Quick Wins (High ROI)"
     quadrant-3 "Avoid / Deprioritize"
     quadrant-4 "Time Wasters / Low Value"
@@ -1106,10 +1085,10 @@ C4Context
     System_Ext(mailSystem, "E-mail System", "The internal Microsoft Exchange e-mail system.")
     System_Ext(mainframe, "Mainframe Banking System", "Stores all core banking information about customers, accounts, and transactions.")
 
-    Rel(customer, bankingSystem, "Uses", "HTTPS")
-    Rel_Back(customer, mailSystem, "Sends e-mails to")
-    Rel(bankingSystem, mailSystem, "Sends e-mails", "SMTP")
-    Rel(bankingSystem, mainframe, "Queries balance & executes transfers", "XML/HTTPS")
+    Rel(customer, bankingSystem, "HTTPS")
+    Rel_Back(customer, mailSystem, "e-mail")
+    Rel(bankingSystem, mailSystem, "SMTP")
+    Rel(bankingSystem, mainframe, "XML/HTTPS")
 ```
 
 ### Level 2: Container Diagram
@@ -1127,10 +1106,10 @@ C4Container
         ContainerDb(db, "Relational Database", "PostgreSQL", "Stores customer records, transactions, and audit logs")
     }
 
-    Rel(customer, webApp, "Visits", "HTTPS")
-    Rel(webApp, apiGateway, "Makes API calls to", "JSON/HTTPS")
-    Rel(apiGateway, backendApi, "Proxies requests to", "gRPC")
-    Rel(backendApi, db, "Reads & writes to", "TCP/SQL")
+    Rel(customer, webApp, "HTTPS")
+    Rel(webApp, apiGateway, "JSON/HTTPS")
+    Rel(apiGateway, backendApi, "gRPC")
+    Rel(backendApi, db, "TCP/SQL")
 ```
 
 ---

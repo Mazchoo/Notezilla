@@ -1,11 +1,14 @@
 //! Renders a Mermaid diagram block to inline SVG.
 
 use super::marker_arrow::expand_path_markers;
+use super::mermaid_contrast::fix_label_contrast;
 use super::mermaid_directive::apply_directives;
 use super::mermaid_label::flatten_label;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
-use crate::constants::{MERMAID_ERROR_CLASS, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP};
+use crate::constants::{
+    BG_2, DAY_BG_2, MERMAID_ERROR_CLASS, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP,
+};
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
@@ -23,8 +26,11 @@ impl MermaidRender {
     /// Render Mermaid source to an inline SVG string.
     ///
     /// Returns the rusty-mermaid parse error when `source` is not a diagram.
+    /// Labels left unreadable on their fill are repainted, except in text
+    /// colours a directive chose.
     pub fn render_svg(&self, source: &str) -> Result<String, String> {
-        let mut theme = diagram_theme();
+        let default_theme = diagram_theme();
+        let mut theme = default_theme.clone();
         let directives = apply_directives(source, &mut theme);
         let source = &*strip_statement_semicolons(&directives.body);
         let scene = match directives.node_label_color {
@@ -32,6 +38,8 @@ impl MermaidRender {
             Some(color) => render_with_node_labels(source, &theme, color),
         }
         .map_err(|e| e.to_string())?;
+        let chosen = chosen_text_colors(&default_theme, &theme);
+        let scene = fix_label_contrast(&scene, page_color(), &chosen);
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
         Ok(prepare_svg(&svg, source))
@@ -145,6 +153,35 @@ fn diagram_theme() -> Theme {
             theme
         }
     }
+}
+
+/// Return the text colours in `themed` that directives changed from `default`.
+fn chosen_text_colors(default: &Theme, themed: &Theme) -> Vec<Color> {
+    let text = |theme: &Theme| {
+        [
+            theme.node_text,
+            theme.edge_label_text,
+            theme.muted_text,
+            theme.subgraph_label,
+            theme.composite_label,
+            theme.note_text,
+        ]
+    };
+    text(default)
+        .into_iter()
+        .zip(text(themed))
+        .filter(|(before, after)| before != after)
+        .map(|(_, after)| after)
+        .collect()
+}
+
+/// Return the page colour diagrams are shown on in the current theme.
+fn page_color() -> Color {
+    let css = match current_theme() {
+        ColorTheme::Night => BG_2,
+        ColorTheme::Day => DAY_BG_2,
+    };
+    Color::from_css(css).unwrap_or_else(|| diagram_theme().background)
 }
 
 /// Grow theme padding so content left of or above the origin stays in view.
@@ -359,7 +396,7 @@ fn include_path(bounds: &mut Bounds, segments: &[PathSegment], half: f64) {
 /// the radius scale-up when the radii are too small to span the endpoints.
 /// Returns `None` when the arc is drawn as a line or omitted (zero radius,
 /// coincident endpoints); the endpoints alone bound those.
-fn arc_ellipse_extent(
+pub(super) fn arc_ellipse_extent(
     from: Point,
     to: Point,
     rx: f64,
@@ -406,7 +443,7 @@ fn arc_ellipse_extent(
 }
 
 /// Map `point` through an SVG group transform.
-fn apply_transform(transform: &Transform, point: Point) -> Point {
+pub(super) fn apply_transform(transform: &Transform, point: Point) -> Point {
     match *transform {
         Transform::Identity => point,
         Transform::Translate(x, y) => Point::new(point.x + x, point.y + y),
@@ -751,6 +788,26 @@ mod tests {
             .render_svg("%%{init: {\n'theme': 'base'\n}}%%\npie\n\"A\" : 1\n\"B\" : 2\n")
             .unwrap();
         assert!(!svg.contains("stroke=\"#ffffff\""), "{svg}");
+    }
+
+    /// Mindmap with a root, one parent and one leaf.
+    const MINDMAP: &str = "mindmap\n  root((Root))\n    Parent\n      Leaf\n";
+
+    #[test]
+    /// Assert night mindmap leaves on their near-white fill get black labels.
+    fn night_mindmap_leaf_text_is_black() {
+        let svg = MermaidRender.render_svg(MINDMAP).unwrap().to_ascii_lowercase();
+        // Theme::dark().node_text, the light label colour leaves had before.
+        assert!(!svg.contains("#cdd6f4"), "{svg}");
+        assert!(svg.contains("fill=\"#000000\""), "{svg}");
+    }
+
+    #[test]
+    /// Assert a directive text colour still wins on mindmap leaves.
+    fn mindmap_directive_text_colour_is_kept() {
+        let source = format!("%%{{init: {{'themeVariables': {{'primaryTextColor': '#123456'}}}}}}%%\n{MINDMAP}");
+        let svg = MermaidRender.render_svg(&source).unwrap().to_ascii_lowercase();
+        assert!(svg.contains("#123456"), "{svg}");
     }
 
     #[test]
