@@ -4,6 +4,22 @@ A hands-on guide to **Graphviz** and the **DOT language**, with live diagrams re
 
 ---
 
+## Table of Contents
+
+- [How to Render Graphviz in Notezilla](#how-to-render-graphviz-in-notezilla)
+- [Chapter 1: Graph Types, Direction & Core Syntax](#chapter-1-graph-types-direction--core-syntax)
+- [Chapter 2: Node Shapes & Styles](#chapter-2-node-shapes--styles)
+- [Chapter 3: Record Shapes & Port Targeting](#chapter-3-record-shapes--port-targeting)
+- [Chapter 4: Edge Styles & Direction](#chapter-4-edge-styles--direction)
+- [Chapter 5: Subgraphs & Attribute Scope](#chapter-5-subgraphs--attribute-scope)
+- [Chapter 6: Relational Schemas with Records](#chapter-6-relational-schemas-with-records)
+- [Chapter 7: Layout Engines](#chapter-7-layout-engines)
+- [Chapter 8: Feedback Loops & Side Channels](#chapter-8-feedback-loops--side-channels)
+- [Chapter 9: Putting It Together: Cloud Microservices Architecture](#chapter-9-putting-it-together-cloud-microservices-architecture)
+- [Chapter 10: CLI Tooling, Compilation & Automation](#chapter-10-cli-tooling-compilation--automation)
+
+---
+
 ## How to Render Graphviz in Notezilla
 
 Wrap DOT source in a fenced code block with the `graphviz` language tag:
