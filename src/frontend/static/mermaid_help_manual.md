@@ -1159,7 +1159,7 @@ packet-beta
     64-95: "Acknowledgment Number (32 bits)"
     96-99: "Data Offset"
     100-105: "Reserved"
-    106-111: "Flags (URG, ACK, PSH, RST, SYN, FIN)"
+    106-111: "Flags"
     112-127: "Window Size (16 bits)"
     128-143: "Checksum (16 bits)"
     144-159: "Urgent Pointer (16 bits)"

@@ -120,6 +120,49 @@ pub const GRAPHVIZ_EDGE_LABEL_GAP: f64 = 0.25;
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 /// Optional mermaid statement terminator rusty-mermaid rejects at line end.
 pub const MERMAID_STATEMENT_TERMINATOR: char = ';';
+/// Named entities decoded in mermaid labels, as `&name;` or mermaid's `#name;`.
+pub const MERMAID_NAMED_ENTITIES: &[(&str, char)] = &[
+    ("quot", '"'),
+    ("amp", '&'),
+    ("lt", '<'),
+    ("gt", '>'),
+    ("apos", '\''),
+    ("nbsp", '\u{a0}'),
+    ("lbrack", '['),
+    ("rbrack", ']'),
+    ("lpar", '('),
+    ("rpar", ')'),
+    ("lbrace", '{'),
+    ("rbrace", '}'),
+    ("semi", ';'),
+    ("colon", ':'),
+    ("num", '#'),
+    ("vert", '|'),
+    ("copy", '©'),
+    ("reg", '®'),
+    ("deg", '°'),
+    ("hellip", '…'),
+    ("ndash", '–'),
+    ("mdash", '—'),
+    ("larr", '←'),
+    ("rarr", '→'),
+    ("uarr", '↑'),
+    ("darr", '↓'),
+    ("hearts", '♥'),
+];
+/// Decoded entity characters that would change how rusty-mermaid parses or
+/// measures a label, so they pass through layout as stand-ins.
+pub const MERMAID_PROTECTED_CHARS: &[char] = &[
+    '"', '<', '>', '&', '[', ']', '(', ')', '{', '}', '|', ';', '*',
+];
+/// First stand-in for [`MERMAID_PROTECTED_CHARS`]. U+20C2..=U+20CF are
+/// unassigned, and rusty-mermaid measures them at the full monospace advance.
+pub const MERMAID_STAND_IN_BASE: u32 = 0x20C2;
+/// Line prefixes of mermaid statements whose `#…;` text is a colour, not an entity.
+pub const MERMAID_STYLE_PREFIXES: &[&str] = &["style ", "classDef ", "linkStyle ", "%%"];
+/// Delimiters of a mermaid markdown string label, `"`…`"`.
+pub const MERMAID_MARKDOWN_STRING_OPEN: &str = "\"`";
+pub const MERMAID_MARKDOWN_STRING_CLOSE: &str = "`\"";
 /// Lowest WCAG contrast ratio a mermaid label may have against its fill
 /// before it is repainted black or white (the WCAG large-text minimum).
 pub const MERMAID_MIN_TEXT_CONTRAST: f64 = 3.0;
@@ -270,6 +313,40 @@ pub const CODE_THEME: &str = "base16-ocean.dark";
 pub const DAY_CODE_THEME: &str = "base16-ocean.light";
 /// Item marker of an unordered list rewritten for PDF export.
 pub const LIST_BULLET: &str = "•";
+
+/// Attribute holding the markdown source byte offset a rendered element came from.
+pub const SOURCE_OFFSET_ATTR: &str = "data-src";
+/// Attribute naming how a tagged element's text maps to the source.
+pub const SOURCE_KIND_ATTR: &str = "data-src-kind";
+/// [`SOURCE_KIND_ATTR`] value: each text line is the tail of one source line.
+pub const SOURCE_KIND_LINES: &str = "lines";
+/// [`SOURCE_KIND_ATTR`] value: the element maps to its offset as a whole.
+pub const SOURCE_KIND_ATOM: &str = "atom";
+/// Selector matching every element tagged with [`SOURCE_OFFSET_ATTR`].
+pub const SOURCE_MAPPED_SELECTOR: &str = "[data-src]";
+/// Selector of the rendered markdown inside an editor block.
+pub const BLOCK_RENDER_SELECTOR: &str = ".block-render";
+/// Document methods returning the caret under a viewport point, each with the
+/// result properties holding the caret's node and its offset in that node.
+pub const CARET_FROM_POINT_METHODS: &[(&str, &str, &str)] = &[
+    ("caretPositionFromPoint", "offsetNode", "offset"),
+    ("caretRangeFromPoint", "startContainer", "startOffset"),
+];
+/// Inline styles of the hidden copy of a textarea used to measure where a
+/// caret sits. The copy also takes the textarea's class, so with these it
+/// wraps text exactly as the textarea does without affecting layout.
+pub const TEXTAREA_MIRROR_STYLE: &[(&str, &str)] = &[
+    ("position", "absolute"),
+    ("top", "0"),
+    ("left", "0"),
+    ("height", "auto"),
+    ("visibility", "hidden"),
+    ("pointer-events", "none"),
+    ("white-space", "pre-wrap"),
+    ("overflow-wrap", "break-word"),
+];
+/// Zero-width text that marks the caret position inside the textarea mirror.
+pub const CARET_MARKER_TEXT: &str = "\u{200b}";
 
 /// Classes of the fallback block a failing render emits. Styled by `index.html`.
 pub const GRAPHVIZ_ERROR_CLASS: &str = "graphviz-error";

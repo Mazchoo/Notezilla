@@ -10,20 +10,26 @@ mod html_escape;
 mod math_substitution;
 mod pdf;
 mod renders;
+mod source_map;
 mod svg_attr;
 mod svg_path_ends;
 mod svg_text_elements;
 
 use block_kind::BlockKind;
 pub(crate) use html_escape::{escape_html, escape_html_comment, escape_svg_text};
-use math_substitution::substitute_math;
+use math_substitution::{substitute_math, substitute_math_mapped};
 pub(crate) use pdf::{html_to_pdf_bytes, pdf_rgb_operator};
 use pdf::{pdf_list_item_open, PdfListKind};
 use pulldown_cmark::{html, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use renders::{
     CodeRender, GraphvizRender, MermaidRender, MissingImageRender, RenderPdf, RenderTarget,
 };
+use source_map::SourceMap;
+pub(crate) use source_map::{
+    resolve_source_offset, source_offset_at_textarea, textarea_text_before, SourceKind,
+};
 use std::collections::VecDeque;
+use std::ops::Range;
 
 /// Kind of fenced diagram that renders to a standalone SVG file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,6 +59,22 @@ impl DiagramKind {
 /// Render markdown to HTML for the editor.
 pub fn render_markdown(src: &str) -> String {
     render_markdown_for(src, RenderTarget::Editor)
+}
+
+/// Render markdown to editor HTML tagged with markdown source offsets.
+///
+/// Text runs, inline code, fences, images and math carry `data-src`, so a
+/// click on the rendered note can be resolved to a caret position in `src`.
+pub fn render_markdown_with_source_map(src: &str) -> String {
+    let (with_math, offsets) = substitute_math_mapped(src);
+
+    let mut out = String::with_capacity(with_math.len() * 2);
+    html::push_html(
+        &mut out,
+        InterceptedMarkdown::new(&with_math, markdown_options(), RenderTarget::Editor)
+            .with_source_map(SourceMap::new(src, offsets)),
+    );
+    out
 }
 
 /// Render markdown to HTML for PDF export.
@@ -124,6 +146,9 @@ struct InterceptedMarkdown<'a> {
     last_top_end: usize,
     target: RenderTarget,
     pdf_list_stack: Vec<PdfListKind>,
+    /// Parser offset where the fence or image being intercepted starts.
+    intercept_start: usize,
+    source_map: Option<SourceMap<'a>>,
 }
 
 impl<'a> InterceptedMarkdown<'a> {
@@ -140,7 +165,36 @@ impl<'a> InterceptedMarkdown<'a> {
             last_top_end: 0,
             target,
             pdf_list_stack: Vec::new(),
+            intercept_start: 0,
+            source_map: None,
         }
+    }
+
+    /// Tag the emitted HTML with offsets into the original markdown.
+    fn with_source_map(mut self, source_map: SourceMap<'a>) -> Self {
+        self.source_map = Some(source_map);
+        self
+    }
+
+    /// Tag a rendered fence or image with the source offset it started at.
+    fn tag_block(&self, fragment: String) -> String {
+        match &self.source_map {
+            Some(map) => map.annotate_block(fragment, self.intercept_start),
+            None => fragment,
+        }
+    }
+
+    /// Wrap a text or inline-code event in an element tagged with its source offset.
+    fn tag_text(&self, event: Event<'a>, range: Range<usize>) -> Event<'a> {
+        let Some(map) = &self.source_map else {
+            return event;
+        };
+        let tagged = match &event {
+            Event::Text(text) => map.text_element("span", text, self.src, range, false),
+            Event::Code(text) => map.text_element("code", text, self.src, range, true),
+            _ => None,
+        };
+        tagged.map_or(event, |html| Event::Html(html.into()))
     }
 
     /// Insert extra `<br>` events for extra blank lines between top-level blocks.
@@ -187,6 +241,7 @@ impl<'a> InterceptedMarkdown<'a> {
             Some(BlockKind::Code(lang)) => self.render(&CodeRender::new(lang), &source),
             None => return,
         };
+        let html_fragment = self.tag_block(html_fragment);
         self.pending.push_back(Event::Html(html_fragment.into()));
     }
 
@@ -194,7 +249,7 @@ impl<'a> InterceptedMarkdown<'a> {
     fn finish_image(&mut self) {
         self.in_image = false;
         let alt = std::mem::take(&mut self.buf);
-        let html_fragment = self.render(&MissingImageRender, &alt);
+        let html_fragment = self.tag_block(self.render(&MissingImageRender, &alt));
         self.pending.push_back(Event::Html(html_fragment.into()));
     }
 
@@ -204,15 +259,17 @@ impl<'a> InterceptedMarkdown<'a> {
     }
 
     /// Consume `event` if it opens an intercepted construct; otherwise return it.
-    fn try_start_intercepted(&mut self, event: Event<'a>) -> Option<Event<'a>> {
+    fn try_start_intercepted(&mut self, event: Event<'a>, start: usize) -> Option<Event<'a>> {
         match event {
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang))) => {
                 self.block = Some(BlockKind::from_fence_language(lang.as_ref()));
+                self.intercept_start = start;
                 self.buf.clear();
                 None
             }
             Event::Start(Tag::Image { .. }) => {
                 self.in_image = true;
+                self.intercept_start = start;
                 self.buf.clear();
                 None
             }
@@ -280,9 +337,9 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
                 continue;
             }
 
-            match self.try_start_intercepted(event) {
+            match self.try_start_intercepted(event, range.start) {
                 None => continue,
-                Some(event) => return Some(event),
+                Some(event) => return Some(self.tag_text(event, range)),
             }
         }
     }
@@ -290,8 +347,100 @@ impl<'a> Iterator for InterceptedMarkdown<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{diagram_fences, render_markdown, render_markdown_for_pdf, DiagramKind};
+    use super::{
+        diagram_fences, render_markdown, render_markdown_for_pdf, render_markdown_with_source_map,
+        DiagramKind,
+    };
     use crate::constants::LIST_BULLET;
+
+    /// Return the `data-src` offset tagged on the element whose text is `text`.
+    fn tagged_offset(html: &str, text: &str) -> usize {
+        let close = html
+            .find(&format!(">{text}</"))
+            .unwrap_or_else(|| panic!("no element holding {text:?}: {html}"));
+        let open = html[..close].rfind('<').expect("opening tag");
+        let attr = html[open..close]
+            .split("data-src=\"")
+            .nth(1)
+            .unwrap_or_else(|| panic!("element holding {text:?} is untagged: {html}"));
+        attr[..attr.find('"').expect("closing quote")]
+            .parse()
+            .expect("numeric offset")
+    }
+
+    #[test]
+    /// Assert every text run is tagged with where it starts in the source.
+    fn source_map_tags_text_runs_with_their_offsets() {
+        let src = "# Title\n\nsome **bold** and `code` here\n\n- item one\n";
+        let html = render_markdown_with_source_map(src);
+        for text in [
+            "Title", "some ", "bold", " and ", "code", " here", "item one",
+        ] {
+            assert_eq!(
+                tagged_offset(&html, text),
+                src.find(text).unwrap(),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    /// Assert text after math maps to the original source, not the substituted one.
+    fn source_map_survives_math_substitution() {
+        let src = "before $x_i$ after\n\n$$\ny^2\n$$\n\nlast line\n";
+        let html = render_markdown_with_source_map(src);
+        assert_eq!(tagged_offset(&html, " after"), src.find(" after").unwrap());
+        assert_eq!(tagged_offset(&html, "last line"), src.find("last").unwrap());
+        assert!(
+            html.contains(r#"<math data-src="7" data-src-kind="atom""#),
+            "{html}"
+        );
+        let block = format!(
+            r#"<div data-src="{}" data-src-kind="atom" class="math-block">"#,
+            src.find("$$").unwrap()
+        );
+        assert!(html.contains(&block), "{html}");
+        assert!(
+            !html.contains("<mi><span"),
+            "math text stays untagged: {html}"
+        );
+    }
+
+    #[test]
+    /// Assert a code fence maps by line from the line after its opening fence.
+    fn source_map_tags_fences_and_diagrams() {
+        let src = "a\n\n```rust\nfn main() {}\n```\n\n```mermaid\ngraph LR\n    A --> B\n```\n";
+        let html = render_markdown_with_source_map(src);
+        let body = src.find("fn main").unwrap();
+        assert!(
+            html.contains(&format!(
+                r#"<pre data-src="{body}" data-src-kind="lines" class="code-block">"#
+            )),
+            "{html}"
+        );
+        let fence = src.find("```mermaid").unwrap();
+        assert!(
+            html.contains(&format!(r#"data-src="{fence}" data-src-kind="atom""#)),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert text that differs from its source (an entity) maps as a whole.
+    fn source_map_marks_non_verbatim_text_as_atom() {
+        let html = render_markdown_with_source_map("a &amp; b\n");
+        assert!(
+            html.contains(r#"<span data-src="2" data-src-kind="atom">&amp;</span>"#),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert the plain editor render carries no source tags.
+    fn plain_render_has_no_source_tags() {
+        let html = render_markdown("# Title\n\n`code` $x$\n");
+        assert!(!html.contains("data-src"), "{html}");
+    }
 
     #[test]
     /// Assert markdown on the line right after display math is still parsed.

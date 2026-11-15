@@ -1,5 +1,5 @@
 use crate::components::sidebar::file_tree_backend::FileTreeBackend;
-use crate::rendering::render_markdown;
+use crate::rendering::render_markdown_with_source_map;
 use leptos::prelude::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -111,7 +111,7 @@ impl MarkdownBlock {
     /// Re-render markdown to HTML and update the cache.
     pub fn rerender(self) {
         let raw = self.text.get_untracked();
-        self.html.set(render_markdown(&raw));
+        self.html.set(render_markdown_with_source_map(&raw));
     }
 }
 

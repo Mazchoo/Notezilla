@@ -2,8 +2,9 @@ use crate::components::diagram_modal::diagram_svg_from_event;
 use crate::components::editor::actions::{
     add_front_matter, copy_markdown, delete_entry, delete_front_matter,
 };
+use crate::components::editor::caret_placement::{caret_placement_at, CaretPlacement};
 use crate::components::editor::edit_area::{
-    autosize_textarea, editor_area, focus_textarea, sync_textarea_value,
+    autosize_textarea, editor_area, focus_textarea, place_caret, sync_textarea_value,
 };
 use crate::info_messages::{
     ADD_FRONTMATTER_TITLE, APP_STATE_MISSING_PANIC, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE,
@@ -268,6 +269,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     let color_theme = state.color_theme;
     let textarea_ref = NodeRef::<Textarea>::new();
     let enter_scroll_top = RwSignal::new(None::<i32>);
+    let enter_caret = RwSignal::new(None::<CaretPlacement>);
 
     // Defer the initial markdown→HTML render past first paint. WASM has no
     // worker offload for this path, so we only yield: the editor shell can
@@ -325,16 +327,25 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
     // (scheduled before the view's RenderEffect under Leptos 0.8's async
     // scheduler) can run while `textarea_ref` is still empty, leaving the
     // textarea stuck at the HTML default of two visible rows.
+    //
+    // When edit mode was entered by a click, the caret goes to the clicked
+    // source position and the editor scrolls so that line sits under the
+    // pointer. Otherwise the scroll offset from before the switch is kept.
     Effect::new(move |_| {
         if markdown_editing_enabled.get() && block.focused.try_get().unwrap_or(false) {
             let initial = block.text.try_get().unwrap_or_default();
             let preserve_scroll = enter_scroll_top.get_untracked();
+            let caret = enter_caret.get_untracked();
             request_animation_frame(move || {
                 if let Some(el) = textarea_ref.get_untracked() {
                     sync_textarea_value(&el, &initial);
-                    autosize_textarea(&el, preserve_scroll);
+                    let scroll = caret
+                        .and_then(|placement| place_caret(&el, &initial, placement))
+                        .or(preserve_scroll);
+                    autosize_textarea(&el, scroll);
                     focus_textarea(&el);
                     enter_scroll_top.set(None);
+                    enter_caret.set(None);
                 }
             });
         }
@@ -353,7 +364,8 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         }
     };
 
-    // Click anywhere on the block wrapper to enter edit mode; when editing is
+    // Click anywhere on the block wrapper to enter edit mode with the caret at
+    // the clicked text; when editing is
     // locked, clicking a rendered diagram opens it full-screen instead.
     let diagram_modal_svg = state.diagram_modal_svg;
     let on_block_click = move |ev: web_sys::MouseEvent| {
@@ -365,6 +377,11 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
         }
         if !block.focused.get_untracked() {
             enter_scroll_top.set(editor_area().map(|a| a.scroll_top()));
+            enter_caret.set(
+                block
+                    .text
+                    .with_untracked(|src| caret_placement_at(&ev, src)),
+            );
             block.focused.set(true);
         }
     };

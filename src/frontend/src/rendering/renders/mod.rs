@@ -16,6 +16,7 @@ mod mermaid_architecture;
 mod mermaid_block;
 mod mermaid_contrast;
 mod mermaid_directive;
+mod mermaid_entity;
 mod mermaid_fit;
 mod mermaid_journey;
 mod mermaid_label;

@@ -1,5 +1,6 @@
 pub mod actions;
 pub mod block;
+pub mod caret_placement;
 pub mod edit_area;
 
 use crate::info_messages::APP_STATE_MISSING_PANIC;

@@ -4,6 +4,7 @@
 //! parsed as emphasis, and so display math becomes a block-level element.
 
 use super::renders::{MathRender, RenderPdf, RenderTarget};
+use super::source_map::{annotate_first_tag, OffsetMap, SourceKind};
 use crate::info_messages::CHAR_BOUNDARY_PANIC;
 use math_core::MathDisplay;
 
@@ -14,9 +15,32 @@ fn render_math(latex: &str, display: MathDisplay, target: RenderTarget) -> Strin
 
 /// Replace `$…$` and `$$…$$` outside code spans with math rendered for `target`.
 pub fn substitute_math(src: &str, target: RenderTarget) -> String {
+    substitute(src, target, false).0
+}
+
+/// Substitute math for the editor and tag each expression with its source offset.
+///
+/// Return the substituted text and the map from its offsets back to `src`.
+pub fn substitute_math_mapped(src: &str) -> (String, OffsetMap) {
+    substitute(src, RenderTarget::Editor, true)
+}
+
+/// Replace math delimiters in `src`, recording every place the output differs.
+///
+/// With `tag_source`, each rendered expression carries its offset in `src`.
+fn substitute(src: &str, target: RenderTarget, tag_source: bool) -> (String, OffsetMap) {
     let bytes = src.as_bytes();
     let mut out = String::with_capacity(src.len());
+    let mut offsets = OffsetMap::default();
     let mut i = 0;
+    let math_html = |latex: &str, display: MathDisplay, at: usize| {
+        let html = render_math(latex, display, target);
+        if tag_source {
+            annotate_first_tag(&html, at, SourceKind::Atom)
+        } else {
+            html
+        }
+    };
 
     while i < bytes.len() {
         if bytes[i..].starts_with(b"```") {
@@ -28,8 +52,12 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
 
         if bytes[i..].starts_with(b"~~~") {
             if let Some((content, end)) = same_line_tilde_span(src, i) {
+                let content_start = i + bytes[i..].iter().take_while(|b| **b == b'~').count();
+                let content_end = content_start + content.len();
+                offsets.record(out.len()..out.len() + 1, i..content_start);
                 out.push('`');
                 out.push_str(content);
+                offsets.record(out.len()..out.len() + 1, content_end..end);
                 out.push('`');
                 i = end;
                 continue;
@@ -41,6 +69,7 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             }
             // Unclosed block opener: do not start a fence.
             if at_line_start(bytes, i) {
+                offsets.record(out.len()..out.len() + 1, i..i);
                 out.push('\\');
             }
         }
@@ -56,13 +85,16 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             if let Some(close) = find_closing_display_math(bytes, i) {
                 let latex = &src[i + 2..close];
                 if !latex.trim().is_empty() {
-                    out.push_str(&render_math(latex, MathDisplay::Block, target));
+                    let out_start = out.len();
+                    out.push_str(&math_html(latex, MathDisplay::Block, i));
+                    offsets.record(out_start..out.len(), i..close + 2);
                     let opened_line = at_line_start(bytes, i);
                     i = close + 2;
                     // A line-start `<div>` opens an HTML block that runs to the
                     // next blank line; end it here so the following line is
                     // still parsed as markdown.
                     if opened_line && rest_of_line_is_blank(bytes, i) {
+                        offsets.record(out.len()..out.len() + 1, i..i);
                         out.push('\n');
                     }
                     continue;
@@ -79,11 +111,9 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
             let after_dollar = i > 0 && bytes[i - 1] == b'$';
             if opens && !after_dollar {
                 if let Some(close) = find_closing_inline_dollar(bytes, i + 1) {
-                    out.push_str(&render_math(
-                        &src[i + 1..close],
-                        MathDisplay::Inline,
-                        target,
-                    ));
+                    let out_start = out.len();
+                    out.push_str(&math_html(&src[i + 1..close], MathDisplay::Inline, i));
+                    offsets.record(out_start..out.len(), i..close + 1);
                     i = close + 1;
                     continue;
                 }
@@ -95,7 +125,7 @@ pub fn substitute_math(src: &str, target: RenderTarget) -> String {
         i += ch.len_utf8();
     }
 
-    out
+    (out, offsets)
 }
 
 /// Return whether the byte at `i` is escaped by an odd run of preceding backslashes.
@@ -314,7 +344,9 @@ fn skip_inline_code(src: &str, start: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::{skip_fenced_code, skip_inline_code, substitute_math, RenderTarget};
+    use super::{
+        skip_fenced_code, skip_inline_code, substitute_math, substitute_math_mapped, RenderTarget,
+    };
     use crate::constants::{LATEX_MATH_HELP_MANUAL, TEXT};
 
     #[test]
@@ -342,6 +374,25 @@ mod tests {
         assert!(out.contains("inline <math>"), "{out}");
         assert!(out.contains(r#"display="block""#), "{out}");
         assert!(out.contains(r#"class="math-block""#), "{out}");
+    }
+
+    #[test]
+    /// Assert mapped substitution tags math and maps trailing text to the source.
+    fn mapped_substitution_tracks_source_offsets() {
+        let src = "a $x$ b ~~~c~~~ d";
+        let (out, offsets) = substitute_math_mapped(src);
+        assert!(
+            out.contains(r#"<math data-src="2" data-src-kind="atom""#),
+            "{out}"
+        );
+        for word in ["b", "c", "d"] {
+            let at = out.rfind(word).expect("word in output");
+            assert_eq!(
+                offsets.to_source(at),
+                src.find(word).expect("word in source")
+            );
+        }
+        assert!(offsets.is_replaced(out.find("<math").expect("math in output")));
     }
 
     #[test]

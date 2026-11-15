@@ -158,7 +158,7 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
                 break;
             };
             (
-                rest[content_at..content_at + close_rel].trim(),
+                &rest[content_at..content_at + close_rel],
                 &rest[content_at + close_rel + "</tspan>".len()..],
             )
         };
@@ -182,13 +182,37 @@ fn label_lines(inner: &str, default_x: f64, parent_y: f64) -> Vec<LabelLine> {
         }
         rest = next;
     }
+    if saw_dy {
+        lines.retain_mut(|line| {
+            line.runs.iter_mut().for_each(trim_run_ends);
+            line.runs.iter().any(|run| !run.text.is_empty())
+        });
+    }
     if lines.is_empty() {
         return plain_text_line(inner, default_x, parent_y);
     }
     if saw_dy {
         return lines;
     }
-    vec![join_runs(lines, parent_y)]
+    let mut line = join_runs(lines, parent_y);
+    if let Some(first) = line.runs.first_mut() {
+        first.text = first.text.trim_start().to_string();
+    }
+    if let Some(last) = line.runs.last_mut() {
+        last.text = last.text.trim_end().to_string();
+    }
+    line.runs.retain(|run| !run.text.is_empty());
+    if line.runs.is_empty() {
+        return plain_text_line(inner, default_x, parent_y);
+    }
+    vec![line]
+}
+
+/// Trim whitespace from both ends of `run`, which is a line of its own.
+///
+/// Spaces inside a line separate its runs, so only a whole line is trimmed.
+fn trim_run_ends(run: &mut LabelRun) {
+    run.text = run.text.trim().to_string();
 }
 
 /// Return the label's plain text content as a single line, if it has any.
@@ -346,6 +370,22 @@ mod tests {
             "{html}"
         );
         assert_eq!(html.matches("font-style=\"italic\"").count(), 1, "{html}");
+    }
+
+    #[test]
+    /// Assert spaces between emphasis runs survive and shift the later runs.
+    fn spaces_between_emphasis_runs_are_kept() {
+        let html = flatten_label(
+            r#"<text x="100" y="2" font-size="10px"><tspan> a </tspan><tspan font-weight="bold">b</tspan><tspan> c </tspan></text>"#,
+        );
+        let advance = 10.0 * MONOSPACE_ADVANCE_RATIO;
+        let left = 100.0 - 5.0 * advance / 2.0;
+        assert!(html.contains(">a </text>"), "{html}");
+        assert!(html.contains("> c</text>"), "{html}");
+        assert!(
+            html.contains(&format!("x=\"{}\"", left + 2.0 * advance)),
+            "{html}"
+        );
     }
 
     #[test]

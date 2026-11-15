@@ -46,10 +46,7 @@ fn service_label(service: &[Element]) -> Option<Primitive> {
     let Primitive::Circle { center, radius, .. } = &service[ICON_OFFSET].primitive else {
         return None;
     };
-    let Primitive::Text {
-        content, style, ..
-    } = &service[LABEL_OFFSET].primitive
-    else {
+    let Primitive::Text { content, style, .. } = &service[LABEL_OFFSET].primitive else {
         return None;
     };
     let (top, bottom) = label_band(bbox, center.y + radius);
@@ -129,6 +126,9 @@ mod tests {
     /// Assert a short service label is left on one line.
     fn short_service_label_is_unchanged() {
         let lines = label_lines("architecture-beta\n    service db(database)[Database]\n");
-        assert!(lines.iter().any(|(line, _)| line == "Database"), "{lines:?}");
+        assert!(
+            lines.iter().any(|(line, _)| line == "Database"),
+            "{lines:?}"
+        );
     }
 }

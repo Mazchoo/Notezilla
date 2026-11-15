@@ -5,6 +5,7 @@ use super::mermaid_architecture::fit_service_labels;
 use super::mermaid_block::{label_blocks, render_block};
 use super::mermaid_contrast::fix_label_contrast;
 use super::mermaid_directive::apply_directives;
+use super::mermaid_entity::{decode_source_entities, restore_protected_chars};
 use super::mermaid_journey::label_journey_tasks;
 use super::mermaid_label::flatten_label;
 use super::mermaid_packet::label_packet_fields;
@@ -12,7 +13,8 @@ use super::mermaid_treemap::label_treemap_leaves;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{
-    BG_2, DAY_BG_2, MERMAID_ERROR_CLASS, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP,
+    BG_2, DAY_BG_2, MERMAID_ERROR_CLASS, MERMAID_MARKDOWN_STRING_CLOSE,
+    MERMAID_MARKDOWN_STRING_OPEN, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP,
 };
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
@@ -37,13 +39,15 @@ impl MermaidRender {
         let default_theme = diagram_theme();
         let mut theme = default_theme.clone();
         let directives = apply_directives(source, &mut theme);
-        let source = &*strip_statement_semicolons(&directives.body);
+        let unquoted = strip_markdown_string_quotes(&directives.body);
+        let decoded = decode_source_entities(&unquoted);
+        let source = &*strip_statement_semicolons(&decoded);
         let scene = match directives.node_label_color {
             None => render_scene(source, &theme),
             Some(color) => render_with_node_labels(source, &theme, color),
         }
         .map_err(|e| e.to_string())?;
-        let scene = restore_dropped_labels(scene, source, &theme);
+        let scene = restore_protected_chars(restore_dropped_labels(scene, source, &theme));
         let base_theme = directives.named_theme.as_ref().unwrap_or(&default_theme);
         let chosen = chosen_text_colors(base_theme, &theme);
         let scene = fix_label_contrast(&scene, page_color(&theme), &chosen);
@@ -89,6 +93,21 @@ fn restore_dropped_labels(scene: Scene, source: &str, theme: &Theme) -> Scene {
         Some(DiagramKind::Architecture) => fit_service_labels(scene),
         _ => scene,
     }
+}
+
+/// Turn markdown string labels, `"`…`"`, into plain quoted labels.
+///
+/// rusty-mermaid already reads `**bold**` and `*italic*` in any label but
+/// keeps the backticks as text. Borrows `source` when there are none.
+fn strip_markdown_string_quotes(source: &str) -> Cow<'_, str> {
+    if !source.contains(MERMAID_MARKDOWN_STRING_OPEN) {
+        return Cow::Borrowed(source);
+    }
+    Cow::Owned(
+        source
+            .replace(MERMAID_MARKDOWN_STRING_OPEN, "\"")
+            .replace(MERMAID_MARKDOWN_STRING_CLOSE, "\""),
+    )
 }
 
 /// Remove trailing `;` statement terminators from flowchart lines.
@@ -1174,6 +1193,61 @@ mod tests {
             .render_svg(&source)
             .unwrap()
             .to_ascii_lowercase()
+    }
+
+    /// Return the widths of the `<rect>` elements in `svg`, in document order.
+    fn rect_widths(svg: &str) -> Vec<&str> {
+        svg.split("<rect ")
+            .skip(1)
+            .filter_map(|rect| rect.split("width=\"").nth(1)?.split('"').next())
+            .collect()
+    }
+
+    #[test]
+    /// Assert HTML and mermaid `#code;` entities in labels render as characters.
+    fn label_entities_are_decoded() {
+        let svg = MermaidRender
+            .render_svg(
+                "flowchart LR
+    A[\"Raw Data #91;Unfiltered#93;\"] --> B[\"Output &lt;JSON-Stream&gt;\"]",
+            )
+            .unwrap();
+        assert!(svg.contains("Raw Data [Unfiltered]"), "{svg}");
+        assert!(svg.contains("Output &lt;JSON-Stream&gt;"), "{svg}");
+        assert!(!svg.contains("#91;"), "{svg}");
+        assert!(!svg.contains("&amp;lt;"), "{svg}");
+    }
+
+    #[test]
+    /// Assert a node box is sized from its decoded label, not the entity text.
+    fn decoded_labels_size_their_boxes() {
+        let decoded = MermaidRender
+            .render_svg(
+                "flowchart LR
+    A[\"#91;x#93;\"] --> B[\"Out &lt;JSON&gt;\"]",
+            )
+            .unwrap();
+        let plain = MermaidRender
+            .render_svg(
+                "flowchart LR
+    A[\"_x_\"] --> B[\"Out _JSON_\"]",
+            )
+            .unwrap();
+        assert_eq!(rect_widths(&decoded), rect_widths(&plain), "{decoded}");
+    }
+
+    #[test]
+    /// Assert a markdown string label loses its backticks and keeps its spacing.
+    fn markdown_string_labels_render_as_text() {
+        let svg = MermaidRender
+            .render_svg(
+                "flowchart TD
+    node[\"`a, and **bold** works`\"]",
+            )
+            .unwrap();
+        assert!(!svg.contains('`'), "{svg}");
+        assert!(svg.contains(">a, and </text>"), "{svg}");
+        assert!(svg.contains("> works</text>"), "{svg}");
     }
 
     #[test]
