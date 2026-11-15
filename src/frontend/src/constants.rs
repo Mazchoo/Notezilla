@@ -7,6 +7,9 @@ pub const MERMAID_HELP_MANUAL: &str = include_str!("../static/mermaid_help_manua
 /// Editor path of the graphviz help manual opened from the help dropdown.
 pub const GRAPHVIZ_HELP_MANUAL_PATH: &str = "./graphviz_manual.md";
 pub const GRAPHVIZ_HELP_MANUAL: &str = include_str!("../static/graphviz_manual.md");
+/// Editor path of the LaTeX math help manual opened from the help dropdown.
+pub const LATEX_MATH_HELP_MANUAL_PATH: &str = "./latex_math_core_manual.md";
+pub const LATEX_MATH_HELP_MANUAL: &str = include_str!("../static/latex_math_core_manual.md");
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
@@ -138,6 +141,116 @@ pub const MERMAID_TREEMAP_LEAF_STROKE: f64 = 1.0;
 pub const MERMAID_TREEMAP_FONT_RATIO: f64 = 0.25;
 /// Size of a treemap leaf's value relative to its name.
 pub const MERMAID_TREEMAP_VALUE_SCALE: f64 = 0.85;
+/// Objects a mermaid `theme` key may sit in: `%%{init: ...}%%` or `%%{initialize: ...}%%`.
+pub const MERMAID_INIT_KEYS: &[&str] = &["init", "initialize"];
+/// Directive key that names a mermaid theme.
+pub const MERMAID_THEME_KEY: &str = "theme";
+/// `themeVariables` key holding the diagram font size, e.g. `'14px'`.
+pub const MERMAID_FONT_SIZE_KEY: &str = "fontSize";
+/// Unit suffix allowed on a mermaid `fontSize` value.
+pub const MERMAID_FONT_SIZE_UNIT: &str = "px";
+/// Mermaid theme names.
+pub const MERMAID_THEME_CLASSIC: &str = "classic";
+pub const MERMAID_THEME_FOREST: &str = "forest";
+pub const MERMAID_THEME_DARK: &str = "dark";
+pub const MERMAID_THEME_NEUTRAL: &str = "neutral";
+/// Background of the light mermaid themes. Near-white rather than white
+/// because the rusty-mermaid SVG renderer skips the background rect for
+/// pure white, which would leave light diagrams on the night editor surface.
+pub const MERMAID_LIGHT_THEME_BACKGROUND: &str = "#fefefe";
+/// `themeVariables` of the lavender `classic` theme, applied over `Theme::light()`.
+pub const MERMAID_CLASSIC_THEME_VARIABLES: &[(&str, &str)] = &[
+    ("background", MERMAID_LIGHT_THEME_BACKGROUND),
+    ("primaryColor", "#ececff"),
+    ("primaryTextColor", "#333333"),
+    ("primaryBorderColor", "#9370db"),
+    ("lineColor", "#333333"),
+    ("secondaryColor", "#ffffde"),
+    ("tertiaryColor", "#ffffde"),
+    ("tertiaryBorderColor", "#aaaa33"),
+    ("tertiaryTextColor", "#333333"),
+    ("textColor", "#333333"),
+    ("edgeLabelBackground", "#e8e8e8"),
+    ("noteBkgColor", "#fff5ad"),
+    ("noteBorderColor", "#aaaa33"),
+    ("noteTextColor", "#333333"),
+    ("actorBorder", "#ccccff"),
+    ("actorLineColor", "#808080"),
+    ("signalColor", "#333333"),
+    ("activationBkgColor", "#f4f4f4"),
+    ("activationBorderColor", "#666666"),
+];
+/// `themeVariables` of mermaid's `forest` theme, applied over `Theme::light()`.
+pub const MERMAID_FOREST_THEME_VARIABLES: &[(&str, &str)] = &[
+    ("background", MERMAID_LIGHT_THEME_BACKGROUND),
+    ("primaryColor", "#cde498"),
+    ("primaryTextColor", "#000000"),
+    ("primaryBorderColor", "#13540c"),
+    ("lineColor", "#008000"),
+    ("secondaryColor", "#cdffb2"),
+    ("tertiaryColor", "#cdffb2"),
+    ("tertiaryBorderColor", "#6eaa49"),
+    ("tertiaryTextColor", "#333333"),
+    ("textColor", "#000000"),
+    ("edgeLabelBackground", "#e8e8e8"),
+    ("noteBkgColor", "#fff5ad"),
+    ("noteBorderColor", "#6eaa49"),
+    ("noteTextColor", "#000000"),
+    ("actorLineColor", "#808080"),
+    ("signalColor", "#333333"),
+    ("labelBoxBorderColor", "#326932"),
+    ("activationBkgColor", "#dddddd"),
+    ("activationBorderColor", "#13540c"),
+    ("specialStateColor", "#13540c"),
+    ("compositeBorder", "#13540c"),
+];
+/// `themeVariables` of mermaid's `neutral` theme, applied over `Theme::light()`.
+pub const MERMAID_NEUTRAL_THEME_VARIABLES: &[(&str, &str)] = &[
+    ("background", MERMAID_LIGHT_THEME_BACKGROUND),
+    ("primaryColor", "#eeeeee"),
+    ("primaryTextColor", "#111111"),
+    ("primaryBorderColor", "#999999"),
+    ("lineColor", "#666666"),
+    ("secondaryColor", "#f4f4f4"),
+    ("tertiaryColor", "#f4f4f4"),
+    ("tertiaryBorderColor", "#707070"),
+    ("tertiaryTextColor", "#333333"),
+    ("textColor", "#333333"),
+    ("edgeLabelBackground", "#ffffff"),
+    ("noteBkgColor", "#666666"),
+    ("noteBorderColor", "#999999"),
+    ("noteTextColor", "#ffffff"),
+    ("actorBorder", "#707070"),
+    ("actorLineColor", "#666666"),
+    ("signalColor", "#333333"),
+    ("activationBkgColor", "#f4f4f4"),
+    ("activationBorderColor", "#666666"),
+    ("specialStateColor", "#222222"),
+    ("compositeBorder", "#707070"),
+];
+/// `themeVariables` of mermaid's `dark` theme, applied over `Theme::dark()`.
+pub const MERMAID_DARK_THEME_VARIABLES: &[(&str, &str)] = &[
+    ("background", "#333333"),
+    ("primaryColor", "#1f2020"),
+    ("primaryTextColor", "#e0dfdf"),
+    ("primaryBorderColor", "#81b1db"),
+    ("lineColor", "#cccccc"),
+    ("secondaryColor", "#474949"),
+    ("tertiaryColor", "#474949"),
+    ("tertiaryBorderColor", "#888888"),
+    ("tertiaryTextColor", "#f9fffe"),
+    ("textColor", "#cccccc"),
+    ("edgeLabelBackground", "#585858"),
+    ("noteBkgColor", "#fff5ad"),
+    ("noteBorderColor", "#aaaa33"),
+    ("noteTextColor", "#333333"),
+    ("actorLineColor", "#cccccc"),
+    ("signalColor", "#cccccc"),
+    ("activationBkgColor", "#474949"),
+    ("activationBorderColor", "#81b1db"),
+    ("specialStateColor", "#cccccc"),
+    ("compositeBorder", "#81b1db"),
+];
 /// Offset WCAG adds to both luminances in a contrast ratio.
 pub const WCAG_CONTRAST_FLARE: f64 = 0.05;
 

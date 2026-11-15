@@ -36,7 +36,12 @@ impl Fill {
                 center,
                 radius,
                 style,
-            } => Some(Self::Ellipse(*center, *radius, *radius, visible(style.fill)?)),
+            } => Some(Self::Ellipse(
+                *center,
+                *radius,
+                *radius,
+                visible(style.fill)?,
+            )),
             Primitive::Ellipse {
                 center,
                 rx,
@@ -249,7 +254,11 @@ fn blend(top: Color, bottom: Color) -> Color {
     let mix = |over: u8, under: u8| {
         (f64::from(over) * alpha + f64::from(under) * (1.0 - alpha)).round() as u8
     };
-    Color::rgb(mix(top.r, bottom.r), mix(top.g, bottom.g), mix(top.b, bottom.b))
+    Color::rgb(
+        mix(top.r, bottom.r),
+        mix(top.g, bottom.g),
+        mix(top.b, bottom.b),
+    )
 }
 
 /// Return the WCAG contrast ratio between two opaque colours.
@@ -339,7 +348,10 @@ mod tests {
             },
         });
         scene.push(label(50.0, PALE));
-        assert_eq!(label_fills(&fix_label_contrast(&scene, PAGE, &[])), [Some(PALE)]);
+        assert_eq!(
+            label_fills(&fix_label_contrast(&scene, PAGE, &[])),
+            [Some(PALE)]
+        );
     }
 
     #[test]
@@ -347,7 +359,10 @@ mod tests {
     fn readable_colour_meets_minimum() {
         for backdrop in [PAGE, PALE, Color::WHITE, Color::rgb(124, 111, 189)] {
             let ink = readable_on(backdrop);
-            assert!(contrast(ink, backdrop) >= MERMAID_MIN_TEXT_CONTRAST, "{backdrop:?}");
+            assert!(
+                contrast(ink, backdrop) >= MERMAID_MIN_TEXT_CONTRAST,
+                "{backdrop:?}"
+            );
         }
         assert_eq!(blend(Color::rgba(255, 255, 255, 0), PAGE), PAGE);
     }

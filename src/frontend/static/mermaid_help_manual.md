@@ -122,12 +122,13 @@ flowchart LR
 Mermaid allows in-diagram configuration using **frontmatter** YAML directives or inline `%%{init: ...}%%` directives placed at the top of the diagram.
 
 ### Built-in Themes
-Mermaid provides 5 primary themes:
-1. `default`: Standard theme with neutral blues and greens.
+With no `theme`, or with `base`, a diagram uses the editor's own night or day palette, ready for `themeVariables` overrides. The other themes draw their own background and look the same in night and day mode:
+1. `classic`: Lavender nodes with purple borders.
 2. `forest`: Natural green and earth palette.
-3. `dark`: High-contrast dark mode.
+3. `dark`: Dark grey background with light lines and text.
 4. `neutral`: Monochrome and grayscale styling.
-5. `base`: Minimal bare-bones palette designed for custom CSS/variable overrides.
+
+`themeVariables` colours apply on top of any theme. `fontSize` scales the whole diagram so node labels come out at that size (`14px` is the normal size). `fontFamily` is ignored: labels always use the editor font so PDF export lays them out correctly.
 
 ### Applying Themes with Inline Directive
 

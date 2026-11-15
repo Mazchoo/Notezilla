@@ -1,14 +1,24 @@
-//! Applies mermaid `%%{init: ...}%%` theme variables that rusty-mermaid ignores.
+//! Applies mermaid `%%{init: ...}%%` themes and theme variables that
+//! rusty-mermaid ignores.
 //!
 //! rusty-mermaid skips directives without reading them, and only when the
 //! whole directive sits on one line. This module removes every directive,
-//! single- or multi-line, and maps each mermaid `themeVariables` colour that
-//! has a rusty-mermaid [`Theme`] counterpart onto that theme.
+//! single- or multi-line, swaps in the palette a `theme` key names
+//! (`classic`, `forest`, `dark`, `neutral`; `base` or no theme keeps the
+//! editor palette),
+//! maps each mermaid `themeVariables` colour that has a rusty-mermaid
+//! [`Theme`] counterpart onto that theme, and reads `fontSize` as a scale.
 //!
 //! Colours rusty-mermaid hardcodes (pie slices, git branches, gantt bars,
 //! section palettes, C4 and packet fills) have no theme field and are not
 //! overridable.
 
+use crate::constants::{
+    MERMAID_CLASSIC_THEME_VARIABLES, MERMAID_DARK_THEME_VARIABLES, MERMAID_FONT_SIZE_KEY,
+    MERMAID_FONT_SIZE_UNIT, MERMAID_FOREST_THEME_VARIABLES, MERMAID_INIT_KEYS,
+    MERMAID_NEUTRAL_THEME_VARIABLES, MERMAID_THEME_CLASSIC, MERMAID_THEME_DARK,
+    MERMAID_THEME_FOREST, MERMAID_THEME_KEY, MERMAID_THEME_NEUTRAL,
+};
 use rusty_mermaid::{detect, Color, DiagramKind, Theme};
 use std::borrow::Cow;
 
@@ -368,17 +378,24 @@ pub(super) struct Directives<'a> {
     /// Node label colour the directives set explicitly, when rusty-mermaid
     /// would otherwise replace it with white or black for contrast.
     pub(super) node_label_color: Option<Color>,
+    /// Palette of the named `theme`, before `themeVariables` were applied;
+    /// `None` when the directives keep the caller's palette.
+    pub(super) named_theme: Option<Theme>,
+    /// Factor `themeVariables.fontSize` asks the diagram to be scaled by.
+    pub(super) scale: Option<f64>,
 }
 
-/// Remove every `%%{ ... }%%` directive from `source` and apply its colours.
+/// Remove every `%%{ ... }%%` directive from `source` and apply its theme.
 ///
-/// The returned body borrows `source` when it has no directives. Unknown
-/// variables and unparseable colours are ignored.
+/// A named theme replaces `theme`; theme variables then apply on top. The returned body borrows `source` when it has no directives.
+/// Unknown themes, unknown variables and unparseable values are ignored.
 pub(super) fn apply_directives<'a>(source: &'a str, theme: &mut Theme) -> Directives<'a> {
     if !source.lines().any(is_directive_start) {
         return Directives {
             body: Cow::Borrowed(source),
             node_label_color: None,
+            named_theme: None,
+            scale: None,
         };
     }
     let mut body = String::with_capacity(source.len());
@@ -396,15 +413,76 @@ pub(super) fn apply_directives<'a>(source: &'a str, theme: &mut Theme) -> Direct
     }
     // The same detection rusty-mermaid uses to pick the diagram renderer.
     let diagram = detect(&body);
+    let pairs = string_pairs(&directives);
+    let named_theme = named_theme(&pairs, diagram);
+    if let Some(named) = &named_theme {
+        *theme = named.clone();
+    }
     let default_node_text = theme.node_text;
-    apply_theme_variables(&directives, diagram, theme);
+    apply_theme_variables(&pairs, diagram, theme);
+    let scale = font_scale(&pairs, theme);
     let node_label_color = (diagram.is_some_and(|kind| CONTRAST_LABEL_DIAGRAMS.contains(&kind))
-        && theme.node_text != default_node_text)
+        && (named_theme.is_some() || theme.node_text != default_node_text))
         .then_some(theme.node_text);
     Directives {
         body: Cow::Owned(body),
         node_label_color,
+        named_theme,
+        scale,
     }
+}
+
+/// Return the palette of the theme `pairs` name, built for `diagram`.
+///
+/// `base` and unknown names return `None` and keep the editor palette.
+fn named_theme(pairs: &[StringPair<'_>], diagram: Option<DiagramKind>) -> Option<Theme> {
+    let name = pairs
+        .iter()
+        .rev()
+        .find(|pair| MERMAID_INIT_KEYS.contains(&pair.parent) && pair.key == MERMAID_THEME_KEY)?
+        .value;
+    let (mut theme, variables) = match name {
+        MERMAID_THEME_CLASSIC => (Theme::light(), MERMAID_CLASSIC_THEME_VARIABLES),
+        MERMAID_THEME_FOREST => (Theme::light(), MERMAID_FOREST_THEME_VARIABLES),
+        MERMAID_THEME_NEUTRAL => (Theme::light(), MERMAID_NEUTRAL_THEME_VARIABLES),
+        MERMAID_THEME_DARK => (Theme::dark(), MERMAID_DARK_THEME_VARIABLES),
+        _ => return None,
+    };
+    let palette: Vec<StringPair<'_>> = variables
+        .iter()
+        .map(|&(key, value)| StringPair {
+            parent: THEME_VARIABLES_KEY,
+            key,
+            value,
+        })
+        .collect();
+    apply_theme_variables(&palette, diagram, &mut theme);
+    Some(theme)
+}
+
+/// Return the scale that makes node labels `themeVariables.fontSize` tall.
+///
+/// rusty-mermaid sizes several labels (flowchart nodes among them) with a
+/// fixed font instead of the theme's, so the whole diagram is scaled rather
+/// than its text, which also grows the boxes around the labels.
+fn font_scale(pairs: &[StringPair<'_>], theme: &Theme) -> Option<f64> {
+    pairs
+        .iter()
+        .rev()
+        .find(|pair| pair.parent == THEME_VARIABLES_KEY && pair.key == MERMAID_FONT_SIZE_KEY)
+        .and_then(|pair| parse_font_size(pair.value))
+        .map(|size| size / theme.font_size_node)
+}
+
+/// Parse a positive `fontSize` such as `14px` or `14`.
+fn parse_font_size(value: &str) -> Option<f64> {
+    let size: f64 = value
+        .trim()
+        .trim_end_matches(MERMAID_FONT_SIZE_UNIT)
+        .trim_end()
+        .parse()
+        .ok()?;
+    (size.is_finite() && size > 0.0).then_some(size)
 }
 
 /// Return whether `line` opens a directive.
@@ -412,9 +490,12 @@ fn is_directive_start(line: &str) -> bool {
     line.trim_start().starts_with(DIRECTIVE_OPEN)
 }
 
-/// Apply every variable in `directives` that affects `diagram` to `theme`.
-fn apply_theme_variables(directives: &str, diagram: Option<DiagramKind>, theme: &mut Theme) {
-    let pairs = string_pairs(directives);
+/// Apply every variable in `pairs` that affects `diagram` to `theme`.
+fn apply_theme_variables(
+    pairs: &[StringPair<'_>],
+    diagram: Option<DiagramKind>,
+    theme: &mut Theme,
+) {
     for variable in THEME_VARIABLES {
         if !variable.applies_to(diagram) {
             continue;
@@ -651,6 +732,75 @@ mod tests {
             apply_directives(source, &mut theme).body,
             Cow::Borrowed(s) if s == source
         ));
+    }
+
+    #[test]
+    /// Assert each named theme swaps in its own palette.
+    fn named_themes_replace_the_palette() {
+        let themed = |name: &str| {
+            let mut theme = Theme::dark();
+            let source = format!(
+                "%%{{init: {{'theme': '{name}'}}}}%%
+flowchart LR
+"
+            );
+            let directives = apply_directives(&source, &mut theme);
+            assert!(directives.named_theme.is_some(), "{name}");
+            theme
+        };
+        assert_eq!(themed("forest").node_fill, hex("#cde498"));
+        assert_eq!(themed("forest").edge_stroke, hex("#008000"));
+        assert_eq!(themed("neutral").node_fill, hex("#eeeeee"));
+        assert_eq!(themed("classic").node_fill, hex("#ececff"));
+        assert_eq!(themed("dark").node_fill, hex("#1f2020"));
+        assert_eq!(themed("dark").background, hex("#333333"));
+    }
+
+    #[test]
+    /// Assert `base`, `default` and unknown names keep the caller's palette.
+    fn base_and_unknown_themes_keep_the_palette() {
+        for name in ["base", "default", "nonsense"] {
+            let mut theme = Theme::dark();
+            let source = format!(
+                "%%{{init: {{'theme': '{name}'}}}}%%
+flowchart LR
+"
+            );
+            let directives = apply_directives(&source, &mut theme);
+            assert!(directives.named_theme.is_none(), "{name}");
+            assert_eq!(theme.node_fill, Theme::dark().node_fill, "{name}");
+        }
+    }
+
+    #[test]
+    /// Assert theme variables override the named theme.
+    fn theme_variables_override_the_named_theme() {
+        let mut theme = Theme::dark();
+        let source =
+            "%%{init: {'theme': 'forest', 'themeVariables': {'primaryColor': '#123456'}}}%%
+                      flowchart LR
+";
+        apply_directives(source, &mut theme);
+        assert_eq!(theme.node_fill, hex("#123456"));
+        assert_eq!(theme.node_stroke, hex("#13540c"));
+    }
+
+    #[test]
+    /// Assert `fontSize` becomes a scale relative to the node label size.
+    fn font_size_sets_scale() {
+        let scale = |value: &str| {
+            let mut theme = Theme::dark();
+            let source = format!(
+                "%%{{init: {{'themeVariables': {{'fontSize': '{value}'}}}}}}%%
+graph LR
+"
+            );
+            apply_directives(&source, &mut theme).scale
+        };
+        assert_eq!(scale("28px"), Some(2.0));
+        assert_eq!(scale("7"), Some(0.5));
+        assert_eq!(scale("big"), None);
+        assert_eq!(scale("-3px"), None);
     }
 
     #[test]

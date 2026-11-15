@@ -43,12 +43,31 @@ impl MermaidRender {
         }
         .map_err(|e| e.to_string())?;
         let scene = restore_dropped_labels(scene, source, &theme);
-        let chosen = chosen_text_colors(&default_theme, &theme);
-        let scene = fix_label_contrast(&scene, page_color(), &chosen);
+        let base_theme = directives.named_theme.as_ref().unwrap_or(&default_theme);
+        let chosen = chosen_text_colors(base_theme, &theme);
+        let scene = fix_label_contrast(&scene, page_color(&theme), &chosen);
+        let scene = match directives.scale {
+            Some(scale) => scale_scene(&scene, scale),
+            None => scene,
+        };
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
         Ok(prepare_svg(&svg, source))
     }
+}
+
+/// Return `scene` enlarged or shrunk by `scale`, keeping its top-left corner.
+fn scale_scene(scene: &Scene, scale: f64) -> Scene {
+    let mut scaled = Scene::new(scene.width * scale, scene.height * scale);
+    scaled.push(Primitive::Group {
+        transform: Transform::Scale(scale, scale),
+        children: scene
+            .elements()
+            .iter()
+            .map(|element| element.primitive.clone())
+            .collect(),
+    });
+    scaled
 }
 
 /// Parse and lay out `source`, keeping the block shapes rusty-mermaid misreads.
@@ -199,8 +218,14 @@ fn chosen_text_colors(default: &Theme, themed: &Theme) -> Vec<Color> {
         .collect()
 }
 
-/// Return the page colour diagrams are shown on in the current theme.
-fn page_color() -> Color {
+/// Return the colour `theme`'s diagram is shown on.
+///
+/// A non-white theme background is drawn behind the diagram; otherwise the
+/// editor surface of the current night or day palette shows through.
+fn page_color(theme: &Theme) -> Color {
+    if theme.background != Color::WHITE {
+        return theme.background;
+    }
     let css = match current_theme() {
         ColorTheme::Night => BG_2,
         ColorTheme::Day => DAY_BG_2,
@@ -820,7 +845,10 @@ mod tests {
     #[test]
     /// Assert night mindmap leaves on their near-white fill get black labels.
     fn night_mindmap_leaf_text_is_black() {
-        let svg = MermaidRender.render_svg(MINDMAP).unwrap().to_ascii_lowercase();
+        let svg = MermaidRender
+            .render_svg(MINDMAP)
+            .unwrap()
+            .to_ascii_lowercase();
         // Theme::dark().node_text, the light label colour leaves had before.
         assert!(!svg.contains("#cdd6f4"), "{svg}");
         assert!(svg.contains("fill=\"#000000\""), "{svg}");
@@ -829,8 +857,13 @@ mod tests {
     #[test]
     /// Assert a directive text colour still wins on mindmap leaves.
     fn mindmap_directive_text_colour_is_kept() {
-        let source = format!("%%{{init: {{'themeVariables': {{'primaryTextColor': '#123456'}}}}}}%%\n{MINDMAP}");
-        let svg = MermaidRender.render_svg(&source).unwrap().to_ascii_lowercase();
+        let source = format!(
+            "%%{{init: {{'themeVariables': {{'primaryTextColor': '#123456'}}}}}}%%\n{MINDMAP}"
+        );
+        let svg = MermaidRender
+            .render_svg(&source)
+            .unwrap()
+            .to_ascii_lowercase();
         assert!(svg.contains("#123456"), "{svg}");
     }
 
@@ -1122,6 +1155,81 @@ mod tests {
         assert!(svg.contains("#f59e0b"), "{svg}");
         assert!(svg.contains("fill=\"#ec4899\""), "{svg}");
         assert!(svg.contains("fill=\"#f3f4f6\""), "{svg}");
+    }
+
+    /// Flowchart from the manual's theme example.
+    const THEMED_FLOWCHART: &str = "flowchart LR
+    A[Start with Forest Theme] --> B[Processing] --> C[Finished]
+";
+
+    /// Return the SVG for `THEMED_FLOWCHART` under the named `theme`.
+    fn render_named_theme(theme: &str) -> String {
+        let source = format!(
+            "%%{{init: {{'theme': '{theme}', 'themeVariables': {{ 'fontSize': '14px',              'fontFamily': 'arial' }}}}}}%%
+{THEMED_FLOWCHART}"
+        );
+        MermaidRender
+            .render_svg(&source)
+            .unwrap()
+            .to_ascii_lowercase()
+    }
+
+    #[test]
+    /// Assert every named theme renders its own colours, in both app palettes.
+    fn named_themes_render_their_palettes() {
+        let cases = [
+            ("classic", "#ececff", "#fefefe"),
+            ("forest", "#cde498", "#fefefe"),
+            ("neutral", "#eeeeee", "#fefefe"),
+            ("dark", "#1f2020", "#333333"),
+        ];
+        for day in [false, true] {
+            let _guard = day.then(|| ThemeGuard::set(ColorTheme::Day));
+            let svgs: Vec<String> = cases
+                .iter()
+                .map(|(name, ..)| render_named_theme(name))
+                .collect();
+            for ((name, fill, background), svg) in cases.iter().zip(&svgs) {
+                assert!(
+                    svg.contains(&format!("fill=\"{fill}\"")),
+                    "{name} day={day}: {svg}"
+                );
+                assert!(
+                    svg.contains(&format!("fill=\"{background}\"")),
+                    "{name} background: {svg}"
+                );
+                assert!(svg.contains("start with forest theme"), "{name}: {svg}");
+            }
+            for (i, a) in svgs.iter().enumerate() {
+                for b in &svgs[i + 1..] {
+                    assert_ne!(a, b, "two themes rendered identically");
+                }
+            }
+        }
+    }
+
+    #[test]
+    /// Assert `fontSize` scales the whole diagram.
+    fn font_size_scales_the_diagram() {
+        let width = |svg: &str| -> f64 {
+            svg.split("width=\"")
+                .nth(1)
+                .unwrap()
+                .split('"')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap()
+        };
+        let plain = MermaidRender.render_svg(THEMED_FLOWCHART).unwrap();
+        let large = MermaidRender
+            .render_svg(&format!(
+                "%%{{init: {{'themeVariables': {{'fontSize': '28px'}}}}}}%%
+{THEMED_FLOWCHART}"
+            ))
+            .unwrap();
+        assert!(large.contains("scale(2, 2)"), "{large}");
+        assert!(width(&large) > width(&plain) * 1.8, "{large}");
     }
 
     #[test]
