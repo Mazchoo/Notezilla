@@ -1,10 +1,13 @@
 //! Renders a Mermaid diagram block to inline SVG.
 
 use super::marker_arrow::expand_path_markers;
+use super::mermaid_block::{label_blocks, render_block};
 use super::mermaid_contrast::fix_label_contrast;
 use super::mermaid_directive::apply_directives;
 use super::mermaid_journey::label_journey_tasks;
 use super::mermaid_label::flatten_label;
+use super::mermaid_packet::label_packet_fields;
+use super::mermaid_treemap::label_treemap_leaves;
 use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{
@@ -35,19 +38,35 @@ impl MermaidRender {
         let directives = apply_directives(source, &mut theme);
         let source = &*strip_statement_semicolons(&directives.body);
         let scene = match directives.node_label_color {
-            None => render(source, &theme),
+            None => render_scene(source, &theme),
             Some(color) => render_with_node_labels(source, &theme, color),
         }
         .map_err(|e| e.to_string())?;
-        let scene = match detect(source) {
-            Some(DiagramKind::UserJourney) => label_journey_tasks(scene, source, &theme),
-            _ => scene,
-        };
+        let scene = restore_dropped_labels(scene, source, &theme);
         let chosen = chosen_text_colors(&default_theme, &theme);
         let scene = fix_label_contrast(&scene, page_color(), &chosen);
         let svg_theme = padded_theme(theme, &scene);
         let svg = SvgRenderer::with_theme(&svg_theme).render_themed(&scene, &svg_theme);
         Ok(prepare_svg(&svg, source))
+    }
+}
+
+/// Parse and lay out `source`, keeping the block shapes rusty-mermaid misreads.
+fn render_scene(source: &str, theme: &Theme) -> Result<Scene, ParseError> {
+    match detect(source) {
+        Some(DiagramKind::Block) => render_block(source, theme),
+        _ => render(source, theme),
+    }
+}
+
+/// Put back the labels rusty-mermaid leaves out of `scene` for being too wide.
+fn restore_dropped_labels(scene: Scene, source: &str, theme: &Theme) -> Scene {
+    match detect(source) {
+        Some(DiagramKind::UserJourney) => label_journey_tasks(scene, source, theme),
+        Some(DiagramKind::Block) => label_blocks(scene, source, theme),
+        Some(DiagramKind::Packet) => label_packet_fields(scene, source, theme),
+        Some(DiagramKind::Treemap) => label_treemap_leaves(scene, source, theme),
+        _ => scene,
     }
 }
 
@@ -89,7 +108,7 @@ fn render_with_node_labels(source: &str, theme: &Theme, color: Color) -> Result<
         composite_label: COMPOSITE_LABEL_MARKER,
         ..theme.clone()
     };
-    let scene = render(source, &marked)?;
+    let scene = render_scene(source, &marked)?;
     let label = TextStyle::default();
     let mut painted = Scene::new(scene.width, scene.height);
     for element in scene.elements() {

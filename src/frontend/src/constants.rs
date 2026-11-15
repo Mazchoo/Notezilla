@@ -126,6 +126,18 @@ pub const MERMAID_JOURNEY_TASK_WIDTH: f64 = 120.0;
 pub const MERMAID_JOURNEY_TASK_HEIGHT: f64 = 32.0;
 /// Horizontal space rusty-mermaid keeps between a journey task label and its box edges.
 pub const MERMAID_JOURNEY_LABEL_PADDING: f64 = 8.0;
+/// Space kept between a restored mermaid label and the edges of its box.
+pub const MERMAID_LABEL_PADDING: f64 = 8.0;
+/// Smallest font size a restored mermaid label is shrunk to while fitting its box.
+pub const MERMAID_MIN_LABEL_FONT_SIZE: f64 = 8.0;
+/// Step a restored mermaid label's font size shrinks by while fitting its box.
+pub const MERMAID_LABEL_FONT_STEP: f64 = 1.0;
+/// Stroke width rusty-mermaid gives treemap leaf boxes (sections use 1.5).
+pub const MERMAID_TREEMAP_LEAF_STROKE: f64 = 1.0;
+/// Share of a treemap leaf's height rusty-mermaid uses as its label font size.
+pub const MERMAID_TREEMAP_FONT_RATIO: f64 = 0.25;
+/// Size of a treemap leaf's value relative to its name.
+pub const MERMAID_TREEMAP_VALUE_SCALE: f64 = 0.85;
 /// Offset WCAG adds to both luminances in a contrast ratio.
 pub const WCAG_CONTRAST_FLARE: f64 = 0.05;
 

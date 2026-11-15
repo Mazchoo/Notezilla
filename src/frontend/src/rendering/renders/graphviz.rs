@@ -141,7 +141,10 @@ mod tests {
         recolor_default_paints, strip_marker_defs, strip_xml_declaration, GraphvizRender, Render,
         RenderPdf, GRAPHVIZ_ERROR_CLASS, SVG_XML_DECLARATION,
     };
-    use crate::constants::{BASELINE_FROM_CENTER, BG_3 as NODE_FILL, TEXT as STROKE};
+    use crate::constants::{
+        BASELINE_FROM_CENTER, BG_3 as NODE_FILL, GRAPHVIZ_HELP_MANUAL, TEXT as STROKE,
+    };
+    use crate::rendering::{diagram_fences, DiagramKind};
 
     #[test]
     /// Assert the XML declaration is removed so the SVG can be inlined.
@@ -320,6 +323,25 @@ mod tests {
             html.contains(&format!("class=\"{GRAPHVIZ_ERROR_CLASS}\"")),
             "{html}"
         );
+    }
+
+    #[test]
+    /// Assert every graphviz fence in the help manual renders as SVG.
+    fn help_manual_diagrams_render() {
+        let fences: Vec<String> = diagram_fences(GRAPHVIZ_HELP_MANUAL)
+            .into_iter()
+            .filter(|(kind, _)| *kind == DiagramKind::Graphviz)
+            .map(|(_, source)| source)
+            .collect();
+        assert_eq!(fences.len(), 11, "manual diagram count changed");
+        for source in fences {
+            let result = std::panic::catch_unwind(|| GraphvizRender.render_svg(&source));
+            match result {
+                Ok(Ok(svg)) => assert!(svg.contains("<svg"), "{source}"),
+                Ok(Err(error)) => panic!("{error}\n{source}"),
+                Err(_) => panic!("panicked on\n{source}"),
+            }
+        }
     }
 
     #[test]
