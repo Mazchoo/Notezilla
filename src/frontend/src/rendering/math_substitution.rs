@@ -315,7 +315,22 @@ fn skip_inline_code(src: &str, start: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{skip_fenced_code, skip_inline_code, substitute_math, RenderTarget};
-    use crate::constants::TEXT;
+    use crate::constants::{LATEX_MATH_HELP_MANUAL, TEXT};
+
+    #[test]
+    /// Assert every expression in the LaTeX manual converts to MathML.
+    fn latex_manual_has_no_math_errors() {
+        let out = substitute_math(LATEX_MATH_HELP_MANUAL, RenderTarget::Editor);
+        let errors: Vec<&str> = out
+            .match_indices("<code class=\"math-error")
+            .map(|(at, _)| {
+                let end = out[at..].find("-->").map_or(out.len(), |n| at + n + 3);
+                &out[at..end]
+            })
+            .collect();
+        assert!(errors.is_empty(), "{}", errors.join("\n"));
+        assert!(out.contains("<math"), "{out}");
+    }
 
     #[test]
     /// Assert inline `$…$` and block `$$…$$` become distinct MathML displays.

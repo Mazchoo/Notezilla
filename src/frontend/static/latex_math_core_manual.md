@@ -796,7 +796,7 @@ $$
 | Need | Syntax Example |
 | :--- | :--- |
 | **Fractions** | `\frac{a}{b}`, `\dfrac{a}{b}`, `\cfrac{a}{b}` |
-| **Powers / Indices** | `x^2`, `x_i`, `{x_i}`^2, `{}_n C_k` |
+| **Powers / Indices** | `x^2`, `x_i`, `{x_i}^2`, `{}_n C_k` |
 | **Roots** | `\sqrt{x}`, `\sqrt[3]{x}` |
 | **Sum / Product / Integral** | `\sum_{i=1}^n`, `\prod_{i=1}^n`, `\int_a^b f(x)\,dx`, `\oint_C` |
 | **Matrices** | `\begin{pmatrix} a & b \\ c & d \end{pmatrix}`, `\begin{bmatrix} ... \end{bmatrix}` |

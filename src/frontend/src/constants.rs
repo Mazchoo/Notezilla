@@ -55,6 +55,8 @@ pub const EXPORT_TEMPLATE: &str = include_str!("../static/export.html");
 pub const EXPORT_PDF_TEMPLATE: &str = include_str!("../static/export-pdf.html");
 pub const NIGHT_CSS: &str = include_str!("../night.css");
 pub const DAY_CSS: &str = include_str!("../day.css");
+/// Style sheet math-core's MathML needs: `<menclose>`, table padding, wide accents.
+pub const MATH_CSS: &str = include_str!("../math.css");
 pub const PROMPT_TEMPLATE: &str = include_str!("../static/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
@@ -364,6 +366,10 @@ mod tests {
         assert!(
             EXPORT_TEMPLATE.contains("{{THEME_CSS}}"),
             "HTML export must inject the active theme stylesheet: {EXPORT_TEMPLATE}"
+        );
+        assert!(
+            EXPORT_TEMPLATE.contains("{{MATH_CSS}}"),
+            "HTML export must inject the MathML stylesheet: {EXPORT_TEMPLATE}"
         );
     }
 

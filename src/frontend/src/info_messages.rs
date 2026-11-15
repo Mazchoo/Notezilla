@@ -220,6 +220,7 @@ pub const APP_STATE_OWNER_PANIC: &str =
 pub const CHAR_BOUNDARY_PANIC: &str = "byte index is a boundary";
 pub const CLIPBOARD_NO_WINDOW_ERROR: &str = "Clipboard unavailable: no window";
 pub const EVENT_STREAM_OPEN_FAILED_WARNING: &str = "Could not open file-change event stream";
+pub const MATH_CONVERTER_PANIC: &str = "math-core config defines no custom macros";
 pub const MCP_MISSING_NOTES_ERROR: &str = "Missing notes in MCP response";
 pub const MCP_MISSING_SESSION_HEADER_ERROR: &str =
     "No mcp-session-id header in initialize response";

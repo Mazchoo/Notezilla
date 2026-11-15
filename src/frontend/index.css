@@ -681,7 +681,7 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
   height: 100%;
   max-width: 4rem;
 }
-/* LaTeX → MathML (latex2mathml): inline `$…$` vs block `$$…$$`.
+/* LaTeX → MathML (math-core; its polyfills live in math.css): inline `$…$` vs block `$$…$$`.
    Chromium sizes <msqrt> from the MATH table of the math font, so name one
    explicitly rather than inherit the body sans-serif, and let math set its
    own line height so stretched constructs are not squeezed. */

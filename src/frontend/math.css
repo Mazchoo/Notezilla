@@ -1,0 +1,173 @@
+/* Style sheet required by math-core's MathML output.
+
+   The first part is math-core's own `css/mathmlfixes.css` (MIT, see
+   vendor/math-core/LICENSE). The part marked "Notezilla" styles the markup
+   added by the vendored math-core: `\cancelto`, `\widetilde`, `\widecheck`.
+
+   Loaded by index.html and embedded into HTML exports as `{{MATH_CSS}}`. */
+
+/* Style for unknown command; feel free to customize it */
+
+merror.math-core-unknown-cmd {
+    border: unset; /* `merror` default is `1px solid red` */
+    background-color: unset; /* `merror` default is `lightYellow` */
+    color: #c00; /* `merror` default is `unset` */
+}
+
+/* Styles for all browsers */
+
+mtd {
+    /* The vertical padding is the default for mtd elements as defined in the MathML Core
+       specification. The horizontal padding is LaTeX's `\arraycolsep` (5pt at a font size of
+       10pt), which gives a gap of 1em between columns; the specification says 0.4em. */
+    padding: 0.5ex 0.5em;
+}
+
+mtr > mtd:first-child {
+    padding-left: 0;
+}
+
+mtr > mtd:last-child {
+    padding-right: 0;
+}
+
+/* Styles for Chromium only */
+@supports (not (-webkit-backdrop-filter: blur(1px))) and
+    (not (-moz-appearance: none)) {
+    menclose {
+        position: relative;
+        padding: 0.5ex 0;
+    }
+    menclose[notation~="box" i] {
+        border: 0.04em solid;
+        padding: 0.3rem;
+    }
+    menclose[notation~="actuarial" i] {
+        padding: 0.03889rem 0.03889rem 0 0.03889rem;
+        border-width: 0.08em 0.08em 0em 0em;
+        border-style: solid;
+        margin-right: 0.03889rem;
+    }
+    menclose[notation~="phasorangle" i] {
+        border-bottom: 0.067em solid;
+        padding: 0.2em 0.2em 0.1em 0.6em;
+    }
+    mrow.menclose-phasorangle {
+        display: inline-block;
+        position: absolute;
+        left: 0.5px;
+        bottom: -0.04em;
+        height: 100%;
+        aspect-ratio: 0.5;
+        background-color: currentcolor;
+        clip-path: polygon(
+            0.05em 100%,
+            0 calc(100% - 0.05em),
+            calc(100% - 0.05em) 0,
+            100% 0.05em
+        );
+    }
+    mrow.menclose-updiagonalstrike,
+    mrow.menclose-downdiagonalstrike {
+        display: inline-block;
+        position: absolute;
+        left: 0.5px;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        background-color: currentcolor;
+    }
+    mrow.menclose-updiagonalstrike {
+        clip-path: polygon(
+            0.05em 100%,
+            0 calc(100% - 0.05em),
+            calc(100% - 0.05em) 0,
+            100% 0.05em
+        );
+    }
+    mrow.menclose-downdiagonalstrike {
+        clip-path: polygon(
+            0em 0.05em,
+            0.05em 0em,
+            100% calc(100% - 0.05em),
+            calc(100% - 0.05em) 100%
+        );
+    }
+}
+
+/* Styles for Chromium and Safari */
+@supports (not (-moz-appearance: none)) {
+    mover[accent="true" i] > mo:nth-child(2) {
+        margin-bottom: 0.15ex;
+    }
+}
+
+/* ---- Notezilla ---- */
+
+/* Styles for Chromium only, which draws neither `<menclose>` nor a stretched
+   tilde or caron (math fonts rarely ship stretchy variants of those two). */
+@supports (not (-webkit-backdrop-filter: blur(1px))) and
+    (not (-moz-appearance: none)) {
+    /* `\cancelto`: the strike of `updiagonalstrike` plus an arrowhead at its
+       upper end, turned to the slope of the box diagonal. */
+    mrow.menclose-updiagonalarrow {
+        display: inline-block;
+        position: absolute;
+        left: 0.5px;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        container-type: size;
+    }
+    mrow.menclose-updiagonalarrow::before,
+    mrow.menclose-updiagonalarrow::after {
+        content: "";
+        position: absolute;
+        background-color: currentcolor;
+    }
+    mrow.menclose-updiagonalarrow::before {
+        inset: 0;
+        clip-path: polygon(
+            0.05em 100%,
+            0 calc(100% - 0.05em),
+            calc(100% - 0.05em) 0,
+            100% 0.05em
+        );
+    }
+    mrow.menclose-updiagonalarrow::after {
+        top: 0;
+        right: 0;
+        width: 0.42em;
+        height: 0.34em;
+        clip-path: polygon(100% 50%, 0 0, 22% 50%, 0 100%);
+        transform-origin: 100% 50%;
+        transform: translateY(-50%) rotate(calc(-1 * atan2(100cqh, 100cqw)));
+    }
+
+    /* `\widetilde` and `\widecheck`: the accent is taken out of the flow and
+       drawn as a shape spanning the width of the base. */
+    mover.math-core-wide-tilde,
+    mover.math-core-wide-check {
+        position: relative;
+        padding-top: 0.34em;
+    }
+    mover.math-core-wide-tilde > mo,
+    mover.math-core-wide-check > mo {
+        position: absolute;
+        top: 0.04em;
+        left: 0;
+        width: 100%;
+        height: 0.26em;
+        margin: 0;
+        overflow: hidden;
+        background-color: currentcolor;
+        -webkit-mask: var(--math-core-wide-accent) center / 100% 100% no-repeat;
+        mask: var(--math-core-wide-accent) center / 100% 100% no-repeat;
+    }
+    mover.math-core-wide-tilde > mo {
+        --math-core-wide-accent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 24' preserveAspectRatio='none'%3E%3Cpath d='M0 17C5 6 15 0 27 0C43 0 57 16 73 16C83 16 91 11 96 3L100 5C95 15 85 21 73 21C56 21 43 5 27 5C17 5 9 10 4 20Z'/%3E%3C/svg%3E");
+    }
+    mover.math-core-wide-check > mo {
+        --math-core-wide-accent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 24' preserveAspectRatio='none'%3E%3Cpath d='M0 3L2 0L50 19L98 0L100 3L50 24Z'/%3E%3C/svg%3E");
+    }
+}

@@ -397,7 +397,7 @@ pub fn TopBar() -> impl IntoView {
                     aria-expanded=move || help_menu_open.get().to_string()
                     on:click=on_help_toggle
                 >
-                    <Icon icon=id::LuCircleHelp/>
+                    <Icon icon=id::TbQuestionMarkOutline/>
                 </button>
                 <Show when=move || help_menu_open.get()>
                     <div class="context-menu-backdrop" on:click=close_help_menu></div>

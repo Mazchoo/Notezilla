@@ -2,12 +2,22 @@
 
 use super::{Render, RenderPdf};
 use crate::constants::TEXT;
+use crate::info_messages::MATH_CONVERTER_PANIC;
 use crate::rendering::{escape_html, escape_html_comment};
-use math_core::{LatexToMathML, MathDisplay};
+use math_core::{LatexToMathML, MathCoreConfig, MathDisplay};
 use std::sync::LazyLock;
 
 /// Shared LaTeX to MathML converter; it holds no per-call state.
-static CONVERTER: LazyLock<LatexToMathML> = LazyLock::new(LatexToMathML::default);
+///
+/// `allow_unreliable_rendering` enables `\widetilde`, `\widecheck` and
+/// `\utilde`, which math-core leaves off because browsers stretch them unevenly.
+static CONVERTER: LazyLock<LatexToMathML> = LazyLock::new(|| {
+    let config = MathCoreConfig {
+        allow_unreliable_rendering: true,
+        ..MathCoreConfig::default()
+    };
+    LatexToMathML::new(config, Vec::new()).expect(MATH_CONVERTER_PANIC)
+});
 
 /// LaTeX render for one display style.
 pub struct MathRender {
@@ -226,5 +236,145 @@ mod tests {
             MathRender::new(MathDisplay::Block).render_pdf(r"\frac{-b \pm \sqrt{b^2-4ac}}{2a}");
         assert!(html.contains(r"\;\pm\;"), "{html}");
         assert!(!html.contains(r" \pm \"), "{html}");
+    }
+
+    /// Render `latex` as block math and assert it converted.
+    fn block(latex: &str) -> String {
+        let html = MathRender::new(MathDisplay::Block).render(latex);
+        assert!(!html.contains("math-error"), "{html}");
+        html
+    }
+
+    #[test]
+    /// Assert `alignedat` aligns column pairs with no space between the pairs.
+    fn alignedat_renders_tight_column_pairs() {
+        let html = block("\\begin{alignedat}{2}\na &= b, &\\quad c &= d \\\\\ne &= f, &\\quad g &= h\n\\end{alignedat}");
+        assert_eq!(html.matches("<mtr>").count(), 2, "{html}");
+        assert_eq!(html.matches("<mtd").count(), 8, "{html}");
+        assert_eq!(
+            html.matches("padding-left: 0;padding-right: 0;").count(),
+            8,
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert `alignedat` rejects a missing or non-numeric pair count.
+    fn alignedat_requires_a_pair_count() {
+        let html = MathRender::new(MathDisplay::Block)
+            .render("\\begin{alignedat}{x}\na &= b\n\\end{alignedat}");
+        assert!(html.contains("math-error"), "{html}");
+    }
+
+    #[test]
+    /// Assert `\widetilde` renders a stretchy accent the style sheet can widen.
+    fn widetilde_renders_classed_stretchy_accent() {
+        let html = block(r"\widetilde{X_1 + X_2}");
+        assert!(
+            html.contains(r#"<mover accent="true" class="math-core-wide-tilde">"#),
+            "{html}"
+        );
+        assert!(html.contains(r#"<mo stretchy="true">~</mo>"#), "{html}");
+    }
+
+    #[test]
+    /// Assert `\widehat`, `\overline` and `\underline` render stretchy accents.
+    fn wide_accents_and_lines_render() {
+        let html = block(r"\widehat{A + B} \overline{z} \underline{u + v}");
+        assert_eq!(
+            html.matches(r#"<mover accent="true">"#).count(),
+            2,
+            "{html}"
+        );
+        assert!(html.contains(r#"<munder accentunder="true">"#), "{html}");
+    }
+
+    #[test]
+    /// Assert `\pmod`, `\pod` and `\bmod` all render.
+    fn modular_arithmetic_commands_render() {
+        let html = block(r"a \equiv b \pmod{m} \qquad a \equiv b \pod{m} \qquad r = a \bmod m");
+        assert_eq!(html.matches("<mi>mod</mi>").count(), 2, "{html}");
+        assert_eq!(
+            html.matches(r#"<mo stretchy="false">(</mo>"#).count(),
+            2,
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert `\boxed` frames its content.
+    fn boxed_renders_box_enclosure() {
+        let html = block(r"\boxed{e^{i\pi} + 1 = 0}");
+        assert!(html.contains(r#"<menclose notation="box">"#), "{html}");
+    }
+
+    #[test]
+    /// Assert `\cancelto` strikes the expression with an arrow carrying the value.
+    fn cancelto_renders_arrow_with_value() {
+        let html = block(r"\cancelto{0}{5x^3}");
+        assert!(
+            html.starts_with(
+                r#"<div class="math-block"><math display="block"><msup><menclose notation="updiagonalarrow">"#
+            ),
+            "{html}"
+        );
+        assert!(
+            html.contains(
+                r#"<mrow class="menclose-updiagonalarrow"></mrow></menclose><mn>0</mn></msup>"#
+            ),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert `\cancel` keeps the strike element the style sheet draws.
+    fn cancel_renders_strike() {
+        let html = block(r"\cancel{x - 1}");
+        assert!(
+            html.contains(r#"<menclose notation="updiagonalstrike">"#),
+            "{html}"
+        );
+        assert!(
+            html.contains(r#"class="menclose-updiagonalstrike""#),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert `\color` accepts a `#rrggbb` literal and scopes it to the group.
+    fn color_accepts_hex_literal() {
+        let html = block(r"{\color{#2563eb} F} = \color{#dc2626}{m}");
+        assert!(
+            html.contains(r#"<mrow style="color:#2563EB;"><mi>F</mi></mrow><mo>=</mo>"#),
+            "{html}"
+        );
+        assert!(html.contains(r#"<mrow style="color:#DC2626;">"#), "{html}");
+    }
+
+    #[test]
+    /// Assert a `#` that is not a color literal is still an error.
+    fn stray_hash_is_still_an_error() {
+        for latex in [r"x #2563eb", r"\color{#25} x", r"\color{#2563ebf} x"] {
+            let html = MathRender::new(MathDisplay::Block).render(latex);
+            assert!(html.contains("math-error"), "{latex}: {html}");
+        }
+    }
+
+    #[test]
+    /// Assert math accents inside `\text` render as accented letters.
+    fn text_mode_accepts_math_accents() {
+        let html = block(r"\text{(Amp\grave{e}re-Maxwell)}");
+        assert!(
+            html.contains("<mtext>(Ampe\u{300}re-Maxwell)</mtext>"),
+            "{html}"
+        );
+    }
+
+    #[test]
+    /// Assert `aligned` takes an empty column before a trailing `\text` note.
+    fn aligned_takes_trailing_text_column() {
+        let html = block("\\begin{aligned}\na &= b && \\text{(Gauss's)} \\\\\nc &= d && \\text{(x)}\n\\end{aligned}");
+        assert_eq!(html.matches("<mtd").count(), 8, "{html}");
+        assert!(html.contains("<mtext>(Gauss’s)</mtext>"), "{html}");
     }
 }
