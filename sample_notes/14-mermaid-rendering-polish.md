@@ -27,7 +27,7 @@ Ensure the GUI correctly renders Mermaid diagrams to satisfy the "extending user
 - [x] Theme changes (light/dark) are reflected in diagram colors without a page reload.
 - [x] In locked mode, clicking on an a diagram creates a modal that zooms into that diagram
 - [x] A Mermaid syntax reference is accessible from the editor for quick lookup.
-- [ ] Scrolling to links are supported when the document is locked
-- [ ] Graphviz has a manual in help
-- [ ] Latex rendering has a manual
+- [x] Scrolling to links are supported when the document is locked
+- [x] Graphviz has a manual in help
+- [x] Latex rendering has a manual
 - [ ] Clicking help button to get a manual gets a pre-rendered manual
