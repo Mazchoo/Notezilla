@@ -9,11 +9,16 @@ use crate::info_messages::{
     body_read_error, http_status_error, network_error, ollama_ready_log, ollama_unreachable_log,
     parse_error, serialize_error, OLLAMA_MISSING_RESPONSE_ERROR,
 };
+use crate::utils::retry::{begin_generation, retry_with_backoff};
 use gloo_net::http::Request;
 use leptos::prelude::{Effect, Get, RwSignal, Set};
 use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::sync::atomic::AtomicU64;
+
+/// Bumped by each Ollama probe so older retry loops stop.
+static OLLAMA_PROBE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Generation controls sent with POST `/api/generate`.
 #[derive(Clone, Debug, PartialEq)]
@@ -150,21 +155,26 @@ async fn check_connection(port: u16) -> Result<(), String> {
 }
 
 /// Probe Ollama when `port` changes and store whether the API responded.
+///
+/// A failure marks Ollama unavailable at once, then retries in the background with
+/// geometric backoff; a later success marks it available. A port change supersedes
+/// any pending retries.
 pub fn probe_ollama(port: RwSignal<u16>, available: RwSignal<bool>) {
     Effect::new(move |_| {
         let port = port.get();
-        spawn_local(async move {
-            match check_connection(port).await {
-                Ok(()) => {
-                    web_sys::console::log_1(&ollama_ready_log(&ollama_base_url(port)).into());
-                    available.set(true);
-                }
-                Err(e) => {
-                    web_sys::console::warn_1(&ollama_unreachable_log(&e).into());
-                    available.set(false);
-                }
-            }
-        });
+        let is_current = begin_generation(&OLLAMA_PROBE_GENERATION);
+        spawn_local(retry_with_backoff(
+            move || check_connection(port),
+            is_current,
+            move |()| {
+                web_sys::console::log_1(&ollama_ready_log(&ollama_base_url(port)).into());
+                available.set(true);
+            },
+            move |e| {
+                web_sys::console::warn_1(&ollama_unreachable_log(&e).into());
+                available.set(false);
+            },
+        ));
     });
 }
 

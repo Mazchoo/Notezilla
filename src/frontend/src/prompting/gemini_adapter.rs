@@ -6,11 +6,16 @@ use crate::info_messages::{
     body_read_error, gemini_ready_log, gemini_unreachable_log, http_status_error, network_error,
     parse_error, serialize_error, GEMINI_MISSING_NAME_ERROR, GEMINI_MISSING_TEXT_ERROR,
 };
+use crate::utils::retry::{begin_generation, retry_with_backoff};
 use gloo_net::http::Request;
 use leptos::prelude::{Effect, Get, RwSignal, Set};
 use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::sync::atomic::AtomicU64;
+
+/// Bumped by each Gemini probe so older retry loops stop.
+static GEMINI_PROBE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Deserialize)]
 struct GeminiErrorBody {
@@ -155,26 +160,35 @@ async fn check_connection(model: &str, api_key: &str) -> Result<(), String> {
 }
 
 /// Probe Gemini when the API key or model changes and store whether GET succeeded.
+///
+/// A failure marks Gemini unavailable at once, then retries in the background with
+/// geometric backoff; a later success marks it available. A key or model change
+/// supersedes any pending retries.
 pub fn probe_gemini(api_key: RwSignal<String>, model: RwSignal<String>, available: RwSignal<bool>) {
     Effect::new(move |_| {
         let api_key = api_key.get();
         let model = model.get();
-        spawn_local(async move {
-            if api_key.trim().is_empty() || model.trim().is_empty() {
+        let is_current = begin_generation(&GEMINI_PROBE_GENERATION);
+        if api_key.trim().is_empty() || model.trim().is_empty() {
+            available.set(false);
+            return;
+        }
+        spawn_local(retry_with_backoff(
+            move || {
+                let model = model.clone();
+                let api_key = api_key.clone();
+                async move { check_connection(&model, &api_key).await }
+            },
+            is_current,
+            move |()| {
+                web_sys::console::log_1(&gemini_ready_log(GEMINI_API_ORIGIN).into());
+                available.set(true);
+            },
+            move |e| {
+                web_sys::console::warn_1(&gemini_unreachable_log(&e).into());
                 available.set(false);
-                return;
-            }
-            match check_connection(&model, &api_key).await {
-                Ok(()) => {
-                    web_sys::console::log_1(&gemini_ready_log(GEMINI_API_ORIGIN).into());
-                    available.set(true);
-                }
-                Err(e) => {
-                    web_sys::console::warn_1(&gemini_unreachable_log(&e).into());
-                    available.set(false);
-                }
-            }
-        });
+            },
+        ));
     });
 }
 

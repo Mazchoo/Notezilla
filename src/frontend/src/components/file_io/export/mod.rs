@@ -8,6 +8,7 @@ use crate::components::toast::show_error_toast;
 use crate::info_messages::{export_progress_label, EXPORT_METADATA_HEADING};
 use crate::models::block::EditorEntry;
 use crate::rendering::escape_html;
+use crate::utils::retry::sleep_ms;
 use export_interface::ExportOne;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -56,19 +57,7 @@ fn run_export(
 
 /// Yield so the overlay can paint before the next blocking WASM conversion.
 async fn yield_for_paint() {
-    let timeout = js_sys::Promise::new(&mut |resolve, _reject| {
-        let Some(window) = web_sys::window() else {
-            let _ = resolve.call0(&JsValue::UNDEFINED);
-            return;
-        };
-        if window
-            .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 0)
-            .is_err()
-        {
-            let _ = resolve.call0(&JsValue::UNDEFINED);
-        }
-    });
-    let _ = wasm_bindgen_futures::JsFuture::from(timeout).await;
+    sleep_ms(0).await;
 
     let frame = js_sys::Promise::new(&mut |resolve, _reject| {
         let Some(window) = web_sys::window() else {

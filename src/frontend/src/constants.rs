@@ -41,6 +41,12 @@ pub const GEMINI_API_ORIGIN: &str = "https://generativelanguage.googleapis.com";
 pub const GEMINI_MODELS_PATH: &str = "/v1beta/models";
 /// Action suffix for POST `{model}:generateContent`.
 pub const GEMINI_GENERATE_CONTENT_ACTION: &str = "generateContent";
+/// Retries made after a failed MCP, Ollama, or Gemini status probe before giving up.
+pub const NUMBER_OF_RETRIES: u32 = 5;
+/// Factor each retry delay grows by over the one before it.
+pub const GEOMETRIC_RATIO: f64 = 2.0;
+/// Wait before the first retry of a failed status probe, in milliseconds.
+pub const RETRY_INITIAL_DELAY_MS: u32 = 1000;
 
 /// Return the Gemini model metadata URL for `model` and `api_key`.
 pub fn gemini_model_url(model: &str, api_key: &str) -> String {

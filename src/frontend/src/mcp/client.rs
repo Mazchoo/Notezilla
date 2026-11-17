@@ -8,6 +8,7 @@ use crate::info_messages::{
     serialize_error, sse_parse_error, unexpected_result_shape_error, unexpected_tool_message_error,
     BACKEND_NO_RESPONSE_TOAST, MCP_EMPTY_RESULT_ERROR, MCP_MISSING_SESSION_HEADER_ERROR,
 };
+use crate::utils::retry::{begin_generation, retry_with_backoff};
 use gloo_net::http::Request;
 use leptos::prelude::{GetUntracked, RwSignal, Set};
 use leptos::task::spawn_local;
@@ -16,6 +17,8 @@ use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static CALL_ID: AtomicU64 = AtomicU64::new(1);
+/// Bumped by each MCP probe so older retry loops stop.
+static MCP_PROBE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Deserialize, Debug)]
 struct JsonRpcResponse {
@@ -39,7 +42,9 @@ fn parse_sse(body: &str) -> Option<JsonRpcResponse> {
 
 /// Probe MCP, store the session ID when initialize succeeds, and record availability.
 ///
-/// Skips the call while a probe is already in flight.
+/// A failure marks MCP unavailable at once, then retries in the background with
+/// geometric backoff; a later success marks it available. Skips the call while the
+/// first attempt is in flight, and a new probe supersedes any pending retries.
 pub fn probe_mcp(
     session_id: RwSignal<Option<String>>,
     mcp_available: RwSignal<bool>,
@@ -49,20 +54,22 @@ pub fn probe_mcp(
         return;
     }
     mcp_probing.set(true);
-    spawn_local(async move {
-        match initialize_session().await {
-            Ok(id) => {
-                web_sys::console::log_1(&mcp_ready_log(&id).into());
-                session_id.set(Some(id));
-                mcp_available.set(true);
-            }
-            Err(e) => {
-                web_sys::console::warn_1(&mcp_init_failed_warning(e).into());
-                mcp_available.set(false);
-            }
-        }
-        mcp_probing.set(false);
-    });
+    let is_current = begin_generation(&MCP_PROBE_GENERATION);
+    spawn_local(retry_with_backoff(
+        initialize_session,
+        is_current,
+        move |id: String| {
+            web_sys::console::log_1(&mcp_ready_log(&id).into());
+            session_id.set(Some(id));
+            mcp_available.set(true);
+            mcp_probing.set(false);
+        },
+        move |e| {
+            web_sys::console::warn_1(&mcp_init_failed_warning(e).into());
+            mcp_available.set(false);
+            mcp_probing.set(false);
+        },
+    ));
 }
 
 /// Perform the MCP initialize handshake and return the session ID.
