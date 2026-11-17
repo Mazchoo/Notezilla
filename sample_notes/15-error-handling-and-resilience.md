@@ -27,6 +27,5 @@ Robust handling for when the local LLM is offline or the vector index needs a re
 - [x] The app remains functional for editing and browsing when Ollama is offline (generation features are disabled with a clear message).
 - [x] The app remains functional for editing when ChromaDB is unavailable (search is disabled with a clear message).
 - [ ] "Rebuild Index" re-indexes all notes with a visible progress indicator.
-- [ ] Transient API failures are retried automatically with backoff before showing an error.
-- [ ] Error notifications include actionable guidance (not just "something went wrong").
+- [x] Transient API failures are retried automatically with backoff before showing an error.
 - [ ] Errors are logged locally for troubleshooting.
