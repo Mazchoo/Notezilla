@@ -14,8 +14,8 @@ from src.config import (
     MAX_DB_BATCH_ITERATION,
 )
 from src.field_enums import ColumnTypes, ReservedFields
-from src.backend.chroma_parsing import notes_from_chroma
-from src.backend.database_interface import INoteDatabase
+from src.backend.database.chroma_parsing import notes_from_chroma
+from src.backend.database.interface import INoteDatabase
 from src.backend.file_io import delete_all_old_index_folders
 from src.backend.note import NoteData
 

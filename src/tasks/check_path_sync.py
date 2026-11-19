@@ -1,7 +1,7 @@
 """Compare note paths in the database against files on disk."""
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_sync import get_sync_difference
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.sync import get_sync_difference
 
 
 def print_path_set(title: str, paths: set[str]) -> None:

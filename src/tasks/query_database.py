@@ -3,7 +3,7 @@
 from typing import List
 from time import perf_counter
 
-from src.backend.database_adapter import NoteDatabase
+from src.backend.database.adapter import NoteDatabase
 from src.backend.file_io import get_db_column_types
 from src.backend.note import NoteData
 

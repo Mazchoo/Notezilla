@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from src.backend.database_interface import INoteDatabase
-from src.backend.database_update import prepate_database_row
+from src.backend.database.interface import INoteDatabase
+from src.backend.database.update import prepate_database_row
 from src.backend.file_io import (
     delete_note_file,
     get_normalised_path,

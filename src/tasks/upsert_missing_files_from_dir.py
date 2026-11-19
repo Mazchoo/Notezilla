@@ -1,7 +1,7 @@
 """Upsert note files that exist on disk but are missing from the database."""
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_sync import upsert_missing_files_from_dir
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.sync import upsert_missing_files_from_dir
 from src.backend.file_io import get_db_column_types
 
 

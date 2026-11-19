@@ -1,9 +1,9 @@
 """Delete database entries that have no corresponding file on disk."""
 
-from src.backend.database_adapter import NoteDatabase
+from src.backend.database.adapter import NoteDatabase
 from src.backend.file_io import get_normalised_path
 from src.backend.resolved_folders import ResolvedFolder
-from src.backend.database_sync import get_sync_difference
+from src.backend.database.sync import get_sync_difference
 
 
 def delete_only_in_db() -> list[str]:

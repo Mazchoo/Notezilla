@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import yaml
 
 from src.backend.note import NoteData
-from src.backend.chroma_parsing import cast_value
+from src.backend.database.chroma_parsing import cast_value
 from src.backend.file_io import (
     absolute_note_path,
     extract_yaml_from_file_contents,

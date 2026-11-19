@@ -21,9 +21,9 @@ from src.backend.event_handling import (
     event_is_folder_removal,
     filter_event_list,
 )
-from src.backend.database_interface import INoteDatabase
+from src.backend.database.interface import INoteDatabase
 from src.backend.parse_markdown import IMarkdownFile
-from src.backend.database_update import prepate_database_row
+from src.backend.database.update import prepate_database_row
 from src.backend.file_change_notify import publish
 from src.backend.file_io import get_normalised_path
 from src.backend.logger import LOGGER

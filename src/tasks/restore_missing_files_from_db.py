@@ -1,7 +1,7 @@
 """Restore note files that exist in the database but are missing on disk."""
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_sync import restore_missing_files_from_db
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.sync import restore_missing_files_from_db
 from src.backend.file_io import get_db_column_types
 
 

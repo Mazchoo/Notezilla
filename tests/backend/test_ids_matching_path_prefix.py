@@ -77,7 +77,7 @@ class TestIdsMatchingPathPrefix:
 
     def test_pages_until_a_short_batch(self, temp_db, monkeypatch):
         """A short final page ends the scan before MAX_DB_BATCH_ITERATION."""
-        monkeypatch.setattr("src.backend.database_adapter.BATCH_SIZE", 2)
+        monkeypatch.setattr("src.backend.database.adapter.BATCH_SIZE", 2)
         pages = [["keep/a.md", "drop/b.md"], ["keep/c.md"]]
 
         with patch.object(
@@ -92,8 +92,8 @@ class TestIdsMatchingPathPrefix:
 
     def test_stops_after_MAX_DB_BATCH_ITERATION(self, temp_db, monkeypatch):
         """The scan stops after MAX_DB_BATCH_ITERATION full pages."""
-        monkeypatch.setattr("src.backend.database_adapter.BATCH_SIZE", 2)
-        monkeypatch.setattr("src.backend.database_adapter.MAX_DB_BATCH_ITERATION", 2)
+        monkeypatch.setattr("src.backend.database.adapter.BATCH_SIZE", 2)
+        monkeypatch.setattr("src.backend.database.adapter.MAX_DB_BATCH_ITERATION", 2)
 
         def always_full(*, include, limit, offset):
             return {"ids": [f"keep/{offset}.md", f"keep/{offset + 1}.md"]}

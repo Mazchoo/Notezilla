@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from watchdog.events import DirMovedEvent, FileDeletedEvent, FileMovedEvent
 
-from src.backend.database_adapter import NoteDatabase
+from src.backend.database.adapter import NoteDatabase
 from src.backend.directory_watcher import PyFileHandler
 from src.field_enums import ReservedFields
 from tests.backend.helpers import MOCK_NOTES_FOLDER, temporary_notes

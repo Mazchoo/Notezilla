@@ -18,7 +18,7 @@ from src.backend.file_io import (
     rename_basename,
     resolve_note_path,
 )
-from src.backend.database_sync import (
+from src.backend.database.sync import (
     delete_db_only_entries,
     delete_dir_only_files,
     delete_note_from_db,

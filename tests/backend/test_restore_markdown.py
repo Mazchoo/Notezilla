@@ -6,8 +6,8 @@ to_file_string() matches.
 
 import pytest
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_update import prepate_database_row
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.update import prepate_database_row
 from src.backend.note import NoteData
 from src.field_enums import FieldTypes, ReservedFields
 

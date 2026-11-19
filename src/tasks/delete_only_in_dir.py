@@ -1,7 +1,7 @@
 """Delete note files on disk that have no corresponding database entry."""
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_sync import get_sync_difference
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.sync import get_sync_difference
 from src.backend.file_io import delete_note_file
 from src.backend.resolved_folders import ResolvedFolder
 

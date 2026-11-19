@@ -6,8 +6,8 @@ from typing import Any
 
 from tqdm import tqdm
 
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_sync import get_database_paths, get_directory_paths
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.sync import get_database_paths, get_directory_paths
 from src.backend.file_io import get_db_column_types, get_normalised_path
 from src.backend.parse_markdown import IMarkdownFile
 from src.field_enums import ReservedFields

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.backend.database_adapter import NoteDatabase
+from src.backend.database.adapter import NoteDatabase
 from src.backend.mcp_interface import init_db
 from src.backend.resolved_folders import ResolvedFolder
 from tests.backend.helpers import (

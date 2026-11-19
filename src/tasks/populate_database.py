@@ -11,8 +11,8 @@ from src.backend.file_io import (
     save_frontmatter,
 )
 from src.backend.parse_markdown import IMarkdownFile
-from src.backend.database_adapter import NoteDatabase
-from src.backend.database_update import prepate_database_row
+from src.backend.database.adapter import NoteDatabase
+from src.backend.database.update import prepate_database_row
 from src.backend.resolved_folders import ResolvedFolder
 
 
