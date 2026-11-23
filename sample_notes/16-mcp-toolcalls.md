@@ -11,4 +11,6 @@ Ensure that the backend MCP server can also be used to build prompts and create 
 
 - [x] Verify cursor and claude can use tool call to look up notes
 - [x] Verify tool call works to upsert a new markdown file and instructions are adequate
-- [ ] Verify tool call works to get a note with specified file path
+- [x] Verify tool call works to get a note with specified file path
+- [ ] Write a generic manual for prompting
+- [ ] Write a manual for using the MCP

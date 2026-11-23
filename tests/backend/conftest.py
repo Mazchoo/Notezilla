@@ -1,10 +1,12 @@
 """Shared pytest configuration and fixtures for backend MCP tool tests."""
 
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.backend.database.adapter import NoteDatabase
+from src.backend.logger import LOGGER
 from src.backend.mcp_interface import init_db
 from src.backend.resolved_folders import ResolvedFolder
 from tests.backend.helpers import (
@@ -14,6 +16,18 @@ from tests.backend.helpers import (
     MOCK_TEMPLATES_FOLDER,
     reset_mock_folder,
 )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def detach_log_file_handlers():
+    """Keep test logging (including deliberate error-path tracebacks) out of the
+    real LOG_FILE; console output is unaffected."""
+    file_handlers = [h for h in LOGGER.handlers if isinstance(h, logging.FileHandler)]
+    for handler in file_handlers:
+        LOGGER.removeHandler(handler)
+    yield
+    for handler in file_handlers:
+        LOGGER.addHandler(handler)
 
 
 @pytest.fixture(autouse=True)

@@ -4,6 +4,10 @@ NOTE_FOLDER = "./notes"  # Determines where notes are loaded from
 TEMPLATE_FOLDER = "./response_templates"  # Determines where templates are loaded from
 MCP_PORT = 8020
 
+# Also write backend logs to this file (appended). Set to None to log to the
+# console only.
+LOG_FILE: str | None = "./notezilla.log"
+
 # If no file-change ping arrives within this many seconds, write an SSE
 # comment on GET /events so proxies and browsers do not close the idle stream.
 FILE_CHANGE_SSE_IDLE_TIMEOUT_SECONDS = 15.0

@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp.server.middleware.logging import LoggingMiddleware
 from fastmcp.tools.tool import ToolResult
 from pydantic import Field
 from starlette.requests import Request
@@ -47,6 +48,9 @@ from src.backend.output_schema import (
 from src.backend.resolved_folders import ResolvedFolder
 
 MCP = FastMCP("Notezilla")
+MCP.add_middleware(
+    LoggingMiddleware(logger=LOGGER, include_payloads=True, methods=["tools/call"])
+)
 
 
 @MCP.custom_route("/events", methods=["GET"])
