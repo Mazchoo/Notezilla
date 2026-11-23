@@ -874,7 +874,7 @@ Mindmaps organize brainstorming concepts, functional breakdowns, and knowledge d
 
 ```mermaid
 mindmap
-  root((Cloud Architecture))
+  Root
     Compute
       Containers
         [Kubernetes]
@@ -885,8 +885,8 @@ mindmap
       Virtual Machines
     Storage
       Object Storage
-        )S3 Buckets(
-        )GCS Storage(
+        (S3 Buckets)
+        (GCS Storage)
       Block Storage
       Databases
         ::icon(fa fa-database)
