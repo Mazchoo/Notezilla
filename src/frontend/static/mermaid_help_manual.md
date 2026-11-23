@@ -21,7 +21,7 @@
    - [Nested Subgraphs](#nested-subgraphs)
    - [Styling, CSS Classes, & Link Styling](#styling-css-classes--link-styling)
    - [Interactivity: Hyperlinks & Tooltips](#interactivity-hyperlinks--tooltips)
-   - [Markdown String Formatting & FontAwesome Icons](#markdown-string-formatting--fontawesome-icons)
+   - [Markdown String Formatting](#markdown-string-formatting)
 4. [Sequence Diagrams (`sequenceDiagram`)](#4-sequence-diagrams-sequencediagram)
    - [Participants, Actors, & Aliases](#participants-actors--aliases)
    - [All Message & Arrow Types](#all-message--arrow-types)
@@ -312,7 +312,7 @@ Nodes can trigger browser events, open URLs in new tabs, or display hover toolti
 
 > **Not supported yet.** `click` statements (hyperlinks, tooltips and callbacks) are not supported by the diagram renderer. A flowchart that contains a `click` line will fail to render, so leave them out for now.
 
-### Markdown String Formatting & FontAwesome Icons
+### Markdown String Formatting
 
 Flowchart nodes enclosed in backtick strings `["`...`"]` render formatted Markdown (bold, italic, code blocks, lists, and line breaks):
 
@@ -324,10 +324,10 @@ flowchart TD
     - Item 1
     - Item 2`"]
 
-    iconNode["fa:fa-server Compute Node"]
-    dbNode["fa:fa-database Storage Engine"]
+    computeNode["Compute Node"]
+    dbNode["Storage Engine"]
 
-    mdNode --> iconNode --> dbNode
+    mdNode --> computeNode --> dbNode
 ```
 
 ---
@@ -888,10 +888,9 @@ mindmap
         (S3 Buckets)
         (GCS Storage)
       Block Storage
-      Databases
-        ::icon(fa fa-database)
-        ((Postgres SQL))
-        ((MongoDB))
+      🗄️ Databases
+        ((🐘 Postgres SQL))
+        ((🍃 MongoDB))
     Security
       Identity
         [OAuth 2.0 / OIDC]
