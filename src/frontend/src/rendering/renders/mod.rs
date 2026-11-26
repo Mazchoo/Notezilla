@@ -1,7 +1,7 @@
 //! Renders for the markdown constructs the editor handles itself.
 //!
 //! Every construct that this crate renders (fenced code, graphviz, mermaid,
-//! math, missing images) is expressed as a unit struct or small value type
+//! quizzes, math, missing images) is expressed as a unit struct or small value type
 //! implementing [`Render`], so callers select a construct and render it the
 //! same way. [`RenderPdf`] carries the second output form: HTML that ironpress
 //! converts to PDF, which most constructs share with the editor.
@@ -23,6 +23,7 @@ mod mermaid_label;
 mod mermaid_packet;
 mod mermaid_treemap;
 mod missing_image;
+mod quiz;
 mod render_error;
 mod render_target;
 
@@ -31,6 +32,7 @@ pub(super) use graphviz::GraphvizRender;
 pub(super) use math::MathRender;
 pub(super) use mermaid::MermaidRender;
 pub(super) use missing_image::MissingImageRender;
+pub(super) use quiz::QuizRender;
 pub(super) use render_target::RenderTarget;
 
 /// Renders one markdown construct to an HTML fragment for the editor.

@@ -8,15 +8,17 @@ use crate::components::sidebar::prompt_panel::status_badge_class;
 use crate::components::toast::{show_error_toast, show_toast};
 use crate::constants::{
     GRAPHVIZ_HELP_MANUAL, GRAPHVIZ_HELP_MANUAL_PATH, LATEX_MATH_HELP_MANUAL,
-    LATEX_MATH_HELP_MANUAL_PATH, MERMAID_HELP_MANUAL, MERMAID_HELP_MANUAL_PATH,
+    LATEX_MATH_HELP_MANUAL_PATH, MERMAID_HELP_MANUAL, MERMAID_HELP_MANUAL_PATH, QUIZ_HELP_MANUAL,
+    QUIZ_HELP_MANUAL_PATH,
 };
 use crate::info_messages::{
     format_save_summary, mcp_status_title, save_failed_toast, saved_log, with_hotkey,
     APP_STATE_MISSING_PANIC, CLOSE_ALL_TITLE, EDIT_MAIN_TEXT_FROZEN_TITLE, EDIT_MAIN_TEXT_ON_TITLE,
     EXPORT_HTML_MENU, EXPORT_MARKDOWN_MENU, EXPORT_PDF_MENU, EXPORT_SVG_MENU, EXPORT_TITLE,
-    HELP_GRAPHVIZ_MENU, HELP_LATEX_MATH_MENU, HELP_MERMAID_MENU, HELP_TITLE, IMPORT_MARKDOWN_TITLE,
-    MCP_REFRESH_TITLE, MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL, NEW_FILE_BUTTON,
-    NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE, THEME_SLIDER_ARIA,
+    HELP_GRAPHVIZ_MENU, HELP_LATEX_MATH_MENU, HELP_MERMAID_MENU, HELP_QUIZ_MENU, HELP_TITLE,
+    IMPORT_MARKDOWN_TITLE, MCP_REFRESH_TITLE, MCP_SESSION_NOT_READY_TOAST, MCP_STATUS_LABEL,
+    NEW_FILE_BUTTON, NEW_FILE_TITLE, SAVE_TITLE, SWITCH_TO_DAY_TITLE, SWITCH_TO_NIGHT_TITLE,
+    THEME_SLIDER_ARIA,
 };
 use crate::mcp::client::probe_mcp;
 use crate::models::block::EditorEntry;
@@ -102,7 +104,7 @@ pub fn append_new_file(state: &AppState) {
 }
 
 /// Help-dropdown entries: menu label, editor path, and bundled manual text.
-const HELP_MANUALS: [(&str, &str, &str); 3] = [
+const HELP_MANUALS: [(&str, &str, &str); 4] = [
     (
         HELP_MERMAID_MENU,
         MERMAID_HELP_MANUAL_PATH,
@@ -118,6 +120,7 @@ const HELP_MANUALS: [(&str, &str, &str); 3] = [
         LATEX_MATH_HELP_MANUAL_PATH,
         LATEX_MATH_HELP_MANUAL,
     ),
+    (HELP_QUIZ_MENU, QUIZ_HELP_MANUAL_PATH, QUIZ_HELP_MANUAL),
 ];
 
 /// Open a bundled help manual as a note, replacing any open copy at the same path.

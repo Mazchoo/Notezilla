@@ -3,8 +3,8 @@
 use crate::constants::{
     ACCENT, BG_0, BG_1, BG_2, BG_3, BORDER, CODE, CODE_THEME, DAY_ACCENT, DAY_BG_0, DAY_BG_1,
     DAY_BG_2, DAY_BG_3, DAY_BORDER, DAY_CODE, DAY_CODE_THEME, DAY_CSS, DAY_TEXT, DAY_TEXT_FILL,
-    DAY_TEXT_MUTED, DAY_TEXT_STROKE, DAY_TEXT_SUBTLE, MATH_CSS, NIGHT_CSS, TEXT, TEXT_FILL,
-    TEXT_MUTED, TEXT_STROKE, TEXT_SUBTLE,
+    DAY_TEXT_MUTED, DAY_TEXT_STROKE, DAY_TEXT_SUBTLE, MATH_CSS, NIGHT_CSS, QUIZ_CSS, TEXT,
+    TEXT_FILL, TEXT_MUTED, TEXT_STROKE, TEXT_SUBTLE,
 };
 use crate::utils::template::fill_placeholders;
 use std::cell::Cell;
@@ -140,6 +140,7 @@ pub fn fill_export_template(template: &str, title: &str, body_html: &str) -> Str
         &[
             ("THEME_CSS", theme.css()),
             ("MATH_CSS", MATH_CSS),
+            ("QUIZ_CSS", QUIZ_CSS),
             ("PAGE_BG", theme.palette().bg_2),
             ("THEME", theme.as_attr()),
             ("TITLE", title),

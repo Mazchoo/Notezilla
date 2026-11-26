@@ -10,6 +10,9 @@ pub const GRAPHVIZ_HELP_MANUAL: &str = include_str!("../static/graphviz_manual.m
 /// Editor path of the LaTeX math help manual opened from the help dropdown.
 pub const LATEX_MATH_HELP_MANUAL_PATH: &str = "./latex_math_core_manual.md";
 pub const LATEX_MATH_HELP_MANUAL: &str = include_str!("../static/latex_math_core_manual.md");
+/// Editor path of the quiz and flash card help manual opened from the help dropdown.
+pub const QUIZ_HELP_MANUAL_PATH: &str = "./quizes_and_flash_cards.md";
+pub const QUIZ_HELP_MANUAL: &str = include_str!("../static/quizes_and_flash_cards.md");
 
 pub const SIDEBAR_MIN_WIDTH: f64 = 160.0;
 pub const SIDEBAR_MAX_WIDTH: f64 = 600.0;
@@ -63,6 +66,8 @@ pub const NIGHT_CSS: &str = include_str!("../night.css");
 pub const DAY_CSS: &str = include_str!("../day.css");
 /// Style sheet math-core's MathML needs: `<menclose>`, table padding, wide accents.
 pub const MATH_CSS: &str = include_str!("../math.css");
+/// Style sheet that makes ` ```quiz ` fences interactive without script.
+pub const QUIZ_CSS: &str = include_str!("../quiz.css");
 pub const PROMPT_TEMPLATE: &str = include_str!("../static/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
@@ -336,6 +341,20 @@ pub const BLOCK_RENDER_SELECTOR: &str = ".block-render";
 pub const LINK_SELECTOR: &str = "a[href]";
 /// Attribute holding a link's destination.
 pub const LINK_HREF_ATTR: &str = "href";
+/// Selector of a rendered quiz's clickable answers and reveal buttons.
+pub const QUIZ_CONTROL_SELECTOR: &str = ".quiz-choice, .quiz-reveal";
+/// Fence language token of a quiz block.
+pub const QUIZ_FENCE_LANGUAGE: &str = "quiz";
+/// Marks an answer the reader is expected to select.
+pub const QUIZ_EXPECT_SELECTED_MARKER: char = '+';
+/// Marks an answer the reader is expected to leave unselected.
+pub const QUIZ_EXPECT_UNSELECTED_MARKER: char = '-';
+/// Mark shown on a revealed answer the reader got right.
+pub const QUIZ_CORRECT_MARK: &str = "✓";
+/// Mark shown on a revealed answer the reader got wrong.
+pub const QUIZ_INCORRECT_MARK: &str = "✗";
+/// Class of the fallback block shown for a malformed quiz fence.
+pub const QUIZ_ERROR_CLASS: &str = "quiz-error";
 /// Selector of every rendered heading carrying an anchor id.
 pub const ANCHORED_HEADING_SELECTOR: &str = "h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]";
 /// Document methods returning the caret under a viewport point, each with the
@@ -459,6 +478,10 @@ mod tests {
         assert!(
             EXPORT_TEMPLATE.contains("{{MATH_CSS}}"),
             "HTML export must inject the MathML stylesheet: {EXPORT_TEMPLATE}"
+        );
+        assert!(
+            EXPORT_TEMPLATE.contains("{{QUIZ_CSS}}"),
+            "HTML export must inject the quiz stylesheet: {EXPORT_TEMPLATE}"
         );
     }
 

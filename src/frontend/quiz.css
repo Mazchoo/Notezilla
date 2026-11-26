@@ -1,0 +1,155 @@
+/* Quiz fences (```quiz), rendered by rendering/renders/quiz.rs.
+   No script: every answer and each reveal button is a checkbox inside its
+   <label>, and `:has()` lets a question's reveal checkbox restyle its
+   answers. Once revealed, an answer is green when the reader's choice matches
+   its `+` / `-` expectation and red when it does not, and shows the
+   explanation for its current selected or unselected state. */
+
+.content .quiz {
+  counter-reset: quiz-question;
+  margin: 1em 0;
+}
+
+.content .quiz-question {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.content .quiz-prompt {
+  counter-increment: quiz-question;
+  color: var(--text);
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+.content .quiz-prompt::before {
+  content: counter(quiz-question) ". ";
+  color: var(--accent);
+}
+
+.content .quiz-answer {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.4rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.content .quiz-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.content .quiz-input {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.content .quiz-answer-text {
+  flex: 1;
+}
+
+.content .quiz-mark {
+  display: none;
+  font-weight: 700;
+}
+
+.content .quiz-mark-correct   { color: var(--status-ok); }
+.content .quiz-mark-incorrect { color: var(--status-err); }
+
+.content .quiz-explain {
+  display: none;
+  margin: 0.35rem 0 0 1.6rem;
+  color: var(--text-subtle);
+  font-size: 0.9em;
+}
+
+/* The reveal checkbox is visually hidden but stays focusable, so Space
+   toggles it from the keyboard; the label is drawn as the button. */
+.content .quiz-reveal {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--bg-2);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.content .quiz-reveal:hover {
+  filter: brightness(1.1);
+}
+
+.content .quiz-reveal:has(.quiz-reveal-input:focus-visible) {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.content .quiz-reveal-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.content .quiz-reveal-hide {
+  display: none;
+}
+
+/* ── Revealed ─────────────────────────────────────────────────────────── */
+
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-reveal-show {
+  display: none;
+}
+
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-reveal-hide {
+  display: inline;
+}
+
+/* Answers are locked while revealed; hide the answers to change them. */
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-choice {
+  pointer-events: none;
+  cursor: default;
+}
+
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-answer:has(.quiz-input:checked) .quiz-explain-selected,
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-answer:has(.quiz-input:not(:checked)) .quiz-explain-unselected {
+  display: block;
+}
+
+/* Reader's choice matches the expectation. */
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-selected:has(.quiz-input:checked),
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-unselected:has(.quiz-input:not(:checked)) {
+  border-color: var(--status-ok);
+  background: color-mix(in srgb, var(--status-ok) 14%, transparent);
+}
+
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-selected:has(.quiz-input:checked) .quiz-mark-correct,
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-unselected:has(.quiz-input:not(:checked)) .quiz-mark-correct {
+  display: inline;
+}
+
+/* Reader's choice does not match the expectation. */
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-selected:has(.quiz-input:not(:checked)),
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-unselected:has(.quiz-input:checked) {
+  border-color: var(--status-err);
+  background: color-mix(in srgb, var(--status-err) 14%, transparent);
+}
+
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-selected:has(.quiz-input:not(:checked)) .quiz-mark-incorrect,
+.content .quiz-question:has(.quiz-reveal-input:checked) .quiz-expect-unselected:has(.quiz-input:checked) .quiz-mark-incorrect {
+  display: inline;
+}

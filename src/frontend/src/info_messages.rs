@@ -15,6 +15,7 @@ pub const HELP_TITLE: &str = "Help";
 pub const HELP_MERMAID_MENU: &str = "Mermaid";
 pub const HELP_GRAPHVIZ_MENU: &str = "Graphviz";
 pub const HELP_LATEX_MATH_MENU: &str = "LaTeX Math";
+pub const HELP_QUIZ_MENU: &str = "Quizzes & Flash Cards";
 pub const IMPORT_MARKDOWN_TITLE: &str = "Import Markdown";
 pub const SAVE_TITLE: &str = "Save";
 pub const EXPORT_TITLE: &str = "Export";
@@ -206,6 +207,20 @@ pub const PAGE_TITLE: &str = "Notezilla";
 
 pub const DIAGRAM_MODAL_LABEL: &str = "Diagram";
 pub const CLOSE_DIAGRAM_TITLE: &str = "Close (Esc)";
+
+// --- Quiz ---
+
+pub const QUIZ_REVEAL_BUTTON: &str = "Reveal";
+pub const QUIZ_HIDE_BUTTON: &str = "Hide";
+pub const QUIZ_PDF_CORRECT_LABEL: &str = "(Correct)";
+pub const QUIZ_PDF_INCORRECT_LABEL: &str = "(Incorrect)";
+pub const QUIZ_EMPTY_ERROR: &str = "Quiz has no questions";
+pub const QUIZ_QUESTION_NO_ANSWERS_ERROR: &str = "Quiz question has no answers";
+pub const QUIZ_EXPLANATION_WITHOUT_ANSWER_ERROR: &str =
+    "Indented explanation line appears before any answer";
+pub const QUIZ_EXPLANATION_MARKER_ERROR: &str =
+    "First explanation line of an answer must start with + or -";
+pub const QUIZ_TOO_MANY_EXPLANATIONS_ERROR: &str = "An answer has at most two explanation lines";
 
 // --- Toast ---
 

@@ -1,9 +1,12 @@
 //! Classifies a fenced markdown code block for special rendering.
 
+use crate::constants::QUIZ_FENCE_LANGUAGE;
+
 /// Kind of fenced block intercepted during markdown parsing.
 pub(super) enum BlockKind {
     Graphviz,
     Mermaid,
+    Quiz,
     /// Code in the fence's language token, which may be empty.
     Code(String),
 }
@@ -15,6 +18,7 @@ impl BlockKind {
         match token.to_ascii_lowercase().as_str() {
             "graphviz" => BlockKind::Graphviz,
             "mermaid" => BlockKind::Mermaid,
+            QUIZ_FENCE_LANGUAGE => BlockKind::Quiz,
             _ => BlockKind::Code(token.to_string()),
         }
     }
@@ -34,6 +38,10 @@ mod tests {
         assert!(matches!(
             BlockKind::from_fence_language("mermaid"),
             BlockKind::Mermaid
+        ));
+        assert!(matches!(
+            BlockKind::from_fence_language("quiz"),
+            BlockKind::Quiz
         ));
     }
 
