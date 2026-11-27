@@ -575,11 +575,12 @@ html[data-theme="light"] .theme-slider-day { color: var(--accent); }
   cursor: text;
   user-select: text;
 }
-/* Quiz checkboxes only toggle while the note is locked; in edit mode a click
-   opens the block for editing like any other text. */
+/* Quiz and flash card checkboxes only toggle while the note is locked; in edit
+   mode a click opens the block for editing like any other text. */
 .editor-block:not(.editor-block-frozen) .quiz-choice,
 .editor-block:not(.editor-block-frozen) .quiz-input,
-.editor-block:not(.editor-block-frozen) .quiz-reveal {
+.editor-block:not(.editor-block-frozen) .quiz-reveal,
+.editor-block:not(.editor-block-frozen) .flashcard-button {
   cursor: text;
 }
 .block-actions {

@@ -75,3 +75,19 @@ html[data-theme="light"] .sidebar-panel .file-tree-root .menu-list a.drag-over {
 html[data-theme="light"] .sidebar-panel .file-tree-root.drag-over {
   outline-color: #000;
 }
+
+/* Quiz and flash card reveal buttons: a solid accent fill is too heavy on the
+   Latte background, so day mode draws them as a soft accent tint instead. */
+html[data-theme="light"] .content .quiz-reveal,
+html[data-theme="light"] .content .flashcard-reveal,
+html[data-theme="light"] .content .flashcard-hide {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-1));
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+html[data-theme="light"] .content .quiz-reveal:hover,
+html[data-theme="light"] .content .flashcard-reveal:hover,
+html[data-theme="light"] .content .flashcard-hide:hover {
+  filter: none;
+  background: color-mix(in srgb, var(--accent) 20%, var(--bg-1));
+}

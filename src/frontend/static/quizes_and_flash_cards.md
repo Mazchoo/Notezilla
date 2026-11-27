@@ -3,7 +3,9 @@
 
 Quizzes are multiple choice questions where each choice should either be selected or left unselected to be in a correct state. They are usually added at the end of chapters so the reader can check their understanding.
 
-There is a reveal button for each question, and when it is revealed, correct answers are formatted differently to incorrect answers. Answers that have a `+` as the first character are expected to be selected, and ones with `-` are expected not to be selected. Answers will show an explanation when the expected answer is selected, and optionally an explanation when the expected one is not selected.
+There is a reveal button for each question, and when it is revealed, correctly selected responses are formatted differently to incorrectly selected responses.
+
+The first line must be question. An unintended line is a response. An unintended line must be followed by an indented line with + for expected to be selected or - to expect not to be selected. An additional indented line is allowed for an explanation of an incorrect answer. One question can have multiple checkbox responses.
 
 Lock the document to try the quiz out.
 
@@ -37,7 +39,7 @@ Each flashcard is just one line with the question and one line with the answer. 
 What is the capital of Peru?
 Lima
 
-How many grams to a Baht in a Thai gold bar?\
+How many grams to a Baht in a Thai gold bar?
 15.244 grams
 
 What percentage of the Earth's crust is sedimentary rock by volume?

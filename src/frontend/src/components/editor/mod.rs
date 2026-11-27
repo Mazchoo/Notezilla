@@ -3,7 +3,7 @@ pub mod block;
 pub mod caret_placement;
 pub mod edit_area;
 pub mod links;
-pub mod quiz_controls;
+pub mod study_controls;
 
 use crate::info_messages::APP_STATE_MISSING_PANIC;
 use crate::state::AppState;

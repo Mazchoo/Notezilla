@@ -3,7 +3,7 @@
 //! [`render_markdown`] and [`render_markdown_for_pdf`] run the same pipeline
 //! for the two [`RenderTarget`]s: math is substituted first, then markdown is
 //! parsed, and the constructs this crate renders itself (fenced code, graphviz,
-//! mermaid, quizzes, images, lists) are intercepted and handed to a render.
+//! mermaid, quizzes, flash cards, images, lists) are intercepted and handed to a render.
 
 mod block_kind;
 mod heading_slug;
@@ -26,8 +26,8 @@ use pulldown_cmark::{
     html, CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd,
 };
 use renders::{
-    CodeRender, GraphvizRender, MermaidRender, MissingImageRender, QuizRender, RenderPdf,
-    RenderTarget,
+    CodeRender, FlashcardsRender, GraphvizRender, MermaidRender, MissingImageRender, QuizRender,
+    RenderPdf, RenderTarget,
 };
 use source_map::SourceMap;
 pub(crate) use source_map::{
@@ -99,7 +99,7 @@ pub fn diagram_fences(src: &str) -> Vec<(DiagramKind, String)> {
                 kind = match BlockKind::from_fence_language(lang.as_ref()) {
                     BlockKind::Graphviz => Some(DiagramKind::Graphviz),
                     BlockKind::Mermaid => Some(DiagramKind::Mermaid),
-                    BlockKind::Quiz | BlockKind::Code(_) => None,
+                    BlockKind::Quiz | BlockKind::Flashcards | BlockKind::Code(_) => None,
                 };
                 buf.clear();
             }
@@ -245,13 +245,14 @@ impl<'a> InterceptedMarkdown<'a> {
         }
     }
 
-    /// Render the intercepted code, graphviz, mermaid, or quiz block to HTML.
+    /// Render the intercepted code, graphviz, mermaid, quiz, or flash card block to HTML.
     fn finish_code_block(&mut self) {
         let source = std::mem::take(&mut self.buf);
         let html_fragment = match self.block.take() {
             Some(BlockKind::Graphviz) => self.render(&GraphvizRender, &source),
             Some(BlockKind::Mermaid) => self.render(&MermaidRender, &source),
             Some(BlockKind::Quiz) => self.render(&QuizRender, &source),
+            Some(BlockKind::Flashcards) => self.render(&FlashcardsRender, &source),
             Some(BlockKind::Code(lang)) => self.render(&CodeRender::new(lang), &source),
             None => return,
         };
@@ -621,6 +622,14 @@ mod tests {
     fn quiz_fence_uses_the_quiz_render() {
         let html = render_markdown("```quiz\nQuestion\nAnswer\n  + yes\n```\n");
         assert!(html.contains(r#"<div class="quiz">"#), "{html}");
+        assert!(!html.contains("<pre"), "{html}");
+    }
+
+    #[test]
+    /// Assert a flashcards fence is intercepted by the flash card render.
+    fn flashcards_fence_uses_the_flashcards_render() {
+        let html = render_markdown("```flashcards\nQuestion\nAnswer\n```\n");
+        assert!(html.contains(r#"<form class="flashcards""#), "{html}");
         assert!(!html.contains("<pre"), "{html}");
     }
 

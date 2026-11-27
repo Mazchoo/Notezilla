@@ -8,7 +8,7 @@ use crate::components::editor::edit_area::{
     sync_textarea_value,
 };
 use crate::components::editor::links::{clicked_link, link_fragment, scroll_to_heading};
-use crate::components::editor::quiz_controls::clicked_quiz_control;
+use crate::components::editor::study_controls::clicked_study_control;
 use crate::info_messages::{
     ADD_FRONTMATTER_TITLE, APP_STATE_MISSING_PANIC, COLLAPSE_SECTION_TITLE, COPY_MARKDOWN_TITLE,
     DELETE_BLOCK_TITLE, DELETE_FRONT_MATTER_TITLE, EXPAND_SECTION_TITLE,
@@ -382,9 +382,9 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
 
     // Click anywhere on the block wrapper to enter edit mode with the caret at
     // the clicked text; a clicked link is not followed and a clicked quiz
-    // answer or reveal button is not toggled. When editing is locked, an
+    // or flash card control is not toggled. When editing is locked, an
     // in-document link scrolls to its heading, clicking a rendered diagram
-    // opens it full-screen, and quiz checkboxes toggle as usual.
+    // opens it full-screen, and quiz and flash card checkboxes toggle as usual.
     let diagram_modal_svg = state.diagram_modal_svg;
     let on_block_click = move |ev: web_sys::MouseEvent| {
         let link = clicked_link(&ev);
@@ -397,7 +397,7 @@ pub fn BlockComponent(block: MarkdownBlock) -> impl IntoView {
             }
             return;
         }
-        if link.is_some() || clicked_quiz_control(&ev) {
+        if link.is_some() || clicked_study_control(&ev) {
             ev.prevent_default();
         }
         if !block.focused.get_untracked() {

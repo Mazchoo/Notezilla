@@ -3,8 +3,9 @@
 use crate::constants::{
     ACCENT, BG_0, BG_1, BG_2, BG_3, BORDER, CODE, CODE_THEME, DAY_ACCENT, DAY_BG_0, DAY_BG_1,
     DAY_BG_2, DAY_BG_3, DAY_BORDER, DAY_CODE, DAY_CODE_THEME, DAY_CSS, DAY_TEXT, DAY_TEXT_FILL,
-    DAY_TEXT_MUTED, DAY_TEXT_STROKE, DAY_TEXT_SUBTLE, MATH_CSS, NIGHT_CSS, QUIZ_CSS, TEXT,
-    TEXT_FILL, TEXT_MUTED, TEXT_STROKE, TEXT_SUBTLE,
+    DAY_TEXT_MUTED, DAY_TEXT_STROKE, DAY_TEXT_SUBTLE, FLASHCARDS_CSS, FLASHCARDS_ROOT_CLASS_ATTR,
+    MATHML_OPEN_TAG, MATH_CSS, NIGHT_CSS, QUIZ_CSS, QUIZ_ROOT_CLASS_ATTR, TEXT, TEXT_FILL,
+    TEXT_MUTED, TEXT_STROKE, TEXT_SUBTLE,
 };
 use crate::utils::template::fill_placeholders;
 use std::cell::Cell;
@@ -133,20 +134,42 @@ pub fn apply_document_theme(theme: ColorTheme) {
 }
 
 /// Fill export-template placeholders for the current color theme.
+///
+/// The math, quiz, and flash card style sheets are embedded only when
+/// `body_html` contains that construct, so an export carries no unused CSS.
 pub fn fill_export_template(template: &str, title: &str, body_html: &str) -> String {
     let theme = current_theme();
     fill_placeholders(
         template,
         &[
             ("THEME_CSS", theme.css()),
-            ("MATH_CSS", MATH_CSS),
-            ("QUIZ_CSS", QUIZ_CSS),
+            (
+                "MATH_CSS",
+                css_if_used(body_html, MATHML_OPEN_TAG, MATH_CSS),
+            ),
+            (
+                "QUIZ_CSS",
+                css_if_used(body_html, QUIZ_ROOT_CLASS_ATTR, QUIZ_CSS),
+            ),
+            (
+                "FLASHCARDS_CSS",
+                css_if_used(body_html, FLASHCARDS_ROOT_CLASS_ATTR, FLASHCARDS_CSS),
+            ),
             ("PAGE_BG", theme.palette().bg_2),
             ("THEME", theme.as_attr()),
             ("TITLE", title),
             ("BODY", body_html),
         ],
     )
+}
+
+/// Return `css` when `body_html` contains `marker`, otherwise nothing.
+fn css_if_used(body_html: &str, marker: &str, css: &'static str) -> &'static str {
+    if body_html.contains(marker) {
+        css
+    } else {
+        ""
+    }
 }
 
 /// Restore `current_theme` when dropped. Used by tests that switch theme.
@@ -178,8 +201,49 @@ mod tests {
         current_theme, fill_export_template, ColorTheme, ThemeGuard, DAY_PALETTE, NIGHT_PALETTE,
     };
     use crate::constants::{
-        BG_0, BG_1, BG_2, BG_3, DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3, DAY_TEXT, NIGHT_CSS,
+        BG_0, BG_1, BG_2, BG_3, DAY_BG_0, DAY_BG_1, DAY_BG_2, DAY_BG_3, DAY_TEXT, FLASHCARDS_CSS,
+        MATH_CSS, NIGHT_CSS, QUIZ_CSS,
     };
+    use crate::rendering::render_markdown;
+
+    /// Template holding only the optional style sheet placeholders.
+    const OPTIONAL_CSS_TEMPLATE: &str = "{{MATH_CSS}}{{QUIZ_CSS}}{{FLASHCARDS_CSS}}";
+
+    /// Return which optional style sheets an export of `markdown` embeds.
+    fn embedded_css(markdown: &str) -> [bool; 3] {
+        let html = fill_export_template(OPTIONAL_CSS_TEMPLATE, "t", &render_markdown(markdown));
+        [MATH_CSS, QUIZ_CSS, FLASHCARDS_CSS].map(|css| html.contains(css))
+    }
+
+    #[test]
+    /// Assert an export without math, quizzes, or flash cards embeds none of their CSS.
+    fn export_omits_unused_css() {
+        assert_eq!(embedded_css("# Title\n\nPlain text.\n"), [false; 3]);
+    }
+
+    #[test]
+    /// Assert each optional style sheet is embedded only for its own construct.
+    fn export_embeds_css_for_used_constructs() {
+        assert_eq!(embedded_css("$x^2$\n"), [true, false, false]);
+        assert_eq!(
+            embedded_css("```quiz\nQ\nA\n  + yes\n```\n"),
+            [false, true, false]
+        );
+        assert_eq!(
+            embedded_css("```flashcards\nQ\nA\n```\n"),
+            [false, false, true]
+        );
+    }
+
+    #[test]
+    /// Assert a malformed fence, shown as an error block, embeds no CSS.
+    fn export_omits_css_for_error_blocks() {
+        assert_eq!(embedded_css("```quiz\nQuestion only\n```\n"), [false; 3]);
+        assert_eq!(
+            embedded_css("```flashcards\nQuestion only\n```\n"),
+            [false; 3]
+        );
+    }
 
     #[test]
     /// Assert night is the default and day uses dark text on a light page.

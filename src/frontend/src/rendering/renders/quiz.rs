@@ -22,7 +22,7 @@ use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{
     QUIZ_CORRECT_MARK, QUIZ_ERROR_CLASS, QUIZ_EXPECT_SELECTED_MARKER,
-    QUIZ_EXPECT_UNSELECTED_MARKER, QUIZ_INCORRECT_MARK,
+    QUIZ_EXPECT_UNSELECTED_MARKER, QUIZ_INCORRECT_MARK, QUIZ_ROOT_CLASS_ATTR,
 };
 use crate::info_messages::{
     QUIZ_EMPTY_ERROR, QUIZ_EXPLANATION_MARKER_ERROR, QUIZ_EXPLANATION_WITHOUT_ANSWER_ERROR,
@@ -175,7 +175,7 @@ fn non_empty(text: &str) -> Option<&str> {
 
 /// Return the interactive editor HTML for `questions`.
 fn quiz_html(questions: &[QuizQuestion<'_>]) -> String {
-    let mut html = String::from(r#"<div class="quiz">"#);
+    let mut html = format!("<div {QUIZ_ROOT_CLASS_ATTR}>");
     for question in questions {
         let _ = write!(
             html,
@@ -227,7 +227,7 @@ fn push_answer_html(html: &mut String, answer: &QuizAnswer<'_>) {
 /// read after the answer has been thought about: whether the answer should be
 /// selected, followed by the explanation for that expected choice.
 fn answer_key_html(questions: &[QuizQuestion<'_>]) -> String {
-    let mut html = String::from(r#"<div class="quiz">"#);
+    let mut html = format!("<div {QUIZ_ROOT_CLASS_ATTR}>");
     for (number, question) in questions.iter().enumerate() {
         let _ = write!(
             html,

@@ -222,6 +222,17 @@ pub const QUIZ_EXPLANATION_MARKER_ERROR: &str =
     "First explanation line of an answer must start with + or -";
 pub const QUIZ_TOO_MANY_EXPLANATIONS_ERROR: &str = "An answer has at most two explanation lines";
 
+// --- Flash cards ---
+
+pub const FLASHCARD_REVEAL_BUTTON: &str = "Reveal";
+pub const FLASHCARD_HIDE_BUTTON: &str = "Hide";
+pub const FLASHCARD_PREVIOUS_BUTTON: &str = "← Previous";
+pub const FLASHCARD_NEXT_BUTTON: &str = "Next →";
+pub const FLASHCARDS_EMPTY_ERROR: &str = "Flash card deck has no cards";
+pub const FLASHCARD_NO_ANSWER_ERROR: &str = "Flash card has a question but no answer line";
+pub const FLASHCARD_EXTRA_LINE_ERROR: &str =
+    "A flash card has one question line and one answer line; separate cards with a blank line";
+
 // --- Toast ---
 
 pub const ERROR_TOAST_COPY_TITLE: &str = "Click to copy";
@@ -426,6 +437,11 @@ pub fn gemini_send_failed_toast(error: impl std::fmt::Display) -> String {
 /// Return the toast text after writing the prompt response to `path`.
 pub fn prompt_response_saved_toast(path: &str) -> String {
     saved_log(path)
+}
+
+/// Return a flash card's position in its deck, such as `2 / 5`.
+pub fn flashcard_position(number: usize, total: usize) -> String {
+    format!("{number} / {total}")
 }
 
 /// Return a count with the matching singular or plural file noun.

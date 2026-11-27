@@ -68,6 +68,17 @@ pub const DAY_CSS: &str = include_str!("../day.css");
 pub const MATH_CSS: &str = include_str!("../math.css");
 /// Style sheet that makes ` ```quiz ` fences interactive without script.
 pub const QUIZ_CSS: &str = include_str!("../quiz.css");
+/// Style sheet that makes ` ```flashcards ` fences navigable without script.
+pub const FLASHCARDS_CSS: &str = include_str!("../flashcards.css");
+/// Opening of every MathML element math-core renders; an HTML export embeds
+/// `MATH_CSS` only when its body contains it.
+pub const MATHML_OPEN_TAG: &str = "<math";
+/// Class attribute of a rendered quiz's root element; an HTML export embeds
+/// `QUIZ_CSS` only when its body contains it.
+pub const QUIZ_ROOT_CLASS_ATTR: &str = r#"class="quiz""#;
+/// Class attribute of a rendered flash card deck's root element; an HTML
+/// export embeds `FLASHCARDS_CSS` only when its body contains it.
+pub const FLASHCARDS_ROOT_CLASS_ATTR: &str = r#"class="flashcards""#;
 pub const PROMPT_TEMPLATE: &str = include_str!("../static/prompt.md");
 
 /// Placeholder shown for markdown images until real image serving exists.
@@ -341,8 +352,8 @@ pub const BLOCK_RENDER_SELECTOR: &str = ".block-render";
 pub const LINK_SELECTOR: &str = "a[href]";
 /// Attribute holding a link's destination.
 pub const LINK_HREF_ATTR: &str = "href";
-/// Selector of a rendered quiz's clickable answers and reveal buttons.
-pub const QUIZ_CONTROL_SELECTOR: &str = ".quiz-choice, .quiz-reveal";
+/// Selector of the clickable controls of rendered quizzes and flash cards.
+pub const STUDY_CONTROL_SELECTOR: &str = ".quiz-choice, .quiz-reveal, .flashcard-button";
 /// Fence language token of a quiz block.
 pub const QUIZ_FENCE_LANGUAGE: &str = "quiz";
 /// Marks an answer the reader is expected to select.
@@ -355,6 +366,13 @@ pub const QUIZ_CORRECT_MARK: &str = "✓";
 pub const QUIZ_INCORRECT_MARK: &str = "✗";
 /// Class of the fallback block shown for a malformed quiz fence.
 pub const QUIZ_ERROR_CLASS: &str = "quiz-error";
+/// Fence language token of a flash card block.
+pub const FLASHCARDS_FENCE_LANGUAGE: &str = "flashcards";
+/// Name of the radio group holding a flash card deck's state; each deck is its
+/// own `<form>`, so decks sharing the name stay independent.
+pub const FLASHCARD_RADIO_NAME: &str = "flashcard";
+/// Class of the fallback block shown for a malformed flashcards fence.
+pub const FLASHCARDS_ERROR_CLASS: &str = "flashcards-error";
 /// Selector of every rendered heading carrying an anchor id.
 pub const ANCHORED_HEADING_SELECTOR: &str = "h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]";
 /// Document methods returning the caret under a viewport point, each with the
@@ -482,6 +500,10 @@ mod tests {
         assert!(
             EXPORT_TEMPLATE.contains("{{QUIZ_CSS}}"),
             "HTML export must inject the quiz stylesheet: {EXPORT_TEMPLATE}"
+        );
+        assert!(
+            EXPORT_TEMPLATE.contains("{{FLASHCARDS_CSS}}"),
+            "HTML export must inject the flash card stylesheet: {EXPORT_TEMPLATE}"
         );
     }
 
