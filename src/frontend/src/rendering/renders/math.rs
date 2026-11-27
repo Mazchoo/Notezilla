@@ -1,7 +1,9 @@
 //! Renders one LaTeX expression to MathML or to ironpress `data-math` HTML.
 
 use super::{Render, RenderPdf};
-use crate::constants::TEXT;
+use crate::constants::{
+    IRONPRESS_ARGUMENT_ENVIRONMENTS, LATEX_BEGIN_COMMAND, LATEX_SQRT_COMMAND, TEXT,
+};
 use crate::info_messages::MATH_CONVERTER_PANIC;
 use crate::rendering::{escape_html, escape_html_comment};
 use math_core::{LatexToMathML, MathCoreConfig, MathDisplay};
@@ -64,7 +66,7 @@ impl RenderPdf for MathRender {
     /// Ironpress ignores MathML, so PDF export keeps the LaTeX source in a
     /// `data-math` attribute and paints it with the page text color.
     fn render_pdf(&self, source: &str) -> String {
-        let escaped = escape_html(&space_ironpress_binops(source));
+        let escaped = escape_html(&ironpress_latex(source));
         match self.display {
             MathDisplay::Inline => format!(
                 r#"<span class="math-inline" style="color:{TEXT}" data-math="{escaped}">{escaped}</span>"#
@@ -74,6 +76,115 @@ impl RenderPdf for MathRender {
             ),
         }
     }
+}
+
+/// Return `latex` rewritten into the subset ironpress typesets correctly.
+fn ironpress_latex(latex: &str) -> String {
+    escape_ironpress_brackets(&space_ironpress_binops(latex))
+}
+
+/// Escape square brackets and drop the arguments ironpress cannot parse.
+///
+/// Ironpress never consumes a bare `]` inside a `\begin` environment, so its
+/// parser loops forever; outside one, `]` ends the formula early and `[` is
+/// dropped. `\[` and `\]` reach it as plain characters. The index of
+/// `\sqrt[n]` keeps its bare brackets, the only ones ironpress reads. The
+/// row gap of `\\[4pt]` and the column argument of the environments in
+/// [`IRONPRESS_ARGUMENT_ENVIRONMENTS`] are dropped: ironpress would print them.
+fn escape_ironpress_brackets(latex: &str) -> String {
+    let mut out = String::with_capacity(latex.len() + 8);
+    // One entry per open `[`: whether it opened a `\sqrt` index.
+    let mut open_is_index = Vec::new();
+    let mut rest = latex;
+    while let Some(ch) = rest.chars().next() {
+        match ch {
+            '[' => {
+                open_is_index.push(false);
+                out.push_str(r"\[");
+                rest = &rest[1..];
+            }
+            ']' => {
+                if open_is_index.pop() != Some(true) {
+                    out.push('\\');
+                }
+                out.push(']');
+                rest = &rest[1..];
+            }
+            '\\' => rest = copy_ironpress_command(rest, &mut out, &mut open_is_index),
+            other => {
+                out.push(other);
+                rest = &rest[other.len_utf8()..];
+            }
+        }
+    }
+    out
+}
+
+/// Copy the command at the start of `rest` to `out` and return what follows it.
+fn copy_ironpress_command<'a>(
+    rest: &'a str,
+    out: &mut String,
+    open_is_index: &mut Vec<bool>,
+) -> &'a str {
+    let after_slash = &rest[1..];
+    let name_len = after_slash
+        .find(|c: char| !c.is_ascii_alphabetic())
+        .unwrap_or(after_slash.len());
+    if name_len == 0 {
+        // A control symbol such as `\\`, `\{` or `\[`.
+        let symbol_len = after_slash.chars().next().map_or(0, char::len_utf8);
+        let (symbol, after) = after_slash.split_at(symbol_len);
+        out.push('\\');
+        out.push_str(symbol);
+        return match symbol {
+            "\\" => skip_delimited(after, '[', ']'),
+            _ => after,
+        };
+    }
+    let (name, after) = after_slash.split_at(name_len);
+    out.push('\\');
+    out.push_str(name);
+    match name {
+        LATEX_SQRT_COMMAND if after.starts_with('[') => {
+            open_is_index.push(true);
+            out.push('[');
+            &after[1..]
+        }
+        LATEX_BEGIN_COMMAND => {
+            let after_name = skip_delimited(after, '{', '}');
+            let environment = &after[..after.len() - after_name.len()];
+            out.push_str(environment);
+            let takes_argument = IRONPRESS_ARGUMENT_ENVIRONMENTS
+                .iter()
+                .any(|name| environment.trim_matches(['{', '}']) == *name);
+            if takes_argument {
+                skip_delimited(after_name, '{', '}')
+            } else {
+                after_name
+            }
+        }
+        _ => after,
+    }
+}
+
+/// Return `text` without its leading `open`…`close` group, or `text` itself
+/// when it does not start with a balanced one.
+fn skip_delimited(text: &str, open: char, close: char) -> &str {
+    if !text.starts_with(open) {
+        return text;
+    }
+    let mut depth = 0usize;
+    for (i, ch) in text.char_indices() {
+        if ch == open {
+            depth += 1;
+        } else if ch == close {
+            depth -= 1;
+            if depth == 0 {
+                return &text[i + close.len_utf8()..];
+            }
+        }
+    }
+    text
 }
 
 /// Insert thick spaces around `\pm` / `\mp` so ironpress treats them as binary.
@@ -236,6 +347,45 @@ mod tests {
             MathRender::new(MathDisplay::Block).render_pdf(r"\frac{-b \pm \sqrt{b^2-4ac}}{2a}");
         assert!(html.contains(r"\;\pm\;"), "{html}");
         assert!(!html.contains(r" \pm \"), "{html}");
+    }
+
+    #[test]
+    /// Assert PDF LaTeX escapes square brackets ironpress would hang on.
+    fn pdf_escapes_square_brackets() {
+        for (latex, expected) in [
+            (r"\mathsf{E}[X]", r"\mathsf{E}\[X\]"),
+            (r"\left[ a \right]", r"\left\[ a \right\]"),
+            (r"\[a\] \{b\}", r"\[a\] \{b\}"),
+            (r"x]", r"x\]"),
+        ] {
+            assert_eq!(super::ironpress_latex(latex), expected);
+        }
+    }
+
+    #[test]
+    /// Assert the `\sqrt` index keeps the bare brackets ironpress reads.
+    fn pdf_keeps_sqrt_index_brackets() {
+        assert_eq!(
+            super::ironpress_latex(r"\sqrt[n]{x} + [\sqrt[3]{y}]"),
+            r"\sqrt[n]{x} + \[\sqrt[3]{y}\]"
+        );
+    }
+
+    #[test]
+    /// Assert a row gap and an environment's column argument are dropped.
+    fn pdf_drops_row_gap_and_column_argument() {
+        assert_eq!(
+            super::ironpress_latex(r"\begin{array}{cc|c} a & b \\[4pt] c & d \end{array}"),
+            r"\begin{array} a & b \\ c & d \end{array}"
+        );
+        assert_eq!(
+            super::ironpress_latex(r"\begin{alignedat}{2} a \end{alignedat}"),
+            r"\begin{alignedat} a \end{alignedat}"
+        );
+        assert_eq!(
+            super::ironpress_latex(r"\begin{matrix}{a} \end{matrix}"),
+            r"\begin{matrix}{a} \end{matrix}"
+        );
     }
 
     /// Render `latex` as block math and assert it converted.

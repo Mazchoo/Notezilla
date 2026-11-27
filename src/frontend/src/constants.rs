@@ -138,6 +138,14 @@ pub const ARROW_SIZE: f64 = 8.0;
 pub const GRAPHVIZ_LABEL_FONT_FAMILY: &str = "Helvetica, Arial, sans-serif";
 /// Gap between a graphviz edge and its upright label, as a fraction of font size.
 pub const GRAPHVIZ_EDGE_LABEL_GAP: f64 = 0.25;
+/// Fill layout-rs writes on the outline it draws over record and
+/// `doublecircle` nodes. Ironpress ignores the zero alpha and paints it solid.
+pub const GRAPHVIZ_TRANSPARENT_FILL_ATTR: &str = "fill=\"#00000000\"";
+/// Replacement for [`GRAPHVIZ_TRANSPARENT_FILL_ATTR`] in PDF export.
+pub const GRAPHVIZ_NO_FILL_ATTR: &str = "fill=\"none\"";
+/// Width of the PDF content box in CSS px: A4 (595.28pt) less the two 72pt
+/// `@page` margins of `export-pdf.html`, at 0.75pt per px.
+pub const PDF_CONTENT_WIDTH_PX: f64 = 601.0;
 /// Extra mermaid padding so a stroke centered on the viewBox edge is not clipped.
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 /// Optional mermaid statement terminator rusty-mermaid rejects at line end.
@@ -333,6 +341,13 @@ pub const WCAG_CONTRAST_FLARE: f64 = 0.05;
 pub const CODE_THEME: &str = "base16-ocean.dark";
 /// Syntect theme applied to fenced code blocks in the day theme.
 pub const DAY_CODE_THEME: &str = "base16-ocean.light";
+/// LaTeX command that opens an environment.
+pub const LATEX_BEGIN_COMMAND: &str = "begin";
+/// LaTeX root command, whose optional `[n]` index ironpress parses.
+pub const LATEX_SQRT_COMMAND: &str = "sqrt";
+/// Environments whose mandatory argument after `\begin{name}` ironpress
+/// would typeset as cell content, so PDF export drops it.
+pub const IRONPRESS_ARGUMENT_ENVIRONMENTS: [&str; 2] = ["array", "alignedat"];
 /// Item marker of an unordered list rewritten for PDF export.
 pub const LIST_BULLET: &str = "•";
 

@@ -2,7 +2,17 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Stack size of the WASM build in bytes, replacing the 1 MiB linker default.
+///
+/// Ironpress lays out nested blocks recursively and overflows 1 MiB on a long
+/// note: the PDF export then traps with "memory access out of bounds".
+const WASM_STACK_BYTES: u32 = 8 * 1024 * 1024;
+
 fn main() {
+    if env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("wasm32") {
+        println!("cargo:rustc-link-arg-bins=-zstack-size={WASM_STACK_BYTES}");
+    }
+
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let env_paths = [
         manifest_dir.join(".env"),
