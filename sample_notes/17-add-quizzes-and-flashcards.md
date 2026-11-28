@@ -45,6 +45,6 @@ What is the French for waffle?
 ## Acceptance Criteria
 
 - [x] Quiz has html behavior in locked editor and export
-- [ ] Flashcards have html behavior in locked editor and export
+- [x] Flashcards have html behavior in locked editor and export
 - [x] Quiz has html behavior in PDF export
-- [ ] Flashcards have html behavior in PDF export
+- [x] Flashcards have html behavior in PDF export
