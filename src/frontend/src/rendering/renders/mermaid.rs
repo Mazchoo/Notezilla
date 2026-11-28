@@ -16,7 +16,7 @@ use crate::constants::{
     BG_2, DAY_BG_2, MERMAID_ERROR_CLASS, MERMAID_MARKDOWN_STRING_CLOSE,
     MERMAID_MARKDOWN_STRING_OPEN, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP,
 };
-use crate::rendering::svg_attr::fit_svg_to_pdf_page;
+use crate::rendering::svg_attr::svg_for_pdf;
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
@@ -186,7 +186,7 @@ impl RenderPdf for MermaidRender {
     /// Return the editor SVG scaled down to fit one PDF page.
     fn render_pdf(&self, source: &str) -> String {
         match self.render_svg(source) {
-            Ok(svg) => fit_svg_to_pdf_page(&svg),
+            Ok(svg) => svg_for_pdf(&svg),
             Err(error) => render_error_html(MERMAID_ERROR_CLASS, source, &error),
         }
     }

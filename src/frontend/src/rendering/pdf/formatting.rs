@@ -256,8 +256,18 @@ mod tests {
         assert_pdf(&pdf);
         let text = String::from_utf8_lossy(&pdf);
         let object = text_object_before(&text, "(A)");
-        assert!(
-            object.contains(&text_fill_operator()),
+        let fill = object
+            .lines()
+            .rfind(|line| line.ends_with(" rg"))
+            .unwrap_or_else(|| panic!("graphviz A sets no fill: {object}"));
+        let rounded: Vec<String> = fill
+            .split_whitespace()
+            .take(3)
+            .map(|v| format!("{:.4}", v.parse::<f32>().expect("rg component")))
+            .collect();
+        assert_eq!(
+            format!("{} rg", rounded.join(" ")),
+            text_fill_operator(),
             "graphviz A must paint with page text fill: {object}"
         );
     }
@@ -369,6 +379,65 @@ mod tests {
             (page2_clip - 72.0).abs() < 1.0,
             "page 2 clip bottom should keep the 72pt header inset, was {page2_clip}"
         );
+    }
+
+    #[test]
+    /// Assert a diagram label styled black stays black in both themes.
+    fn diagram_black_label_stays_black() {
+        use crate::theme::{ColorTheme, ThemeGuard};
+
+        let src = "```mermaid\nflowchart LR\n    A[Start] --> B[End]\n    \
+style A fill:#ffffff,color:#000000\n```\n";
+        for theme in [ColorTheme::Night, ColorTheme::Day] {
+            let _guard = ThemeGuard::set(theme);
+            let pdf = export_to_pdf(&render_markdown_for_pdf(src));
+            let text = String::from_utf8_lossy(&pdf);
+            let object = text_object_before(&text, "(Start)");
+            assert!(object.contains("0 0 0 rg"), "{theme:?}: {object}");
+        }
+    }
+
+    #[test]
+    /// Assert body text in the embedded font is painted with the theme text color.
+    ///
+    /// Ironpress emits no fill for it, so without the recolor pass it is black.
+    fn body_text_uses_theme_text_fill() {
+        use crate::theme::{ColorTheme, ThemeGuard};
+
+        for theme in [ColorTheme::Night, ColorTheme::Day] {
+            let _guard = ThemeGuard::set(theme);
+            let fill = String::from_utf8_lossy(theme.palette().text_fill)
+                .trim()
+                .to_string();
+            let pdf = export_to_pdf(&render_markdown_for_pdf(
+                "# Title
+
+Body text.
+",
+            ));
+            let text = String::from_utf8_lossy(&pdf);
+            let objects: Vec<&str> = text
+                .split(
+                    "BT
+",
+                )
+                .skip(1)
+                .map(|object| {
+                    object
+                        .split(
+                            "
+ET",
+                        )
+                        .next()
+                        .unwrap_or(object)
+                })
+                .filter(|object| object.contains("/liberationsans"))
+                .collect();
+            assert!(!objects.is_empty(), "no body text object in {theme:?} PDF");
+            for object in objects {
+                assert!(object.contains(&fill), "{theme:?} body text: {object}");
+            }
+        }
     }
 
     #[test]

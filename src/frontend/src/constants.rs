@@ -429,11 +429,12 @@ pub const SVG_XML_DECLARATION: &str =
 /// Header of every PDF ironpress produces.
 pub const PDF_HEADER: &[u8] = b"%PDF-1.4\n";
 /// Black DeviceRGB operators ironpress hardcodes for math, replaced by
-/// [`TEXT_FILL`] and [`TEXT_STROKE`].
+/// [`TEXT_FILL`] and [`TEXT_STROKE`] outside inline SVG.
 pub const PDF_BLACK_FILL: &[u8] = b"0 0 0 rg";
 pub const PDF_BLACK_STROKE: &[u8] = b"0 0 0 RG";
-
-pub const MATH_FONTS: [&[u8]; 3] = [b"/Helvetica-Oblique ", b"/Symbol ", b"/Helvetica "];
+/// Start of the y-flip `cm` ironpress emits right after the `q` that opens an
+/// inline SVG. Content inside that group keeps the colors it was rendered with.
+pub const PDF_SVG_PLACEMENT_PREFIX: &[u8] = b"1 0 0 -1 ";
 
 /// Liberation Sans faces embedded in exported PDFs. Names are ironpress font
 /// variant keys: the family, then `__bold`, `__italic` or `__bold_italic`.

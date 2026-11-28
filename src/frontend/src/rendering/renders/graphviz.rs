@@ -8,7 +8,7 @@ use crate::constants::{
     GRAPHVIZ_EMPTY_GRAPH_ERROR, GRAPHVIZ_ERROR_CLASS, GRAPHVIZ_NO_FILL_ATTR,
     GRAPHVIZ_TRANSPARENT_FILL_ATTR, SVG_XML_DECLARATION,
 };
-use crate::rendering::svg_attr::fit_svg_to_pdf_page;
+use crate::rendering::svg_attr::svg_for_pdf;
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::current_theme;
 use layout::backends::svg::SVGWriter;
@@ -51,9 +51,9 @@ impl RenderPdf for GraphvizRender {
     /// Return the editor SVG with the paints and size ironpress needs.
     fn render_pdf(&self, source: &str) -> String {
         match self.render_svg(source) {
-            Ok(svg) => fit_svg_to_pdf_page(
-                &svg.replace(GRAPHVIZ_TRANSPARENT_FILL_ATTR, GRAPHVIZ_NO_FILL_ATTR),
-            ),
+            Ok(svg) => {
+                svg_for_pdf(&svg.replace(GRAPHVIZ_TRANSPARENT_FILL_ATTR, GRAPHVIZ_NO_FILL_ATTR))
+            }
             Err(error) => render_error_html(GRAPHVIZ_ERROR_CLASS, source, &error),
         }
     }

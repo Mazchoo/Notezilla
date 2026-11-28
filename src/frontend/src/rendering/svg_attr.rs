@@ -4,6 +4,12 @@ use crate::constants::{PDF_CONTENT_HEIGHT_PX, PDF_CONTENT_WIDTH_PX};
 
 /// Return the quoted value of attribute `name` in the SVG element `tag`.
 pub fn svg_attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let (from, to) = svg_attr_span(tag, name)?;
+    Some(&tag[from..to])
+}
+
+/// Return the byte span of the quoted value of attribute `name` in `tag`.
+fn svg_attr_span(tag: &str, name: &str) -> Option<(usize, usize)> {
     let bytes = tag.as_bytes();
     let mut at = 0;
     while let Some(rel) = tag.get(at..)?.find(name) {
@@ -12,11 +18,19 @@ pub fn svg_attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
         if !starts_attribute_name(bytes, start) {
             continue;
         }
-        if let Some((from, to)) = quoted_value_span(bytes, at) {
-            return Some(&tag[from..to]);
+        if let Some(span) = quoted_value_span(bytes, at) {
+            return Some(span);
         }
     }
     None
+}
+
+/// Return `tag` with the value of attribute `name` replaced by `value`.
+fn set_svg_attr(tag: &str, name: &str, value: &str) -> String {
+    match svg_attr_span(tag, name) {
+        Some((from, to)) => format!("{}{value}{}", &tag[..from], &tag[to..]),
+        None => tag.to_string(),
+    }
 }
 
 /// Return the value of attribute `name` parsed as an `f64`.
@@ -34,13 +48,91 @@ pub fn strip_svg_attr(element: &str, name: &str) -> String {
         .replace(&format!("{name}='{value}'"), "")
 }
 
+/// Return the editor `svg` rewritten so ironpress draws it the same way.
+///
+/// Used by every diagram renderer for PDF export.
+pub fn svg_for_pdf(svg: &str) -> String {
+    let viewbox = svg.find('>').and_then(|end| viewbox_size(&svg[..end]));
+    let mut out = String::with_capacity(svg.len() + 64);
+    let mut rest = svg;
+    while let Some(lt) = rest.find('<') {
+        let Some(len) = rest[lt..].find('>') else {
+            break;
+        };
+        out.push_str(&rest[..lt]);
+        out.push_str(&ironpress_tag(&rest[lt..lt + len], viewbox));
+        rest = &rest[lt + len..];
+    }
+    out.push_str(rest);
+    fit_svg_to_pdf_page(&out)
+}
+
+/// Rewrite one SVG start tag (without its `>`) into attributes ironpress
+/// paints like a browser.
+///
+/// Ironpress reads a percentage `width` / `height` as px and paints a
+/// `#rrggbbaa` color opaque. Percentages are resolved against the root
+/// `viewBox`, and the alpha channel moves to an `opacity` attribute.
+fn ironpress_tag(tag: &str, viewbox: Option<(f64, f64)>) -> String {
+    let mut tag = tag.to_string();
+    if let Some((width, height)) = viewbox {
+        for (name, full) in [("width", width), ("height", height)] {
+            let percent = svg_attr(&tag, name)
+                .and_then(|value| value.trim().strip_suffix('%'))
+                .and_then(|value| value.trim().parse::<f64>().ok());
+            if let Some(percent) = percent {
+                tag = set_svg_attr(&tag, name, &(full * percent / 100.0).to_string());
+            }
+        }
+    }
+    let mut opacity = None;
+    for name in ["fill", "stroke"] {
+        let Some((rgb, alpha)) = svg_attr(&tag, name).and_then(split_hex_alpha) else {
+            continue;
+        };
+        tag = set_svg_attr(&tag, name, &rgb.to_string());
+        opacity.get_or_insert(alpha);
+    }
+    match opacity {
+        Some(alpha) if svg_attr(&tag, "opacity").is_none() => {
+            let (open, close) = match tag.strip_suffix('/') {
+                Some(open) => (open, "/"),
+                None => (tag.as_str(), ""),
+            };
+            format!("{} opacity=\"{alpha}\"{close}", open.trim_end())
+        }
+        _ => tag,
+    }
+}
+
+/// Split a `#rrggbbaa` color into `#rrggbb` and its alpha in `0..=1`.
+fn split_hex_alpha(color: &str) -> Option<(&str, f64)> {
+    let color = color.trim();
+    let digits = color.strip_prefix('#')?;
+    if digits.len() != 8 || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let alpha = u8::from_str_radix(&digits[6..], 16).ok()?;
+    Some((&color[..7], f64::from(alpha) / 255.0))
+}
+
+/// Return the width and height of the `viewBox` on the SVG start tag `tag`.
+fn viewbox_size(tag: &str) -> Option<(f64, f64)> {
+    let values: Vec<f64> = svg_attr(tag, "viewBox")?
+        .split([' ', ','])
+        .filter(|value| !value.is_empty())
+        .filter_map(|value| value.parse().ok())
+        .collect();
+    (values.len() == 4).then(|| (values[2], values[3]))
+}
+
 /// Scale the root `width` / `height` of `svg` down to fit one PDF page.
 ///
 /// Ironpress sizes an inline SVG from these attributes and ignores CSS
 /// `max-width`. It then shrinks the whole document to its widest element, so
 /// one oversized diagram would make every page tiny. The `viewBox` is kept,
 /// so the drawing scales with the box.
-pub fn fit_svg_to_pdf_page(svg: &str) -> String {
+fn fit_svg_to_pdf_page(svg: &str) -> String {
     let Some(tag_end) = svg.find('>') else {
         return svg.to_string();
     };
@@ -96,8 +188,30 @@ fn quoted_value_span(tag: &[u8], at: usize) -> Option<(usize, usize)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{fit_svg_to_pdf_page, strip_svg_attr, svg_attr, svg_attr_f64};
+    use super::{fit_svg_to_pdf_page, strip_svg_attr, svg_attr, svg_attr_f64, svg_for_pdf};
     use crate::constants::{PDF_CONTENT_HEIGHT_PX, PDF_CONTENT_WIDTH_PX};
+
+    #[test]
+    /// Assert a percentage size is resolved against the root viewBox.
+    fn percent_size_uses_viewbox() {
+        assert_eq!(
+            svg_for_pdf(
+                r#"<svg viewBox="0 0 300 80"><rect width="100%" height="50%"></rect></svg>"#
+            ),
+            r#"<svg viewBox="0 0 300 80"><rect width="300" height="40"></rect></svg>"#
+        );
+    }
+
+    #[test]
+    /// Assert a `#rrggbbaa` paint becomes `#rrggbb` plus `opacity`.
+    fn hex_alpha_becomes_opacity() {
+        assert_eq!(
+            svg_for_pdf(r##"<svg><rect fill="#4e79a7ff"/><path stroke="#44475a00" /></svg>"##),
+            r##"<svg><rect fill="#4e79a7" opacity="1"/><path stroke="#44475a" opacity="0"/></svg>"##
+        );
+        let plain = r##"<svg><rect fill="#4e79a7" stroke-width="2"/></svg>"##;
+        assert_eq!(svg_for_pdf(plain), plain);
+    }
 
     #[test]
     /// Assert a wide SVG is scaled to the page width, keeping its aspect and viewBox.
