@@ -146,6 +146,9 @@ pub const GRAPHVIZ_NO_FILL_ATTR: &str = "fill=\"none\"";
 /// Width of the PDF content box in CSS px: A4 (595.28pt) less the two 72pt
 /// `@page` margins of `export-pdf.html`, at 0.75pt per px.
 pub const PDF_CONTENT_WIDTH_PX: f64 = 601.0;
+/// Height of the PDF content box in CSS px: A4 (841.89pt) less the two 72pt
+/// `@page` margins of `export-pdf.html`, at 0.75pt per px.
+pub const PDF_CONTENT_HEIGHT_PX: f64 = 930.0;
 /// Extra mermaid padding so a stroke centered on the viewBox edge is not clipped.
 pub const MERMAID_STROKE_SLOP: f64 = 1.0;
 /// Optional mermaid statement terminator rusty-mermaid rejects at line end.

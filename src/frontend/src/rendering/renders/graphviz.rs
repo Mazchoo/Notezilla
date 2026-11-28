@@ -6,9 +6,9 @@ use super::render_error::render_error_html;
 use super::{Render, RenderPdf};
 use crate::constants::{
     GRAPHVIZ_EMPTY_GRAPH_ERROR, GRAPHVIZ_ERROR_CLASS, GRAPHVIZ_NO_FILL_ATTR,
-    GRAPHVIZ_TRANSPARENT_FILL_ATTR, PDF_CONTENT_WIDTH_PX, SVG_XML_DECLARATION,
+    GRAPHVIZ_TRANSPARENT_FILL_ATTR, SVG_XML_DECLARATION,
 };
-use crate::rendering::svg_attr::{strip_svg_attr, svg_attr_f64};
+use crate::rendering::svg_attr::fit_svg_to_pdf_page;
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::current_theme;
 use layout::backends::svg::SVGWriter;
@@ -57,28 +57,6 @@ impl RenderPdf for GraphvizRender {
             Err(error) => render_error_html(GRAPHVIZ_ERROR_CLASS, source, &error),
         }
     }
-}
-
-/// Scale the root `width` / `height` of `svg` down to the PDF content width.
-///
-/// Ironpress sizes an inline SVG from these attributes and ignores CSS
-/// `max-width`, so a wider diagram would run off the page. The `viewBox` is
-/// kept, so the drawing scales with the box.
-fn fit_svg_to_pdf_page(svg: &str) -> String {
-    let Some(tag_end) = svg.find('>') else {
-        return svg.to_string();
-    };
-    let (tag, rest) = svg.split_at(tag_end);
-    let (Some(width), Some(height)) = (svg_attr_f64(tag, "width"), svg_attr_f64(tag, "height"))
-    else {
-        return svg.to_string();
-    };
-    if width <= PDF_CONTENT_WIDTH_PX {
-        return svg.to_string();
-    }
-    let scaled_height = height * PDF_CONTENT_WIDTH_PX / width;
-    let tag = strip_svg_attr(&strip_svg_attr(tag, "width"), "height");
-    format!("{tag} width=\"{PDF_CONTENT_WIDTH_PX}\" height=\"{scaled_height}\"{rest}")
 }
 
 /// Flatten graphviz labels, map layout-rs default paints onto the palette, and
@@ -174,14 +152,15 @@ fn palette_paint(value: &str, text: &'static str, bg: &'static str) -> Option<&'
 #[cfg(test)]
 mod tests {
     use super::{
-        fit_svg_to_pdf_page, recolor_default_paints, strip_marker_defs, strip_xml_declaration,
-        svg_attr_f64, GraphvizRender, Render, RenderPdf, GRAPHVIZ_ERROR_CLASS,
-        GRAPHVIZ_NO_FILL_ATTR, GRAPHVIZ_TRANSPARENT_FILL_ATTR, PDF_CONTENT_WIDTH_PX,
+        recolor_default_paints, strip_marker_defs, strip_xml_declaration, GraphvizRender, Render,
+        RenderPdf, GRAPHVIZ_ERROR_CLASS, GRAPHVIZ_NO_FILL_ATTR, GRAPHVIZ_TRANSPARENT_FILL_ATTR,
         SVG_XML_DECLARATION,
     };
+    use crate::constants::PDF_CONTENT_WIDTH_PX;
     use crate::constants::{
         BASELINE_FROM_CENTER, BG_3 as NODE_FILL, GRAPHVIZ_HELP_MANUAL, TEXT as STROKE,
     };
+    use crate::rendering::svg_attr::svg_attr_f64;
     use crate::rendering::{diagram_fences, DiagramKind};
 
     #[test]
@@ -416,32 +395,6 @@ mod tests {
         let pdf = GraphvizRender.render_pdf(source);
         assert!(!pdf.contains(GRAPHVIZ_TRANSPARENT_FILL_ATTR), "{pdf}");
         assert!(pdf.contains(GRAPHVIZ_NO_FILL_ATTR), "{pdf}");
-    }
-
-    #[test]
-    /// Assert a wide SVG is scaled to the page width, keeping its aspect and viewBox.
-    fn wide_svg_is_scaled_to_page_width() {
-        let width = PDF_CONTENT_WIDTH_PX * 2.0;
-        let svg = format!(
-            r#"<svg width="{width}" height="100" viewBox="0 0 {width} 100"><rect width="5"/></svg>"#
-        );
-        assert_eq!(
-            fit_svg_to_pdf_page(&svg),
-            format!(
-                r#"<svg   viewBox="0 0 {width} 100" width="{PDF_CONTENT_WIDTH_PX}" height="50"><rect width="5"/></svg>"#
-            )
-        );
-    }
-
-    #[test]
-    /// Assert an SVG that fits the page, or has no size, is left unchanged.
-    fn fitting_or_unsized_svg_is_unchanged() {
-        for svg in [
-            r#"<svg width="100" height="50" viewBox="0 0 100 50"></svg>"#,
-            r#"<svg viewBox="0 0 9000 50"></svg>"#,
-        ] {
-            assert_eq!(fit_svg_to_pdf_page(svg), svg);
-        }
     }
 
     #[test]

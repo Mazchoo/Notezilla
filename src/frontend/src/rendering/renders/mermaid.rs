@@ -16,6 +16,7 @@ use crate::constants::{
     BG_2, DAY_BG_2, MERMAID_ERROR_CLASS, MERMAID_MARKDOWN_STRING_CLOSE,
     MERMAID_MARKDOWN_STRING_OPEN, MERMAID_STATEMENT_TERMINATOR, MERMAID_STROKE_SLOP,
 };
+use crate::rendering::svg_attr::fit_svg_to_pdf_page;
 use crate::rendering::svg_text_elements::rewrite_text_elements;
 use crate::theme::{current_theme, ColorTheme};
 use rusty_mermaid::svg::SvgRenderer;
@@ -181,7 +182,15 @@ impl Render for MermaidRender {
     }
 }
 
-impl RenderPdf for MermaidRender {}
+impl RenderPdf for MermaidRender {
+    /// Return the editor SVG scaled down to fit one PDF page.
+    fn render_pdf(&self, source: &str) -> String {
+        match self.render_svg(source) {
+            Ok(svg) => fit_svg_to_pdf_page(&svg),
+            Err(error) => render_error_html(MERMAID_ERROR_CLASS, source, &error),
+        }
+    }
+}
 
 /// Return the diagram theme for the current night or day palette.
 ///
@@ -561,7 +570,12 @@ mod tests {
         content_mins, diagram_theme, padded_theme, strip_statement_semicolons, MermaidRender,
         Render, RenderPdf, MERMAID_ERROR_CLASS,
     };
-    use crate::constants::{MERMAID_STROKE_SLOP, PDF_FONT_FAMILY};
+    use crate::constants::{
+        MERMAID_HELP_MANUAL, MERMAID_STROKE_SLOP, PDF_CONTENT_HEIGHT_PX, PDF_CONTENT_WIDTH_PX,
+        PDF_FONT_FAMILY,
+    };
+    use crate::rendering::svg_attr::svg_attr_f64;
+    use crate::rendering::{diagram_fences, DiagramKind as FenceKind};
     use crate::theme::{ColorTheme, ThemeGuard};
     use rusty_mermaid::{
         render, BBox, Color, Point, Primitive, Scene, Style, TextAnchor, TextStyle, Theme,
@@ -1316,5 +1330,28 @@ mod tests {
             MermaidRender.render_pdf(source),
             MermaidRender.render(source)
         );
+    }
+
+    #[test]
+    /// Assert every manual diagram fits one PDF page and keeps its viewBox.
+    fn help_manual_diagrams_fit_pdf_page() {
+        let mut scaled = 0;
+        for (kind, source) in diagram_fences(MERMAID_HELP_MANUAL) {
+            if kind != FenceKind::Mermaid {
+                continue;
+            }
+            let svg = MermaidRender.render_pdf(&source);
+            if !svg.starts_with("<svg") {
+                continue;
+            }
+            let tag = &svg[..svg.find('>').expect("svg tag")];
+            let width = svg_attr_f64(tag, "width").expect("width");
+            let height = svg_attr_f64(tag, "height").expect("height");
+            assert!(width <= PDF_CONTENT_WIDTH_PX + 0.01, "{width}: {tag}");
+            assert!(height <= PDF_CONTENT_HEIGHT_PX + 0.01, "{height}: {tag}");
+            assert!(tag.contains("viewBox="), "{tag}");
+            scaled += usize::from(svg != MermaidRender.render(&source));
+        }
+        assert!(scaled > 0, "no manual diagram needed scaling");
     }
 }

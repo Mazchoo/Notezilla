@@ -1,5 +1,7 @@
 //! Reads and removes attributes on a single SVG element string.
 
+use crate::constants::{PDF_CONTENT_HEIGHT_PX, PDF_CONTENT_WIDTH_PX};
+
 /// Return the quoted value of attribute `name` in the SVG element `tag`.
 pub fn svg_attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let bytes = tag.as_bytes();
@@ -30,6 +32,30 @@ pub fn strip_svg_attr(element: &str, name: &str) -> String {
     element
         .replace(&format!("{name}=\"{value}\""), "")
         .replace(&format!("{name}='{value}'"), "")
+}
+
+/// Scale the root `width` / `height` of `svg` down to fit one PDF page.
+///
+/// Ironpress sizes an inline SVG from these attributes and ignores CSS
+/// `max-width`. It then shrinks the whole document to its widest element, so
+/// one oversized diagram would make every page tiny. The `viewBox` is kept,
+/// so the drawing scales with the box.
+pub fn fit_svg_to_pdf_page(svg: &str) -> String {
+    let Some(tag_end) = svg.find('>') else {
+        return svg.to_string();
+    };
+    let (tag, rest) = svg.split_at(tag_end);
+    let (Some(width), Some(height)) = (svg_attr_f64(tag, "width"), svg_attr_f64(tag, "height"))
+    else {
+        return svg.to_string();
+    };
+    let scale = (PDF_CONTENT_WIDTH_PX / width).min(PDF_CONTENT_HEIGHT_PX / height);
+    if scale >= 1.0 {
+        return svg.to_string();
+    }
+    let (width, height) = (width * scale, height * scale);
+    let tag = strip_svg_attr(&strip_svg_attr(tag, "width"), "height");
+    format!("{tag} width=\"{width}\" height=\"{height}\"{rest}")
 }
 
 /// Return whether index `at` starts an attribute name rather than a name suffix.
@@ -70,7 +96,48 @@ fn quoted_value_span(tag: &[u8], at: usize) -> Option<(usize, usize)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{strip_svg_attr, svg_attr, svg_attr_f64};
+    use super::{fit_svg_to_pdf_page, strip_svg_attr, svg_attr, svg_attr_f64};
+    use crate::constants::{PDF_CONTENT_HEIGHT_PX, PDF_CONTENT_WIDTH_PX};
+
+    #[test]
+    /// Assert a wide SVG is scaled to the page width, keeping its aspect and viewBox.
+    fn wide_svg_is_scaled_to_page_width() {
+        let width = PDF_CONTENT_WIDTH_PX * 2.0;
+        let svg = format!(
+            r#"<svg width="{width}" height="100" viewBox="0 0 {width} 100"><rect width="5"/></svg>"#
+        );
+        assert_eq!(
+            fit_svg_to_pdf_page(&svg),
+            format!(
+                r#"<svg   viewBox="0 0 {width} 100" width="{PDF_CONTENT_WIDTH_PX}" height="50"><rect width="5"/></svg>"#
+            )
+        );
+    }
+
+    #[test]
+    /// Assert an SVG taller than the page is scaled to the page height.
+    fn tall_svg_is_scaled_to_page_height() {
+        let height = PDF_CONTENT_HEIGHT_PX * 2.0;
+        let svg =
+            format!(r#"<svg width="100" height="{height}" viewBox="0 0 100 {height}"></svg>"#);
+        assert_eq!(
+            fit_svg_to_pdf_page(&svg),
+            format!(
+                r#"<svg   viewBox="0 0 100 {height}" width="50" height="{PDF_CONTENT_HEIGHT_PX}"></svg>"#
+            )
+        );
+    }
+
+    #[test]
+    /// Assert an SVG that fits the page, or has no size, is left unchanged.
+    fn fitting_or_unsized_svg_is_unchanged() {
+        for svg in [
+            r#"<svg width="100" height="50" viewBox="0 0 100 50"></svg>"#,
+            r#"<svg viewBox="0 0 9000 50"></svg>"#,
+        ] {
+            assert_eq!(fit_svg_to_pdf_page(svg), svg);
+        }
+    }
 
     #[test]
     /// Assert a double-quoted attribute value is read.
